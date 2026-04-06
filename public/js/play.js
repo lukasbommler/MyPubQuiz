@@ -66,11 +66,13 @@ document.getElementById('selfie-done-btn').addEventListener('click', async () =>
   if (fileInput.files.length > 0 && myTeam) {
     try {
       const base64 = await fileToBase64(fileInput.files[0]);
-      await fetch(`/api/team/${myTeam.id}/selfie`, {
+      const res = await fetch(`/api/team/${myTeam.id}/selfie`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64 })
       });
+      const data = await res.json();
+      if (data.selfieUrl) myTeam.selfie = data.selfieUrl;
     } catch (e) { /* non-critical */ }
   }
   showWaiting();
@@ -109,10 +111,31 @@ socket.on('team-arrived', ({ team }) => {
   }
 });
 
-// ── Game started ──────────────────────────────────────────────────────────────
-socket.on('game-started', () => {
-  // Show a "standby" waiting screen — host will send question text next
-  showWaitingForQuestion();
+// ── Round started ─────────────────────────────────────────────────────────────
+socket.on('round-started', ({ roundNum, total }) => {
+  showScreen('screen-waiting');
+  if (myTeam) document.getElementById('waiting-team-name').textContent = myTeam.name;
+  const pulse = document.querySelector('.waiting-pulse p');
+  if (pulse) pulse.textContent = `Round ${roundNum} starting — ${total} questions. Get ready!`;
+});
+
+// ── Round over ────────────────────────────────────────────────────────────────
+socket.on('round-over', ({ roundNum }) => {
+  stopTimer();
+  showScreen('screen-waiting');
+  const pulse = document.querySelector('#screen-waiting .waiting-pulse p');
+  if (pulse) pulse.textContent = `Round ${roundNum} complete! Waiting for host...`;
+});
+
+socket.on('scoreboard-shown', ({ scores, roundNum }) => {
+  showScreen('screen-round-over-play');
+  document.getElementById('round-complete-badge').textContent = `Round ${roundNum} — Standings`;
+  document.getElementById('round-over-scores-play').innerHTML = scores.map((t, i) => `
+    <div class="reveal-score-row ${t.id === myTeamId ? 'my-team' : ''}">
+      <span class="reveal-score-rank">${rankEmoji(i)}</span>
+      <span class="reveal-score-name">${escapeHtml(t.name)}</span>
+      <span class="reveal-score-pts">${t.score} pts</span>
+    </div>`).join('');
 });
 
 // ── STEP 1: Host sends question text only ─────────────────────────────────────
@@ -193,7 +216,7 @@ function showAnswerOptions(q) {
 // ── Multiple Choice ───────────────────────────────────────────────────────────
 function setupMCScreen(q, showAnswers) {
   document.getElementById('mc-category').textContent = q.category;
-  document.getElementById('mc-progress').textContent = `${q.index + 1} / ${q.total}`;
+  document.getElementById('mc-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('mc-question-text').textContent = q.question;
   document.getElementById('mc-feedback').classList.add('hidden');
   document.getElementById('mc-timer-fill').style.width = '100%';
@@ -230,7 +253,7 @@ function setupMCScreen(q, showAnswers) {
 // ── Estimation ────────────────────────────────────────────────────────────────
 function setupEstimationScreen(q, showAnswers) {
   document.getElementById('est-category').textContent = q.category;
-  document.getElementById('est-progress').textContent = `${q.index + 1} / ${q.total}`;
+  document.getElementById('est-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('est-question-text').textContent = q.question;
   document.getElementById('est-unit').textContent = q.unit || '';
   document.getElementById('est-input').value = '';
@@ -268,7 +291,7 @@ document.getElementById('est-submit-btn').addEventListener('click', () => {
 // ── Word Order ────────────────────────────────────────────────────────────────
 function setupWordOrderScreen(q, showAnswers) {
   document.getElementById('wo-category').textContent = q.category;
-  document.getElementById('wo-progress').textContent = `${q.index + 1} / ${q.total}`;
+  document.getElementById('wo-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('wo-question-text').textContent = q.question;
   document.getElementById('wo-hint').textContent = q.hint ? `Hint: ${q.hint}` : '';
   document.getElementById('wo-feedback').classList.add('hidden');
@@ -396,14 +419,7 @@ function showReveal(correct, scores) {
 
     document.getElementById('reveal-points').textContent = '';
 
-    const sb = document.getElementById('reveal-scoreboard');
-    sb.innerHTML = scores.map((t, i) => `
-      <div class="reveal-score-row ${t.id === myTeamId ? 'my-team' : ''}">
-        <span class="reveal-score-rank">${rankEmoji(i)}</span>
-        <span class="reveal-score-name">${escapeHtml(t.name)}</span>
-        <span class="reveal-score-pts">${t.score} pts</span>
-      </div>
-    `).join('');
+    document.getElementById('reveal-scoreboard').innerHTML = '';
   }, 800);
 }
 
@@ -464,7 +480,11 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Reconnect ─────────────────────────────────────────────────────────────────
-if (myTeamId) {
-  socket.emit('team-join', { code, teamId: myTeamId });
-}
+// ── Connect / Reconnect ───────────────────────────────────────────────────────
+// Re-join the room every time the socket connects (handles initial + reconnects).
+// On mobile, sockets drop/reconnect and lose room membership silently.
+socket.on('connect', () => {
+  if (myTeamId) {
+    socket.emit('team-join', { code, teamId: myTeamId });
+  }
+});

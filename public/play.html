@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>QuizNight</title>
+  <title>My Pub Quiz</title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/play.css">
 </head>
@@ -12,7 +12,7 @@
   <!-- Join Screen -->
   <div id="screen-join" class="screen active play-screen">
     <div class="join-container">
-      <div class="logo-small-center">🎉 QuizNight</div>
+      <div class="logo-small-center">🎉 My Pub Quiz</div>
       <div class="game-code-display-sm">Game <strong id="join-code">------</strong></div>
       <h2>Join the Game</h2>
       <input type="text" id="team-name-input" placeholder="Your team name" maxlength="30" class="text-input">
@@ -113,6 +113,18 @@
       <div class="reveal-correct-answer" id="reveal-correct-answer"></div>
       <div class="reveal-points" id="reveal-points"></div>
       <div class="reveal-scoreboard" id="reveal-scoreboard"></div>
+    </div>
+  </div>
+
+  <!-- Round Over Screen -->
+  <div id="screen-round-over-play" class="screen play-screen">
+    <div class="round-over-play-container">
+      <div class="round-complete-badge" id="round-complete-badge">Round 1 Complete!</div>
+      <div class="round-over-scores" id="round-over-scores-play"></div>
+      <div class="waiting-pulse" style="margin-top:1.5rem">
+        <div class="pulse-dot"></div>
+        <p>Waiting for host to select next round...</p>
+      </div>
     </div>
   </div>
 

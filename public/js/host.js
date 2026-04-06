@@ -1,102 +1,154 @@
-// ── Init ──────────────────────────────────────────────────────────────────────
 const code = location.pathname.split('/').pop();
-const params = new URLSearchParams(location.search);
-const hostToken = params.get('token');
-
-if (!hostToken) { alert('Missing host token. Go back to the home page.'); }
+const hostToken = new URLSearchParams(location.search).get('token');
+if (!hostToken) alert('Missing host token.');
 
 const socket = io();
 let timerInterval = null;
 let currentQuestion = null;
 let teams = {};
+let allQuestions = []; // { index, category, type } — received from server
+let currentRound = 0;
 
-// ── Screen helper ─────────────────────────────────────────────────────────────
+const CATEGORY_ICONS = {
+  'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
+  'Sports': '⚽', 'History': '📜', 'Food & Drink': '🍽️'
+};
+const TYPE_LABELS = {
+  'multiple_choice': 'Multiple Choice',
+  'word_order': 'Word Ordering',
+  'estimation': 'Estimation'
+};
+
+// ── Screens ───────────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// Host button steps: idle → sent → answering → revealed
-// idle     = question loaded on host, players waiting
-// sent     = question text sent to players
-// answering = answer options shown, teams can answer
-// revealed = results shown to players
+// ── Host button steps ─────────────────────────────────────────────────────────
 function setStep(step) {
-  const btnSend    = document.getElementById('btn-send-question');
-  const btnAnswers = document.getElementById('btn-show-answers');
-  const btnReveal  = document.getElementById('btn-reveal');
-  const btnNext    = document.getElementById('btn-next');
-  const btnEnd     = document.getElementById('btn-end');
-
-  // Reset all
-  [btnSend, btnAnswers, btnReveal, btnNext].forEach(b => {
-    b.classList.add('hidden');
-    b.disabled = false;
-  });
+  ['btn-send-question','btn-show-answers','btn-reveal','btn-next'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
   document.getElementById('correct-reveal').classList.add('hidden');
 
-  if (step === 'idle') {
-    btnSend.classList.remove('hidden');
-    btnEnd.classList.remove('hidden');
-  } else if (step === 'sent') {
-    btnAnswers.classList.remove('hidden');
-    btnEnd.classList.remove('hidden');
-  } else if (step === 'answering') {
-    btnReveal.classList.remove('hidden');
-    btnEnd.classList.remove('hidden');
-    startTimer(currentQuestion?.time_limit || 20);
-  } else if (step === 'revealed') {
-    document.getElementById('correct-reveal').classList.remove('hidden');
-    btnNext.classList.remove('hidden');
-    btnEnd.classList.remove('hidden');
-    stopTimer();
-  }
+  if (step === 'idle')      document.getElementById('btn-send-question').classList.remove('hidden');
+  if (step === 'sent')      document.getElementById('btn-show-answers').classList.remove('hidden');
+  if (step === 'answering') { document.getElementById('btn-reveal').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
+  if (step === 'revealed')  { document.getElementById('btn-next').classList.remove('hidden'); stopTimer(); document.getElementById('correct-reveal').classList.remove('hidden'); }
+}
+
+// ── Config panel ──────────────────────────────────────────────────────────────
+function buildConfigPanel(checkboxesId, radiosId, countId, defaultCats, defaultType) {
+  const categories = [...new Set(allQuestions.map(q => q.category))];
+  const types = [...new Set(allQuestions.map(q => q.type))];
+
+  // Category checkboxes
+  document.getElementById(checkboxesId).innerHTML = categories.map(cat => `
+    <label class="checkbox-label">
+      <input type="checkbox" class="cat-cb" value="${cat}" ${defaultCats.includes(cat) ? 'checked' : ''}>
+      <span class="cat-icon">${CATEGORY_ICONS[cat] || '❓'}</span>
+      <span>${cat}</span>
+    </label>
+  `).join('');
+
+  // Type radios
+  document.getElementById(radiosId).innerHTML = types.map(t => `
+    <label class="radio-label">
+      <input type="radio" name="${radiosId}" class="type-radio" value="${t}" ${t === defaultType ? 'checked' : ''}>
+      <span>${TYPE_LABELS[t] || t}</span>
+    </label>
+  `).join('') + `
+    <label class="radio-label disabled-option">
+      <input type="radio" disabled>
+      <span>Picture Puzzle <em>(coming soon)</em></span>
+    </label>
+  `;
+
+  // Live count update
+  const update = () => updateCount(checkboxesId, radiosId, countId);
+  document.getElementById(checkboxesId).addEventListener('change', update);
+  document.getElementById(radiosId).addEventListener('change', update);
+  update();
+}
+
+function updateCount(checkboxesId, radiosId, countId) {
+  const cats = [...document.querySelectorAll(`#${checkboxesId} .cat-cb:checked`)].map(cb => cb.value);
+  const typeEl = document.querySelector(`#${radiosId} .type-radio:checked`);
+  const type = typeEl?.value;
+  const count = allQuestions.filter(q => cats.includes(q.category) && q.type === type).length;
+  document.getElementById(countId).textContent = `${count} question${count !== 1 ? 's' : ''} match this selection`;
+  return { cats, type, count };
+}
+
+function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId) {
+  const cats = [...document.querySelectorAll(`#${checkboxesId} .cat-cb:checked`)].map(cb => cb.value);
+  const typeEl = document.querySelector(`#${radiosId} .type-radio:checked`);
+  const pointsCorrect = parseInt(document.getElementById(pointsCorrectId)?.value) || 1;
+  const pointsBonus = parseInt(document.getElementById(pointsBonusId)?.value) || 0;
+  return { categories: cats, questionType: typeEl?.value, pointsCorrect, pointsBonus };
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
 socket.emit('host-join', { code, hostToken });
+socket.on('error', ({ message }) => alert('Error: ' + message));
 
-socket.on('error', ({ message }) => alert(`Error: ${message}`));
-
-// ── Host joined ───────────────────────────────────────────────────────────────
 socket.on('host-joined', ({ event, teams: teamList, questions }) => {
+  allQuestions = questions;
   document.getElementById('header-code').textContent = code;
 
   const gameUrl = `${location.origin}/game/${code}`;
   document.getElementById('lobby-share-link').value = gameUrl;
-  new QRCode(document.getElementById('lobby-qr'), { text: gameUrl, width: 160, height: 160, colorDark: '#7c3aed', colorLight: '#ffffff' });
+  new QRCode(document.getElementById('lobby-qr'), {
+    text: gameUrl, width: 150, height: 150, colorDark: '#7c3aed', colorLight: '#ffffff'
+  });
 
-  document.getElementById('q-count-info').textContent = `${questions.length} questions loaded`;
+  const allCats = [...new Set(questions.map(q => q.category))];
+  buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
 
   teamList.forEach(t => addTeam(t));
 
   if (event.status === 'running') showScreen('screen-game');
+  else if (event.status === 'round-over') showScreen('screen-round-over');
   else if (event.status === 'finished') showScreen('screen-gameover');
   else showScreen('screen-lobby');
 });
 
-// ── Lobby copy button ─────────────────────────────────────────────────────────
 document.getElementById('lobby-copy-btn').addEventListener('click', () => {
   navigator.clipboard.writeText(document.getElementById('lobby-share-link').value);
   const btn = document.getElementById('lobby-copy-btn');
-  btn.textContent = 'Copied!';
-  setTimeout(() => btn.textContent = 'Copy', 2000);
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000);
 });
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
 socket.on('team-arrived', ({ team }) => addTeam(team));
 
 socket.on('team-selfie-updated', ({ teamId, selfieUrl }) => {
-  teams[teamId] = { ...teams[teamId], selfie: selfieUrl };
-  const img = document.querySelector(`[data-team-id="${teamId}"] img`);
-  if (img) { img.src = selfieUrl; img.classList.remove('hidden'); }
-  const init = document.querySelector(`[data-team-id="${teamId}"] .team-initials`);
-  if (init) init.classList.add('hidden');
+  if (teams[teamId]) teams[teamId].selfie = selfieUrl;
+  const card = document.querySelector(`[data-team-id="${teamId}"]`);
+  if (card) {
+    const img = card.querySelector('.team-avatar img');
+    const init = card.querySelector('.team-initials');
+    if (img) { img.src = selfieUrl; img.classList.remove('hidden'); }
+    if (init) init.classList.add('hidden');
+  }
+  document.querySelectorAll(`[data-score-team="${teamId}"] .score-avatar`).forEach(el => {
+    const img = el.querySelector('img');
+    const init = el.querySelector('.init');
+    if (img) { img.src = selfieUrl; img.classList.remove('hidden'); }
+    if (init) init.classList.add('hidden');
+  });
 });
 
 function addTeam(team) {
   teams[team.id] = team;
-  updateTeamCount();
+  const count = Object.keys(teams).length;
+  document.getElementById('team-count').textContent = count;
+  document.getElementById('team-count-lobby').textContent = count;
+
+  if (count >= 1) {
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('start-hint').classList.add('hidden');
+  }
 
   const grid = document.getElementById('team-grid');
   let card = document.querySelector(`[data-team-id="${team.id}"]`);
@@ -109,41 +161,55 @@ function addTeam(team) {
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   card.innerHTML = `
     <div class="team-avatar">
-      ${team.selfie ? `<img src="${team.selfie}" alt="">` : `<span class="team-initials">${initials}</span>`}
+      <img src="${team.selfie || ''}" alt="" class="${team.selfie ? '' : 'hidden'}">
+      <span class="team-initials${team.selfie ? ' hidden' : ''}">${initials}</span>
     </div>
     <div class="team-card-name">${escapeHtml(team.name)}</div>
   `;
-
-  const startBtn = document.getElementById('start-btn');
-  const count = Object.keys(teams).length;
-  startBtn.disabled = count < 1;
-  startBtn.textContent = `Start Game (${count} team${count !== 1 ? 's' : ''})`;
 }
 
-function updateTeamCount() {
-  document.getElementById('team-count').textContent = Object.keys(teams).length;
-}
-
-// ── Start game ────────────────────────────────────────────────────────────────
+// ── Start / next round ────────────────────────────────────────────────────────
 document.getElementById('start-btn').addEventListener('click', () => {
-  socket.emit('start-game', { code });
+  const { categories, questionType, pointsCorrect, pointsBonus } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus');
+  if (!categories.length || !questionType) return;
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus });
 });
 
-socket.on('game-started', () => showScreen('screen-game'));
+document.getElementById('btn-next-round').addEventListener('click', () => {
+  const { categories, questionType, pointsCorrect, pointsBonus } = getConfig('ro-category-checkboxes', 'ro-type-radios', 'ro-pts-correct', 'ro-pts-bonus');
+  if (!categories.length || !questionType) return;
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus });
+});
 
-// ── Question received (host only) ─────────────────────────────────────────────
+document.getElementById('btn-show-scoreboard').addEventListener('click', () => {
+  socket.emit('show-scoreboard', { code });
+});
+
+document.getElementById('btn-end').addEventListener('click', () => {
+  if (confirm('End game?')) socket.emit('end-game', { code });
+});
+document.getElementById('btn-final-end').addEventListener('click', () => {
+  if (confirm('End game and show final results?')) socket.emit('end-game', { code });
+});
+
+// ── Round started ─────────────────────────────────────────────────────────────
+socket.on('round-started', ({ roundNum, total }) => {
+  currentRound = roundNum;
+  showScreen('screen-game');
+});
+
+// ── Question (host only) ──────────────────────────────────────────────────────
 socket.on('question-host', (q) => {
   currentQuestion = q;
-
   document.getElementById('q-category').textContent = q.category;
-  document.getElementById('q-progress').textContent = `${q.index + 1} / ${q.total}`;
-  document.getElementById('q-type-badge').textContent = typeLabel(q.type);
+  document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
+  document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
+  document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
   document.getElementById('question-text').textContent = q.question;
   document.getElementById('answers-log').innerHTML = '';
   document.getElementById('timer-fill').style.width = '100%';
   document.getElementById('timer-fill').className = 'timer-fill';
 
-  // Show answer preview on host screen
   const answersPreview = document.getElementById('answers-preview');
   const wordsPreview = document.getElementById('words-preview');
   const estimationPreview = document.getElementById('estimation-preview');
@@ -153,78 +219,44 @@ socket.on('question-host', (q) => {
 
   if (q.type === 'multiple_choice') {
     answersPreview.classList.remove('hidden');
-    const letters = ['A', 'B', 'C', 'D'];
     answersPreview.innerHTML = q.answers.map((a, i) => `
-      <div class="answer-option" id="opt-${i}">
-        <span class="answer-letter">${letters[i]}</span>
-        ${escapeHtml(a)}
-      </div>
-    `).join('');
-    // Highlight correct answer immediately for host
-    setTimeout(() => {
-      document.querySelectorAll('.answer-option').forEach((el, i) => {
-        el.classList.toggle('correct', i === q.correct);
-      });
-    }, 50);
+      <div class="answer-option${i === q.correct ? ' correct' : ''}">
+        <span class="answer-letter">${'ABCD'[i]}</span>${escapeHtml(a)}
+      </div>`).join('');
   } else if (q.type === 'word_order') {
     wordsPreview.classList.remove('hidden');
     wordsPreview.innerHTML = q.words.map(w => `<span class="word-chip-preview">${escapeHtml(w)}</span>`).join('');
   } else if (q.type === 'estimation') {
     estimationPreview.classList.remove('hidden');
     document.getElementById('estimation-submissions').innerHTML = '';
-    const correctEl = document.getElementById('correct-value');
-    if (correctEl) correctEl.textContent = `${q.correct_value} ${q.unit || ''}`;
+    document.getElementById('correct-value').textContent = `${q.correct_value} ${q.unit || ''}`;
   }
-
   setStep('idle');
 });
 
-// ── Host step buttons ─────────────────────────────────────────────────────────
-document.getElementById('btn-send-question').addEventListener('click', () => {
-  socket.emit('send-question', { code });
-});
+// ── Step buttons ──────────────────────────────────────────────────────────────
+document.getElementById('btn-send-question').addEventListener('click', () => socket.emit('send-question', { code }));
+document.getElementById('btn-show-answers').addEventListener('click', () => socket.emit('show-answers', { code }));
+document.getElementById('btn-reveal').addEventListener('click', () => socket.emit('reveal-answer', { code }));
+document.getElementById('btn-next').addEventListener('click', () => socket.emit('next-question', { code }));
 
-document.getElementById('btn-show-answers').addEventListener('click', () => {
-  socket.emit('show-answers', { code });
-});
-
-document.getElementById('btn-reveal').addEventListener('click', () => {
-  socket.emit('reveal-answer', { code });
-});
-
-document.getElementById('btn-next').addEventListener('click', () => {
-  socket.emit('next-question', { code });
-});
-
-document.getElementById('btn-end').addEventListener('click', () => {
-  if (confirm('End the game now?')) socket.emit('end-game', { code });
-});
-
-// Server confirms each step
 socket.on('host-step', ({ step }) => {
   if (step === 'question-sent') setStep('sent');
   if (step === 'answers-shown') setStep('answering');
 });
 
-// ── Answer received ───────────────────────────────────────────────────────────
-socket.on('answer-received', ({ teamId, isCorrect, points, answer, timeTaken }) => {
+// ── Answers log ───────────────────────────────────────────────────────────────
+socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
   const team = teams[teamId];
   if (!team) return;
-
-  const log = document.getElementById('answers-log');
   const row = document.createElement('div');
   row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
-
-  const displayAnswer = currentQuestion?.type === 'multiple_choice'
-    ? ['A','B','C','D'][parseInt(answer)] || answer
-    : answer;
-
+  const display = currentQuestion?.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
   row.innerHTML = `
     <span class="answer-log-name">${escapeHtml(team.name)}</span>
-    <span style="color:var(--text2);font-size:0.8rem">${displayAnswer}</span>
-    <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>
-  `;
-  log.prepend(row);
+    <span style="color:var(--text2);font-size:.8rem">${display}</span>
+    <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
+  document.getElementById('answers-log').prepend(row);
 
   if (currentQuestion?.type === 'estimation') {
     const chip = document.createElement('div');
@@ -234,112 +266,99 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer, timeTaken }) 
   }
 });
 
-// ── Answer revealed ───────────────────────────────────────────────────────────
+// ── Reveal ────────────────────────────────────────────────────────────────────
 socket.on('answer-revealed', ({ correct, scores }) => {
   setStep('revealed');
-
-  // Show correct answer text
-  const correctValue = document.getElementById('correct-value');
-  if (currentQuestion?.type === 'multiple_choice') {
-    correctValue.textContent = currentQuestion.answers[correct];
-  } else if (currentQuestion?.type === 'estimation') {
-    correctValue.textContent = `${correct} ${currentQuestion.unit || ''}`;
-  } else if (currentQuestion?.type === 'word_order') {
-    correctValue.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
-  }
-
-  updateScoreboard(scores);
+  const cv = document.getElementById('correct-value');
+  if (currentQuestion?.type === 'multiple_choice') cv.textContent = currentQuestion.answers[correct];
+  else if (currentQuestion?.type === 'estimation') cv.textContent = `${correct} ${currentQuestion.unit || ''}`;
+  else if (currentQuestion?.type === 'word_order') cv.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
+  updateScoreboard('scoreboard', scores);
 });
 
-socket.on('scores-updated', ({ scores }) => updateScoreboard(scores));
-
+socket.on('scores-updated', ({ scores }) => updateScoreboard('scoreboard', scores));
 socket.on('first-correct', ({ team, points }) => showBuzz(team, points));
+
+// ── Round over ────────────────────────────────────────────────────────────────
+socket.on('round-over', ({ scores, roundNum }) => {
+  stopTimer();
+  showScreen('screen-round-over');
+  document.getElementById('round-over-badge').textContent = `Round ${roundNum} Complete!`;
+  updateScoreboard('round-over-scoreboard', scores);
+
+  // Build config panel for next round (same defaults)
+  const allCats = [...new Set(allQuestions.map(q => q.category))];
+  buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+});
 
 // ── Game over ─────────────────────────────────────────────────────────────────
 socket.on('game-over', ({ scores }) => {
   stopTimer();
   showScreen('screen-gameover');
-  renderPodium(scores);
+  const top3 = scores.slice(0, 3);
+  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+  document.getElementById('final-podium').innerHTML = order.map(t => {
+    const rank = t === top3[0] ? 1 : t === top3[1] ? 2 : 3;
+    return `<div class="podium-item ${rank===1?'first':''}">
+      <span class="podium-rank">${rankEmoji(rank-1)}</span>
+      <span class="podium-name">${escapeHtml(t.name)}</span>
+      <span class="podium-score">${t.score} pts</span>
+    </div>`;
+  }).join('');
 });
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────
-function updateScoreboard(scores) {
-  document.getElementById('scoreboard').innerHTML = scores.map((t, i) => {
+function updateScoreboard(elId, scores) {
+  document.getElementById(elId).innerHTML = scores.map((t, i) => {
     const initials = t.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
-    return `
-      <div class="score-row">
-        <span class="score-rank">${rankEmoji(i)}</span>
-        <div class="score-avatar">
-          ${t.selfie ? `<img src="${t.selfie}" alt="">` : initials}
-        </div>
-        <span class="score-name">${escapeHtml(t.name)}</span>
-        <span class="score-pts">${t.score}</span>
-        <div class="score-adj">
-          <button onclick="adjustScore('${t.id}', 50)">+</button>
-          <button onclick="adjustScore('${t.id}', -50)">-</button>
-        </div>
+    return `<div class="score-row" data-score-team="${t.id}">
+      <span class="score-rank">${rankEmoji(i)}</span>
+      <div class="score-avatar">
+        <img src="${t.selfie||''}" alt="" class="${t.selfie?'':'hidden'}">
+        <span class="init${t.selfie?' hidden':''}">${initials}</span>
       </div>
-    `;
+      <span class="score-name">${escapeHtml(t.name)}</span>
+      <span class="score-pts">${t.score}</span>
+      <div class="score-adj">
+        <button onclick="adjustScore('${t.id}',50)">+</button>
+        <button onclick="adjustScore('${t.id}',-50)">-</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
 window.adjustScore = (teamId, delta) => socket.emit('adjust-score', { code, teamId, delta });
 
-function renderPodium(scores) {
-  const top3 = scores.slice(0, 3);
-  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
-  document.getElementById('final-podium').innerHTML = order.map(t => {
-    const rank = t === top3[0] ? 1 : t === top3[1] ? 2 : 3;
-    return `
-      <div class="podium-item ${rank === 1 ? 'first' : ''}">
-        <span class="podium-rank">${rankEmoji(rank - 1)}</span>
-        <span class="podium-name">${escapeHtml(t.name)}</span>
-        <span class="podium-score">${t.score} pts</span>
-      </div>
-    `;
-  }).join('');
-}
-
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer(seconds) {
   stopTimer();
   const fill = document.getElementById('timer-fill');
-  fill.style.width = '100%';
-  fill.className = 'timer-fill';
+  fill.style.width = '100%'; fill.className = 'timer-fill';
   let remaining = seconds;
   timerInterval = setInterval(() => {
     remaining--;
     const pct = (remaining / seconds) * 100;
     fill.style.width = `${pct}%`;
-    if (pct < 30) fill.className = 'timer-fill danger';
-    else if (pct < 60) fill.className = 'timer-fill warning';
+    fill.className = 'timer-fill' + (pct < 30 ? ' danger' : pct < 60 ? ' warning' : '');
     if (remaining <= 0) stopTimer();
   }, 1000);
 }
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
 
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-}
-
-// ── Buzz overlay ──────────────────────────────────────────────────────────────
+// ── Buzz ──────────────────────────────────────────────────────────────────────
 function showBuzz(team, points) {
-  const overlay = document.getElementById('buzz-overlay');
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('buzz-team-name').textContent = team.name;
   document.getElementById('buzz-points').textContent = `+${points} pts`;
-  const selfieImg = document.getElementById('buzz-selfie');
-  const initialsEl = document.getElementById('buzz-initials');
-  if (team.selfie) { selfieImg.src = team.selfie; selfieImg.style.display = 'block'; initialsEl.textContent = ''; }
-  else { selfieImg.style.display = 'none'; initialsEl.textContent = initials; }
+  const img = document.getElementById('buzz-selfie');
+  const init = document.getElementById('buzz-initials');
+  if (team.selfie) { img.src = team.selfie; img.style.display = 'block'; init.textContent = ''; }
+  else { img.style.display = 'none'; init.textContent = initials; }
+  const overlay = document.getElementById('buzz-overlay');
   overlay.classList.remove('hidden');
   setTimeout(() => overlay.classList.add('hidden'), 3500);
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
-function typeLabel(type) {
-  return { multiple_choice: 'Multiple Choice', estimation: 'Estimation', word_order: 'Word Order' }[type] || type;
-}
-function rankEmoji(i) { return ['🥇', '🥈', '🥉'][i] || `${i + 1}.`; }
-function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function rankEmoji(i) { return ['🥇','🥈','🥉'][i] || `${i+1}.`; }
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

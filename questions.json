@@ -1,242 +1,186 @@
 [
   {
-    "id": 1,
-    "category": "Geography",
-    "type": "multiple_choice",
+    "id": 1, "category": "Geography", "type": "multiple_choice",
     "question": "What is the capital of Australia?",
     "answers": ["Sydney", "Melbourne", "Canberra", "Brisbane"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 2,
-    "category": "Geography",
-    "type": "multiple_choice",
+    "id": 2, "category": "Geography", "type": "multiple_choice",
     "question": "Which country has the most natural lakes?",
     "answers": ["Russia", "Canada", "Brazil", "USA"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 3,
-    "category": "Geography",
-    "type": "multiple_choice",
+    "id": 3, "category": "Geography", "type": "multiple_choice",
     "question": "What is the longest river in the world?",
     "answers": ["Amazon", "Yangtze", "Mississippi", "Nile"],
-    "correct": 3,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 3, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 4,
-    "category": "Science",
-    "type": "multiple_choice",
+    "id": 4, "category": "Geography", "type": "multiple_choice",
+    "question": "What is the smallest country in the world?",
+    "answers": ["Monaco", "San Marino", "Vatican City", "Liechtenstein"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 5, "category": "Geography", "type": "word_order",
+    "question": "Order these continents by size (largest first):",
+    "words": ["Asia", "Africa", "Americas", "Europe"],
+    "correct_order": [0, 1, 2, 3],
+    "hint": "Think about total land area",
+    "points": 150, "time_limit": 30
+  },
+  {
+    "id": 6, "category": "Science", "type": "multiple_choice",
     "question": "What is the chemical symbol for gold?",
     "answers": ["Go", "Gd", "Au", "Ag"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 5,
-    "category": "Science",
-    "type": "multiple_choice",
+    "id": 7, "category": "Science", "type": "multiple_choice",
     "question": "How many bones are in the adult human body?",
     "answers": ["196", "206", "216", "226"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 6,
-    "category": "Science",
-    "type": "multiple_choice",
+    "id": 8, "category": "Science", "type": "multiple_choice",
     "question": "What planet is known as the Red Planet?",
     "answers": ["Venus", "Jupiter", "Saturn", "Mars"],
-    "correct": 3,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 3, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 7,
-    "category": "Pop Culture",
-    "type": "multiple_choice",
+    "id": 9, "category": "Science", "type": "multiple_choice",
+    "question": "How many planets are in our solar system?",
+    "answers": ["7", "8", "9", "10"],
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 10, "category": "Science", "type": "estimation",
+    "question": "How far is the Moon from Earth in kilometers?",
+    "correct_value": 384400, "unit": "km",
+    "points": 150, "time_limit": 30
+  },
+  {
+    "id": 11, "category": "Pop Culture", "type": "multiple_choice",
     "question": "Which band released the album 'Dark Side of the Moon'?",
     "answers": ["Led Zeppelin", "Pink Floyd", "The Beatles", "The Rolling Stones"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 8,
-    "category": "Pop Culture",
-    "type": "multiple_choice",
+    "id": 12, "category": "Pop Culture", "type": "multiple_choice",
     "question": "In which year was the first iPhone released?",
     "answers": ["2005", "2006", "2007", "2008"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 9,
-    "category": "Pop Culture",
-    "type": "multiple_choice",
+    "id": 13, "category": "Pop Culture", "type": "multiple_choice",
     "question": "Who painted the Mona Lisa?",
     "answers": ["Michelangelo", "Raphael", "Leonardo da Vinci", "Caravaggio"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 10,
-    "category": "Sports",
-    "type": "multiple_choice",
-    "question": "How many players are on a standard football (soccer) team?",
-    "answers": ["9", "10", "11", "12"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
+    "id": 14, "category": "Pop Culture", "type": "multiple_choice",
+    "question": "Which streaming service produced 'Stranger Things'?",
+    "answers": ["HBO", "Amazon Prime", "Disney+", "Netflix"],
+    "correct": 3, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 11,
-    "category": "Sports",
-    "type": "multiple_choice",
-    "question": "In which country did the Olympic Games originate?",
-    "answers": ["Italy", "Greece", "Egypt", "Turkey"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 12,
-    "category": "Sports",
-    "type": "multiple_choice",
-    "question": "How long is a marathon in kilometers?",
-    "answers": ["40.0 km", "41.2 km", "42.195 km", "43.5 km"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 13,
-    "category": "History",
-    "type": "multiple_choice",
-    "question": "In which year did World War II end?",
-    "answers": ["1943", "1944", "1945", "1946"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 14,
-    "category": "History",
-    "type": "multiple_choice",
-    "question": "Who was the first person to walk on the moon?",
-    "answers": ["Buzz Aldrin", "Yuri Gagarin", "Neil Armstrong", "John Glenn"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 15,
-    "category": "History",
-    "type": "multiple_choice",
-    "question": "Which empire built the Colosseum?",
-    "answers": ["Greek", "Roman", "Ottoman", "Byzantine"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 16,
-    "category": "Food & Drink",
-    "type": "multiple_choice",
-    "question": "Which country is the origin of Sushi?",
-    "answers": ["China", "Korea", "Thailand", "Japan"],
-    "correct": 3,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 17,
-    "category": "Food & Drink",
-    "type": "multiple_choice",
-    "question": "What is the main ingredient in guacamole?",
-    "answers": ["Tomato", "Avocado", "Mango", "Lime"],
-    "correct": 1,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 18,
-    "category": "Food & Drink",
-    "type": "multiple_choice",
-    "question": "Champagne originally comes from which country?",
-    "answers": ["Italy", "Spain", "France", "Germany"],
-    "correct": 2,
-    "points": 100,
-    "time_bonus": true,
-    "time_limit": 20
-  },
-  {
-    "id": 19,
-    "category": "Science",
-    "type": "estimation",
-    "question": "How far is the Moon from Earth in kilometers?",
-    "correct_value": 384400,
-    "unit": "km",
-    "points": 150,
-    "time_limit": 30
-  },
-  {
-    "id": 20,
-    "category": "Pop Culture",
-    "type": "word_order",
+    "id": 15, "category": "Pop Culture", "type": "word_order",
     "question": "Put these words in order to form a famous movie quote:",
     "words": ["I'll", "be", "back"],
     "correct_order": [0, 1, 2],
     "hint": "Terminator (1984)",
-    "points": 150,
-    "time_limit": 30
+    "points": 150, "time_limit": 30
   },
   {
-    "id": 21,
-    "category": "Geography",
-    "type": "word_order",
-    "question": "Order these countries by population size (largest first):",
-    "words": ["Germany", "France", "Poland", "Netherlands"],
-    "correct_order": [0, 1, 2, 3],
-    "hint": "Think about European population sizes",
-    "points": 150,
-    "time_limit": 30
+    "id": 16, "category": "Sports", "type": "multiple_choice",
+    "question": "How many players are on a standard football (soccer) team?",
+    "answers": ["9", "10", "11", "12"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
   },
   {
-    "id": 22,
-    "category": "Sports",
-    "type": "estimation",
+    "id": 17, "category": "Sports", "type": "multiple_choice",
+    "question": "In which country did the Olympic Games originate?",
+    "answers": ["Italy", "Greece", "Egypt", "Turkey"],
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 18, "category": "Sports", "type": "multiple_choice",
+    "question": "How long is a marathon in kilometers?",
+    "answers": ["40.0 km", "41.2 km", "42.195 km", "43.5 km"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 19, "category": "Sports", "type": "multiple_choice",
+    "question": "How many Grand Slam tennis tournaments are there per year?",
+    "answers": ["2", "3", "4", "5"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 20, "category": "Sports", "type": "estimation",
     "question": "What is the top speed of a Formula 1 car in km/h?",
-    "correct_value": 372,
-    "unit": "km/h",
-    "points": 150,
-    "time_limit": 30
+    "correct_value": 372, "unit": "km/h",
+    "points": 150, "time_limit": 30
+  },
+  {
+    "id": 21, "category": "History", "type": "multiple_choice",
+    "question": "In which year did World War II end?",
+    "answers": ["1943", "1944", "1945", "1946"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 22, "category": "History", "type": "multiple_choice",
+    "question": "Who was the first person to walk on the moon?",
+    "answers": ["Buzz Aldrin", "Yuri Gagarin", "Neil Armstrong", "John Glenn"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 23, "category": "History", "type": "multiple_choice",
+    "question": "Which empire built the Colosseum?",
+    "answers": ["Greek", "Roman", "Ottoman", "Byzantine"],
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 24, "category": "History", "type": "multiple_choice",
+    "question": "In which year did the Berlin Wall fall?",
+    "answers": ["1987", "1988", "1989", "1990"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 25, "category": "History", "type": "multiple_choice",
+    "question": "Who was the first President of the United States?",
+    "answers": ["John Adams", "Thomas Jefferson", "Benjamin Franklin", "George Washington"],
+    "correct": 3, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 26, "category": "Food & Drink", "type": "multiple_choice",
+    "question": "Which country is the origin of Sushi?",
+    "answers": ["China", "Korea", "Thailand", "Japan"],
+    "correct": 3, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 27, "category": "Food & Drink", "type": "multiple_choice",
+    "question": "What is the main ingredient in guacamole?",
+    "answers": ["Tomato", "Avocado", "Mango", "Lime"],
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 28, "category": "Food & Drink", "type": "multiple_choice",
+    "question": "Champagne originally comes from which country?",
+    "answers": ["Italy", "Spain", "France", "Germany"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 29, "category": "Food & Drink", "type": "multiple_choice",
+    "question": "Which country invented pizza?",
+    "answers": ["Greece", "Spain", "Italy", "France"],
+    "correct": 2, "points": 100, "time_bonus": true, "time_limit": 20
+  },
+  {
+    "id": 30, "category": "Food & Drink", "type": "multiple_choice",
+    "question": "What is the main ingredient in traditional hummus?",
+    "answers": ["Lentils", "Chickpeas", "White beans", "Fava beans"],
+    "correct": 1, "points": 100, "time_bonus": true, "time_limit": 20
   }
 ]

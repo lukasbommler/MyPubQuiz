@@ -3,40 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuizNight — Host Panel</title>
+  <title>My Pub Quiz — Host Panel</title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/host.css">
 </head>
 <body class="host-body">
 
-  <!-- Header -->
   <header class="host-header">
     <div class="header-left">
-      <span class="logo-small">🎉 QuizNight</span>
+      <span class="logo-small">🎉 My Pub Quiz</span>
       <span class="game-code-badge">Code: <strong id="header-code">---</strong></span>
     </div>
     <div class="header-right">
-      <span class="team-count"><span id="team-count">0</span> teams</span>
+      <span class="team-count"><span id="team-count">0</span> teams joined</span>
     </div>
   </header>
 
-  <!-- Lobby Screen -->
+  <!-- Lobby -->
   <div id="screen-lobby" class="screen active">
     <div class="lobby-layout">
+
+      <!-- Left: share -->
       <div class="lobby-left">
-        <h2>Waiting for teams to join...</h2>
+        <h2>Waiting for teams...</h2>
         <p class="hint">Share this link or QR code:</p>
         <div class="share-link-box">
           <input type="text" id="lobby-share-link" readonly>
           <button class="btn btn-secondary" id="lobby-copy-btn">Copy</button>
         </div>
         <div id="lobby-qr"></div>
-        <button class="btn btn-primary btn-lg" id="start-btn" disabled>Start Game (need 1+ teams)</button>
-        <div class="question-count-info" id="q-count-info"></div>
+
+        <div class="team-grid-wrap">
+          <h3 class="section-label">Teams (<span id="team-count-lobby">0</span>)</h3>
+          <div class="team-grid" id="team-grid"></div>
+        </div>
       </div>
+
+      <!-- Right: config -->
       <div class="lobby-right">
-        <h3>Teams</h3>
-        <div class="team-grid" id="team-grid"></div>
+        <div class="config-panel" id="lobby-config">
+          <h2>Configure Round</h2>
+
+          <div class="config-section">
+            <div class="config-label">Categories <span class="config-hint">(select one or more)</span></div>
+            <div class="checkbox-grid" id="category-checkboxes"></div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-label">Question Type</div>
+            <div class="radio-group" id="type-radios"></div>
+          </div>
+
+          <div class="config-match-count" id="match-count">— questions selected</div>
+
+          <div class="config-section">
+            <div class="config-label">Points</div>
+            <div class="points-row">
+              <div class="points-field">
+                <label for="pts-correct">Correct answer</label>
+                <input type="number" id="pts-correct" min="0" value="1">
+              </div>
+              <div class="points-field">
+                <label for="pts-bonus">Fastest bonus</label>
+                <input type="number" id="pts-bonus" min="0" value="1">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg" id="start-btn" disabled>
+            Start Game
+          </button>
+          <p class="hint" id="start-hint">Need at least 1 team to start</p>
+        </div>
       </div>
     </div>
   </div>
@@ -44,36 +82,27 @@
   <!-- Game Screen -->
   <div id="screen-game" class="screen">
     <div class="game-layout">
-
-      <!-- Left: Question & Controls -->
       <div class="game-left">
         <div class="question-meta">
           <span class="q-category" id="q-category">Category</span>
-          <span class="q-progress" id="q-progress">1 / 20</span>
+          <span class="q-round-info" id="q-round-info">Round 1</span>
+          <span class="q-progress" id="q-progress">1 / 5</span>
           <span class="q-type-badge" id="q-type-badge">Multiple Choice</span>
         </div>
         <div class="question-card">
           <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
-          <h2 class="question-text" id="question-text">Question goes here</h2>
-
-          <!-- Multiple choice preview -->
+          <h2 class="question-text" id="question-text"></h2>
           <div class="answers-preview" id="answers-preview"></div>
-
-          <!-- Word order preview -->
           <div class="words-preview hidden" id="words-preview"></div>
-
-          <!-- Estimation -->
           <div class="estimation-preview hidden" id="estimation-preview">
             <p>Teams submit a number — closest wins!</p>
             <div id="estimation-submissions"></div>
           </div>
         </div>
-
         <div class="correct-answer-reveal hidden" id="correct-reveal">
           <div class="correct-label">Correct Answer</div>
           <div class="correct-value" id="correct-value"></div>
         </div>
-
         <div class="host-controls">
           <button class="btn btn-secondary" id="btn-send-question">Send Question to Players →</button>
           <button class="btn btn-warning hidden" id="btn-show-answers">Show Answer Options →</button>
@@ -82,19 +111,62 @@
           <button class="btn btn-danger" id="btn-end">End Game</button>
         </div>
       </div>
-
-      <!-- Right: Teams & Scores -->
       <div class="game-right">
-        <h3>Live Scoreboard</h3>
+        <h3 class="section-label">Scoreboard</h3>
         <div class="scoreboard" id="scoreboard"></div>
-
-        <h3 style="margin-top: 1.5rem">Answers</h3>
+        <h3 class="section-label" style="margin-top:1.5rem">Answers</h3>
         <div class="answers-log" id="answers-log"></div>
       </div>
     </div>
   </div>
 
-  <!-- Game Over Screen -->
+  <!-- Round Over -->
+  <div id="screen-round-over" class="screen">
+    <div class="round-over-layout">
+      <div class="round-over-left">
+        <div class="round-badge" id="round-over-badge">Round 1 Complete!</div>
+        <h3 class="section-label" style="margin-top:1.5rem">Standings</h3>
+        <div class="scoreboard" id="round-over-scoreboard"></div>
+      </div>
+      <div class="round-over-right">
+        <div class="config-panel" id="roundover-config">
+          <h2>Next Round</h2>
+
+          <div class="config-section">
+            <div class="config-label">Categories</div>
+            <div class="checkbox-grid" id="ro-category-checkboxes"></div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-label">Question Type</div>
+            <div class="radio-group" id="ro-type-radios"></div>
+          </div>
+
+          <div class="config-match-count" id="ro-match-count">— questions selected</div>
+
+          <div class="config-section">
+            <div class="config-label">Points</div>
+            <div class="points-row">
+              <div class="points-field">
+                <label for="ro-pts-correct">Correct answer</label>
+                <input type="number" id="ro-pts-correct" min="0" value="1">
+              </div>
+              <div class="points-field">
+                <label for="ro-pts-bonus">Fastest bonus</label>
+                <input type="number" id="ro-pts-bonus" min="0" value="1">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-secondary btn-lg" id="btn-show-scoreboard">Show Scoreboard to Players</button>
+          <button class="btn btn-primary btn-lg" id="btn-next-round" style="margin-top:0.5rem">Start Next Round</button>
+          <button class="btn btn-danger" id="btn-final-end" style="margin-top:0.5rem">End Game &amp; Final Results</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over -->
   <div id="screen-gameover" class="screen">
     <div class="gameover-container">
       <div class="trophy">🏆</div>
@@ -104,7 +176,7 @@
     </div>
   </div>
 
-  <!-- First correct flash overlay -->
+  <!-- Buzz overlay -->
   <div id="buzz-overlay" class="buzz-overlay hidden">
     <div class="buzz-content">
       <div class="buzz-selfie-wrap">

@@ -382,6 +382,32 @@ body.play-body {
 .reveal-score-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
 .reveal-score-pts { font-weight: 700; color: var(--accent2); }
 
+/* ── Round Over Play ─────────────────────────────────────────────────────── */
+.round-over-play-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2.5rem 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  margin: auto;
+}
+.round-complete-badge {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.round-over-scores {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 /* ── Game Over Play ───────────────────────────────────────────────────────── */
 .gameover-play-container {
   display: flex;

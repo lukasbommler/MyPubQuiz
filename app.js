@@ -18,7 +18,6 @@ const PORT = process.env.PORT || 3000;
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -136,17 +135,39 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ── Start game ──────────────────────────────────────────────────────────────
-  socket.on('start-game', ({ code }) => {
+  // ── Start round (works from lobby and between rounds) ───────────────────────
+  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus }) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
-    if (!event || event.status !== 'lobby') return;
+    if (!event || event.status === 'running' || event.status === 'finished') return;
 
-    db.updateEvent(code, { status: 'running', current_question_index: 0 });
-    gameState[code] = { firstCorrectTeam: null, firstCorrectPoints: 0 };
+    const prev = gameState[code] || {};
+    const roundNum = (prev.roundNum || 0) + 1;
 
-    io.to(`room:${code}`).emit('game-started');
-    sendQuestion(code, 0); // sends only to host
+    const indices = questions
+      .map((q, i) => ({ q, i }))
+      .filter(({ q }) => categories.includes(q.category) && q.type === questionType)
+      .map(({ i }) => i)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5);
+
+    if (!indices.length) {
+      socket.emit('error', { message: 'No questions match that selection.' });
+      return;
+    }
+
+    gameState[code] = {
+      firstCorrectTeam: null, firstCorrectPoints: 0,
+      roundQuestionIndices: indices,
+      roundIndex: 0,
+      roundNum,
+      pointsCorrect: Math.max(1, parseInt(pointsCorrect) || 1),
+      pointsBonus: Math.max(0, parseInt(pointsBonus) || 0)
+    };
+
+    db.updateEvent(code, { status: 'running', current_question_index: indices[0] });
+    io.to(`room:${code}`).emit('round-started', { roundNum, total: indices.length });
+    sendQuestion(code, indices[0]);
   });
 
   // ── Host sends question text to players (step 1) ─────────────────────────
@@ -156,7 +177,8 @@ io.on('connection', (socket) => {
     if (!event) return;
     const q = questions[event.current_question_index];
     if (!q) return;
-    const safe = safeQuestion(q, event.current_question_index, questions.length);
+    const state = gameState[code] || {};
+    const safe = { ...safeQuestion(q, event.current_question_index, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-text', safe);
     io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
   });
@@ -168,7 +190,8 @@ io.on('connection', (socket) => {
     if (!event) return;
     const q = questions[event.current_question_index];
     if (!q) return;
-    const safe = safeQuestion(q, event.current_question_index, questions.length);
+    const state = gameState[code] || {};
+    const safe = { ...safeQuestion(q, event.current_question_index, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
     io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: q.time_limit });
     io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
@@ -194,18 +217,20 @@ io.on('connection', (socket) => {
       try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(q.correct_order); } catch (e) {}
     }
 
+    const state = gameState[code];
+    const basePoints = state?.pointsCorrect ?? 1;
+    const bonusPoints = state?.pointsBonus ?? 0;
+    const isFirst = isCorrect && !state?.firstCorrectTeam;
     let points = 0;
+
     if (isCorrect) {
-      const timeBonus = q.time_bonus ? Math.max(0, Math.round((1 - timeTaken / (q.time_limit * 1000)) * 50)) : 0;
-      points = q.points + timeBonus;
+      points = basePoints + (isFirst ? bonusPoints : 0);
       db.addScore(teamId, points);
     }
 
     db.recordAnswer(code, teamId, qIndex, String(answer), isCorrect, points, timeTaken);
 
-    // Store first correct team — revealed only when host clicks Reveal Results
-    const state = gameState[code];
-    if (state && isCorrect && !state.firstCorrectTeam) {
+    if (isFirst) {
       state.firstCorrectTeam = db.getTeam(teamId);
       state.firstCorrectPoints = points;
     }
@@ -234,12 +259,13 @@ io.on('connection', (socket) => {
         if (diff < closestDiff) { closestDiff = diff; closest = a; }
       }
       if (closest) {
-        db.addScore(closest.team_id, q.points);
-        db.updateAnswer(closest.id, { is_correct: 1, points_awarded: q.points });
+        const pts = gameState[code]?.pointsCorrect ?? 1;
+        db.addScore(closest.team_id, pts);
+        db.updateAnswer(closest.id, { is_correct: 1, points_awarded: pts });
         const winner = db.getTeam(closest.team_id);
         if (gameState[code]) {
           gameState[code].firstCorrectTeam = winner;
-          gameState[code].firstCorrectPoints = q.points;
+          gameState[code].firstCorrectPoints = pts;
         }
       }
     }
@@ -270,12 +296,29 @@ io.on('connection', (socket) => {
     const event = db.getEvent(code);
     if (!event) return;
 
-    const nextIndex = event.current_question_index + 1;
-    if (nextIndex >= questions.length) { endGame(code); return; }
+    const state = gameState[code];
+    state.roundIndex++;
+    state.firstCorrectTeam = null;
+    state.firstCorrectPoints = 0;
 
-    db.updateEvent(code, { current_question_index: nextIndex });
-    gameState[code] = { firstCorrectTeam: null, firstCorrectPoints: 0 };
-    sendQuestion(code, nextIndex); // sends only to host
+    if (state.roundIndex >= state.roundQuestionIndices.length) {
+      db.updateEvent(code, { status: 'round-over' });
+      const scores = db.getScoresByEvent(code);
+      io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum });
+      return;
+    }
+
+    const nextQIndex = state.roundQuestionIndices[state.roundIndex];
+    db.updateEvent(code, { current_question_index: nextQIndex });
+    sendQuestion(code, nextQIndex);
+  });
+
+  // ── Show scoreboard to players ───────────────────────────────────────────────
+  socket.on('show-scoreboard', ({ code }) => {
+    if (socket.data?.role !== 'host') return;
+    const scores = db.getScoresByEvent(code);
+    const state = gameState[code];
+    io.to(`room:${code}`).except(`host:${code}`).emit('scoreboard-shown', { scores, roundNum: state?.roundNum ?? 1 });
   });
 
   // ── Adjust score ────────────────────────────────────────────────────────────
@@ -298,8 +341,13 @@ io.on('connection', (socket) => {
 function sendQuestion(code, index) {
   const q = questions[index];
   if (!q) return;
-  // Only send to host — players receive question via send-question / show-answers
-  io.to(`host:${code}`).emit('question-host', { ...q, index, total: questions.length });
+  const state = gameState[code] || {};
+  const roundIndex = state.roundIndex ?? 0;
+  const roundTotal = state.roundQuestionIndices?.length ?? 1;
+  // Only send to host — players receive via send-question / show-answers
+  io.to(`host:${code}`).emit('question-host', {
+    ...q, index, roundIndex, roundTotal
+  });
 }
 
 function endGame(code) {
