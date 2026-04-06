@@ -1,0 +1,4 @@
+node_modules/
+quiz-data.json
+public/uploads/
+*.db

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>QuizNight</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/play.css">
+</head>
+<body class="play-body">
+
+  <!-- Join Screen -->
+  <div id="screen-join" class="screen active play-screen">
+    <div class="join-container">
+      <div class="logo-small-center">🎉 QuizNight</div>
+      <div class="game-code-display-sm">Game <strong id="join-code">------</strong></div>
+      <h2>Join the Game</h2>
+      <input type="text" id="team-name-input" placeholder="Your team name" maxlength="30" class="text-input">
+      <button class="btn btn-primary btn-lg" id="join-btn">Join Game</button>
+    </div>
+  </div>
+
+  <!-- Selfie Screen -->
+  <div id="screen-selfie" class="screen play-screen">
+    <div class="selfie-container">
+      <h2>Take a team photo! 📸</h2>
+      <p class="hint">When your team answers first, this photo shows on everyone's screen</p>
+      <div class="selfie-preview-wrap">
+        <img id="selfie-preview" src="" alt="" class="hidden">
+        <div class="selfie-placeholder" id="selfie-placeholder">📷</div>
+      </div>
+      <input type="file" id="selfie-input" accept="image/*" capture="user" class="hidden">
+      <button class="btn btn-secondary" id="take-selfie-btn">Take Photo</button>
+      <button class="btn btn-primary btn-lg" id="selfie-done-btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="screen-waiting" class="screen play-screen">
+    <div class="waiting-container">
+      <div class="team-joined-badge">
+        <div class="team-selfie-circle" id="waiting-selfie-circle">
+          <img id="waiting-selfie" src="" alt="" class="hidden">
+          <span id="waiting-initials"></span>
+        </div>
+        <div class="team-joined-name" id="waiting-team-name"></div>
+      </div>
+      <div class="waiting-pulse">
+        <div class="pulse-dot"></div>
+        <p>Waiting for host to start...</p>
+      </div>
+      <div class="teams-in-lobby" id="teams-in-lobby"></div>
+    </div>
+  </div>
+
+  <!-- Question Screen: Multiple Choice -->
+  <div id="screen-mc" class="screen play-screen">
+    <div class="play-question-layout">
+      <div class="play-meta">
+        <span class="play-category" id="mc-category"></span>
+        <span class="play-progress" id="mc-progress"></span>
+      </div>
+      <div class="play-timer-bar"><div class="play-timer-fill" id="mc-timer-fill"></div></div>
+      <h2 class="play-question-text" id="mc-question-text"></h2>
+      <div class="mc-answers" id="mc-answers"></div>
+      <div class="mc-feedback hidden" id="mc-feedback"></div>
+    </div>
+  </div>
+
+  <!-- Question Screen: Estimation -->
+  <div id="screen-estimation" class="screen play-screen">
+    <div class="play-question-layout">
+      <div class="play-meta">
+        <span class="play-category" id="est-category"></span>
+        <span class="play-progress" id="est-progress"></span>
+      </div>
+      <div class="play-timer-bar"><div class="play-timer-fill" id="est-timer-fill"></div></div>
+      <h2 class="play-question-text" id="est-question-text"></h2>
+      <div class="estimation-input-wrap">
+        <input type="number" id="est-input" class="estimation-input" placeholder="Your estimate...">
+        <span class="estimation-unit" id="est-unit"></span>
+      </div>
+      <button class="btn btn-primary btn-lg" id="est-submit-btn">Submit</button>
+      <div class="est-feedback hidden" id="est-feedback"></div>
+    </div>
+  </div>
+
+  <!-- Question Screen: Word Order -->
+  <div id="screen-wordorder" class="screen play-screen">
+    <div class="play-question-layout">
+      <div class="play-meta">
+        <span class="play-category" id="wo-category"></span>
+        <span class="play-progress" id="wo-progress"></span>
+      </div>
+      <div class="play-timer-bar"><div class="play-timer-fill" id="wo-timer-fill"></div></div>
+      <h2 class="play-question-text" id="wo-question-text"></h2>
+      <p class="hint" id="wo-hint"></p>
+      <div class="word-order-area">
+        <div class="word-drop-zone" id="word-drop-zone">
+          <p class="drop-hint">Drag words here in order →</p>
+        </div>
+        <div class="word-chips" id="word-chips"></div>
+      </div>
+      <button class="btn btn-primary btn-lg" id="wo-submit-btn">Submit Order</button>
+      <div class="wo-feedback hidden" id="wo-feedback"></div>
+    </div>
+  </div>
+
+  <!-- Reveal Screen (shown after answer revealed) -->
+  <div id="screen-reveal" class="screen play-screen">
+    <div class="reveal-container">
+      <div class="reveal-result" id="reveal-result"></div>
+      <div class="reveal-correct-answer" id="reveal-correct-answer"></div>
+      <div class="reveal-points" id="reveal-points"></div>
+      <div class="reveal-scoreboard" id="reveal-scoreboard"></div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="screen-gameover-play" class="screen play-screen">
+    <div class="gameover-play-container">
+      <div class="trophy">🏆</div>
+      <h1>Game Over!</h1>
+      <div class="final-scores" id="final-scores-play"></div>
+    </div>
+  </div>
+
+  <!-- First correct flash overlay -->
+  <div id="play-buzz-overlay" class="buzz-overlay hidden">
+    <div class="buzz-content">
+      <div class="buzz-selfie-wrap">
+        <img id="play-buzz-selfie" src="" alt="">
+        <div class="buzz-initials" id="play-buzz-initials"></div>
+      </div>
+      <div class="buzz-team-name" id="play-buzz-team-name"></div>
+      <div class="buzz-points" id="play-buzz-points"></div>
+      <div class="buzz-label">First correct! ⚡</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/play.js"></script>
+</body>
+</html>

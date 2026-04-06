@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizNight</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="landing">
+  <div class="landing-container">
+    <div class="logo">
+      <div class="logo-icon">🎉</div>
+      <h1>QuizNight</h1>
+      <p class="tagline">The party quiz for everyone</p>
+    </div>
+
+    <!-- Landing: two options -->
+    <div id="landing-options">
+      <div class="landing-two-col">
+        <div class="card option-card">
+          <div class="option-icon">🎤</div>
+          <h2>Host</h2>
+          <p>Create a game and moderate it</p>
+          <button class="btn btn-primary btn-lg" id="create-btn">Create Game</button>
+        </div>
+        <div class="card option-card">
+          <div class="option-icon">🎮</div>
+          <h2>Join</h2>
+          <p>Enter the code from your host</p>
+          <input type="text" id="join-code-input" class="text-input code-input" placeholder="ABC123" maxlength="6">
+          <button class="btn btn-secondary btn-lg" id="join-btn">Join Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- After creating: game details -->
+    <div class="card hidden" id="created-card">
+      <h2>Game Ready!</h2>
+      <div class="game-code-display">
+        <span class="label">Game Code</span>
+        <span class="code" id="game-code-display">------</span>
+      </div>
+      <div class="share-link-box">
+        <input type="text" id="share-link" readonly>
+        <button class="btn btn-secondary" id="copy-btn">Copy Link</button>
+      </div>
+      <div class="qr-container">
+        <div id="qr-div"></div>
+        <p class="hint">Teams scan this or use the link above</p>
+      </div>
+      <a class="btn btn-primary btn-lg" id="host-link">Open Host Panel →</a>
+    </div>
+  </div>
+
+  <script src="/js/qrcode.min.js"></script>
+  <script src="/js/index.js"></script>
+</body>
+</html>

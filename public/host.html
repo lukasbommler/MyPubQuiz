@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizNight — Host Panel</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/host.css">
+</head>
+<body class="host-body">
+
+  <!-- Header -->
+  <header class="host-header">
+    <div class="header-left">
+      <span class="logo-small">🎉 QuizNight</span>
+      <span class="game-code-badge">Code: <strong id="header-code">---</strong></span>
+    </div>
+    <div class="header-right">
+      <span class="team-count"><span id="team-count">0</span> teams</span>
+    </div>
+  </header>
+
+  <!-- Lobby Screen -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-layout">
+      <div class="lobby-left">
+        <h2>Waiting for teams to join...</h2>
+        <p class="hint">Share this link or QR code:</p>
+        <div class="share-link-box">
+          <input type="text" id="lobby-share-link" readonly>
+          <button class="btn btn-secondary" id="lobby-copy-btn">Copy</button>
+        </div>
+        <div id="lobby-qr"></div>
+        <button class="btn btn-primary btn-lg" id="start-btn" disabled>Start Game (need 1+ teams)</button>
+        <div class="question-count-info" id="q-count-info"></div>
+      </div>
+      <div class="lobby-right">
+        <h3>Teams</h3>
+        <div class="team-grid" id="team-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="screen-game" class="screen">
+    <div class="game-layout">
+
+      <!-- Left: Question & Controls -->
+      <div class="game-left">
+        <div class="question-meta">
+          <span class="q-category" id="q-category">Category</span>
+          <span class="q-progress" id="q-progress">1 / 20</span>
+          <span class="q-type-badge" id="q-type-badge">Multiple Choice</span>
+        </div>
+        <div class="question-card">
+          <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+          <h2 class="question-text" id="question-text">Question goes here</h2>
+
+          <!-- Multiple choice preview -->
+          <div class="answers-preview" id="answers-preview"></div>
+
+          <!-- Word order preview -->
+          <div class="words-preview hidden" id="words-preview"></div>
+
+          <!-- Estimation -->
+          <div class="estimation-preview hidden" id="estimation-preview">
+            <p>Teams submit a number — closest wins!</p>
+            <div id="estimation-submissions"></div>
+          </div>
+        </div>
+
+        <div class="correct-answer-reveal hidden" id="correct-reveal">
+          <div class="correct-label">Correct Answer</div>
+          <div class="correct-value" id="correct-value"></div>
+        </div>
+
+        <div class="host-controls">
+          <button class="btn btn-secondary" id="btn-send-question">Send Question to Players →</button>
+          <button class="btn btn-warning hidden" id="btn-show-answers">Show Answer Options →</button>
+          <button class="btn btn-warning hidden" id="btn-reveal">Reveal Results →</button>
+          <button class="btn btn-primary hidden" id="btn-next">Next Question →</button>
+          <button class="btn btn-danger" id="btn-end">End Game</button>
+        </div>
+      </div>
+
+      <!-- Right: Teams & Scores -->
+      <div class="game-right">
+        <h3>Live Scoreboard</h3>
+        <div class="scoreboard" id="scoreboard"></div>
+
+        <h3 style="margin-top: 1.5rem">Answers</h3>
+        <div class="answers-log" id="answers-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="screen-gameover" class="screen">
+    <div class="gameover-container">
+      <div class="trophy">🏆</div>
+      <h1>Game Over!</h1>
+      <div class="final-podium" id="final-podium"></div>
+      <button class="btn btn-secondary" onclick="location.href='/'">New Game</button>
+    </div>
+  </div>
+
+  <!-- First correct flash overlay -->
+  <div id="buzz-overlay" class="buzz-overlay hidden">
+    <div class="buzz-content">
+      <div class="buzz-selfie-wrap">
+        <img id="buzz-selfie" src="" alt="">
+        <div class="buzz-initials" id="buzz-initials"></div>
+      </div>
+      <div class="buzz-team-name" id="buzz-team-name"></div>
+      <div class="buzz-points" id="buzz-points"></div>
+      <div class="buzz-label">First correct!</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/qrcode.min.js"></script>
+  <script src="/js/host.js"></script>
+</body>
+</html>
