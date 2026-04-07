@@ -6,7 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
 const db = require('./db');
-const questions = require('./questions.json');
+const { loadQuestions } = require('./questions-db');
+const questions = loadQuestions('en'); // change to 'de' for German
 
 const app = express();
 const server = http.createServer(app);
