@@ -2,15 +2,20 @@
 // Usage: node scripts/seed-questions.js
 //        node scripts/seed-questions.js --reset   (wipe and re-seed)
 
-const { db } = require('../questions-db');
-
+const { getDb, save } = require('../questions-db');
 const reset = process.argv.includes('--reset');
+
+(async () => {
+const db = await getDb();
+
 if (reset) {
-  db.exec('DELETE FROM translations; DELETE FROM questions;');
+  db.run('DELETE FROM translations');
+  db.run('DELETE FROM questions');
   console.log('Cleared existing questions.');
 }
 
-const existing = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
+const existingResult = db.exec('SELECT COUNT(*) AS n FROM questions');
+const existing = existingResult[0]?.values[0][0] ?? 0;
 if (existing > 0 && !reset) {
   console.log(`DB already has ${existing} questions. Run with --reset to re-seed.`);
   process.exit(0);
@@ -689,41 +694,44 @@ const questions = [
 
 // ─── Insert ───────────────────────────────────────────────────────────────────
 
-const insertQ = db.prepare(`
-  INSERT INTO questions (category, type, time_limit, correct_index, correct_value, correct_order)
-  VALUES (@category, @type, @time_limit, @correct_index, @correct_value, @correct_order)
-`);
+  db.run('BEGIN TRANSACTION');
+  try {
+    for (const q of questions) {
+      db.run(
+        `INSERT INTO questions (category, type, time_limit, correct_index, correct_value, correct_order)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          q.category,
+          q.type,
+          q.time_limit ?? 20,
+          q.correct_index ?? null,
+          q.correct_value ?? null,
+          q.correct_order ? JSON.stringify(q.correct_order) : null,
+        ]
+      );
+      const lastId = db.exec('SELECT last_insert_rowid()')[0].values[0][0];
 
-const insertT = db.prepare(`
-  INSERT INTO translations (question_id, lang, question_text, answers, words, hint, unit)
-  VALUES (@question_id, @lang, @question_text, @answers, @words, @hint, @unit)
-`);
-
-const seed = db.transaction(() => {
-  for (const q of questions) {
-    const { lastInsertRowid } = insertQ.run({
-      category:      q.category,
-      type:          q.type,
-      time_limit:    q.time_limit ?? 20,
-      correct_index: q.correct_index ?? null,
-      correct_value: q.correct_value ?? null,
-      correct_order: q.correct_order ? JSON.stringify(q.correct_order) : null,
-    });
-
-    for (const lang of ['en', 'de']) {
-      const t = q[lang];
-      insertT.run({
-        question_id:   lastInsertRowid,
-        lang,
-        question_text: t.question,
-        answers:       t.answers ? JSON.stringify(t.answers) : null,
-        words:         t.words   ? JSON.stringify(t.words)   : null,
-        hint:          t.hint    ?? null,
-        unit:          t.unit    ?? null,
-      });
+      for (const lang of ['en', 'de']) {
+        const t = q[lang];
+        db.run(
+          `INSERT INTO translations (question_id, lang, question_text, answers, words, hint, unit)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            lastId, lang, t.question,
+            t.answers ? JSON.stringify(t.answers) : null,
+            t.words   ? JSON.stringify(t.words)   : null,
+            t.hint    ?? null,
+            t.unit    ?? null,
+          ]
+        );
+      }
     }
+    db.run('COMMIT');
+  } catch (err) {
+    db.run('ROLLBACK');
+    throw err;
   }
-});
 
-seed();
-console.log(`Seeded ${questions.length} questions (${questions.length * 2} translation rows).`);
+  save();
+  console.log(`Seeded ${questions.length} questions (${questions.length * 2} translation rows).`);
+})();

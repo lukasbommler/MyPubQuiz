@@ -7,7 +7,7 @@ const fs = require('fs');
 
 const db = require('./db');
 const { loadQuestions } = require('./questions-db');
-const questions = loadQuestions('en'); // change to 'de' for German
+let questions = []; // populated async before server starts
 
 const app = express();
 const server = http.createServer(app);
@@ -359,6 +359,7 @@ function endGame(code) {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-server.listen(PORT, () => {
-  console.log(`\nQuiz App running at http://localhost:${PORT}\n`);
-});
+loadQuestions('en').then(qs => { // change to 'de' for German
+  questions = qs;
+  server.listen(PORT, () => console.log(`\nQuiz App running at http://localhost:${PORT}\n`));
+}).catch(err => { console.error('Failed to load questions:', err); process.exit(1); });
