@@ -8,7 +8,9 @@ let _db = null;
 
 async function getDb() {
   if (_db) return _db;
-  const SQL = await initSqlJs();
+  const SQL = await initSqlJs({
+    locateFile: file => path.join(__dirname, 'node_modules/sql.js/dist', file),
+  });
   if (fs.existsSync(dbPath)) {
     _db = new SQL.Database(fs.readFileSync(dbPath));
   } else {
