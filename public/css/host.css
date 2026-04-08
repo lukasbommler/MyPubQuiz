@@ -539,3 +539,101 @@ body.host-body {
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
 }
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+
+  /* Allow the page to scroll instead of clipping */
+  body.host-body {
+    height: auto;
+    overflow: auto;
+    min-height: 100vh;
+  }
+
+  .screen.active {
+    display: block;
+    overflow: visible;
+  }
+
+  /* ── Header ── */
+  .host-header {
+    padding: 0.6rem 1rem;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .logo-small { font-size: 0.95rem; }
+
+  /* ── Lobby: stack vertically ── */
+  .lobby-layout {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1.25rem;
+    overflow: visible;
+  }
+  .lobby-left {
+    width: 100%;
+    flex-shrink: unset;
+  }
+  .lobby-right {
+    width: 100%;
+    overflow: visible;
+    padding: 1rem;
+  }
+
+  /* Shrink QR so it doesn't dominate */
+  #lobby-qr canvas, #lobby-qr img { max-width: 140px !important; height: auto !important; }
+
+  /* ── Config panel ── */
+  .config-panel { height: auto; gap: 1rem; }
+  .checkbox-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+  .checkbox-label { font-size: 0.85rem; padding: 0.45rem 0.6rem; }
+
+  /* ── Game screen: stack vertically ── */
+  .game-layout {
+    flex-direction: column;
+    overflow: visible;
+  }
+  .game-left {
+    padding: 1rem;
+    overflow: visible;
+  }
+  .game-right {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 1rem;
+    overflow: visible;
+  }
+
+  /* Smaller question text on mobile */
+  .question-text { font-size: 1.1rem; margin-bottom: 1rem; }
+
+  /* Answers single column on narrow screens */
+  .answers-preview { grid-template-columns: 1fr; }
+
+  /* Controls stack nicely */
+  .host-controls { flex-direction: column; }
+  .host-controls .btn { flex: unset; width: 100%; min-width: unset; }
+
+  /* Question meta: wrap */
+  .question-meta { flex-wrap: wrap; gap: 0.4rem; }
+
+  /* ── Round over: stack vertically ── */
+  .round-over-layout { flex-direction: column; overflow: visible; }
+  .round-over-left { padding: 1rem; overflow: visible; }
+  .round-over-right {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 1rem;
+    overflow: visible;
+  }
+
+  /* ── Game over podium ── */
+  .final-podium { flex-wrap: wrap; }
+  .podium-item { padding: 1rem; }
+  .gameover-container h1 { font-size: 2rem; }
+}
