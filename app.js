@@ -143,8 +143,9 @@ io.on('connection', (socket) => {
     socket.join(`team:${team.id}`);
     socket.data = { role: 'team', code, teamId: team.id };
 
-    socket.emit('team-joined', { team, eventStatus: event.status, currentQuestionIndex: event.current_question_index });
-    io.to(`host:${code}`).emit('team-arrived', { team });
+    const allTeams = db.getTeamsByEvent(code);
+    socket.emit('team-joined', { team, eventStatus: event.status, currentQuestionIndex: event.current_question_index, allTeams });
+    io.to(`room:${code}`).emit('team-arrived', { team, totalTeams: allTeams.length });
 
     if (event.status === 'running') {
       const state = gameState[code];
@@ -183,10 +184,11 @@ io.on('connection', (socket) => {
 
     const prev = gameState[code] || {};
     const roundNum = (prev.roundNum || 0) + 1;
+    const usedIndices = prev.usedIndices || new Set();
 
     const indices = getQ(code)
       .map((q, i) => ({ q, i }))
-      .filter(({ q }) => categories.includes(q.category) && q.type === questionType)
+      .filter(({ q, i }) => categories.includes(q.category) && q.type === questionType && !usedIndices.has(i))
       .map(({ i }) => i)
       .sort(() => Math.random() - 0.5)
       .slice(0, 5);
@@ -196,8 +198,11 @@ io.on('connection', (socket) => {
       return;
     }
 
+    indices.forEach(i => usedIndices.add(i));
+
     gameState[code] = {
-      lang: prev.lang || 'en',  // preserve language across rounds
+      lang: prev.lang || 'en',
+      usedIndices,              // persists across rounds for the whole game
       firstCorrectTeam: null, firstCorrectPoints: 0,
       roundQuestionIndices: indices,
       roundIndex: 0,
@@ -437,11 +442,10 @@ io.on('connection', (socket) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event || event.status !== 'running') return;
-    const state = gameState[code];
-    if (!state) return;
+    const state = gameState[code] || {};
     db.updateEvent(code, { status: 'round-over' });
     const scores = db.getScoresByEvent(code);
-    io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum });
+    io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum ?? 1 });
   });
 
   // ── End game ────────────────────────────────────────────────────────────────

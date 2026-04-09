@@ -37,19 +37,33 @@
 
   <!-- Lobby Screen -->
   <div id="screen-waiting" class="screen play-screen">
-    <div class="waiting-container">
-      <div class="team-joined-badge">
-        <div class="team-selfie-circle" id="waiting-selfie-circle">
+    <div class="lobby-screen">
+      <div class="lobby-hero">
+        <div class="lobby-logo">🎉 QuizNight</div>
+        <div class="lobby-status-line">
+          <span class="lobby-pulse-dot"></span>
+          <span id="lobby-status-text">Waiting for host to start...</span>
+        </div>
+      </div>
+
+      <div class="lobby-your-team" id="lobby-your-team">
+        <div class="lobby-your-avatar" id="lobby-your-avatar">
           <img id="waiting-selfie" src="" alt="" class="hidden">
           <span id="waiting-initials"></span>
         </div>
-        <div class="team-joined-name" id="waiting-team-name"></div>
+        <div class="lobby-your-info">
+          <div class="lobby-your-label">You're in!</div>
+          <div class="lobby-your-name" id="waiting-team-name"></div>
+        </div>
       </div>
-      <div class="waiting-pulse">
-        <div class="pulse-dot"></div>
-        <p>Waiting for host to start...</p>
+
+      <div class="lobby-teams-section">
+        <div class="lobby-teams-header">
+          <span class="lobby-teams-title">Teams joined</span>
+          <span class="lobby-teams-count" id="lobby-teams-count">0</span>
+        </div>
+        <div class="lobby-teams-grid" id="teams-in-lobby"></div>
       </div>
-      <div class="teams-in-lobby" id="teams-in-lobby"></div>
     </div>
   </div>
 

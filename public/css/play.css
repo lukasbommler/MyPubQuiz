@@ -118,46 +118,163 @@ body.play-body {
 .selfie-placeholder { font-size: 4rem; }
 #selfie-preview { width: 100%; height: 100%; object-fit: cover; }
 
-/* ── Waiting ──────────────────────────────────────────────────────────────── */
-.waiting-container {
+/* ── Lobby / Waiting screen ───────────────────────────────────────────────── */
+.lobby-screen {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-  padding: 3rem 2rem;
-  max-width: 400px;
+  gap: 1.5rem;
+  padding: 2rem 1.25rem 3rem;
+  max-width: 480px;
   width: 100%;
-  margin: auto;
+  margin: 0 auto;
 }
 
-.team-joined-badge {
+.lobby-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  padding-top: 0.5rem;
 }
-.team-selfie-circle {
-  width: 100px;
-  height: 100px;
+.lobby-logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.lobby-status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text2);
+  font-size: 0.9rem;
+}
+.lobby-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  animation: lobby-pulse 1.8s ease-in-out infinite;
+}
+@keyframes lobby-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+/* Your team card */
+.lobby-your-team {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(168,85,247,0.08));
+  border: 1.5px solid rgba(124,58,237,0.4);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+}
+.lobby-your-avatar {
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid var(--green);
+  border: 2.5px solid var(--accent);
   background: var(--card2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.3rem;
   font-weight: 700;
+  flex-shrink: 0;
 }
-.team-selfie-circle img { width: 100%; height: 100%; object-fit: cover; }
-.team-joined-name { font-size: 1.3rem; font-weight: 700; }
+.lobby-your-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.lobby-your-info { display: flex; flex-direction: column; gap: 0.2rem; }
+.lobby-your-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent2); }
+.lobby-your-name { font-size: 1.15rem; font-weight: 700; }
 
-.waiting-pulse {
+/* Teams grid */
+.lobby-teams-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 0.75rem;
+}
+.lobby-teams-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lobby-teams-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--text2);
+}
+.lobby-teams-count {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  min-width: 24px;
+  text-align: center;
+}
+.lobby-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+}
+
+/* Individual team chip */
+.lobby-team-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+}
+.lobby-team-chip.chip-mine {
+  border-color: var(--accent);
+  background: rgba(124,58,237,0.12);
+}
+.chip-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+}
+.chip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chip entrance animation */
+@keyframes chip-pop-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.chip-pop { animation: chip-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Keep old pulse keyframe name for pulse-dot used elsewhere */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
 }
 .pulse-dot {
   width: 16px;
@@ -165,24 +282,6 @@ body.play-body {
   border-radius: 50%;
   background: var(--accent);
   animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.5; }
-}
-
-.teams-in-lobby {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-}
-.lobby-team-chip {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.85rem;
 }
 
 /* ── Play Question Layout ─────────────────────────────────────────────────── */

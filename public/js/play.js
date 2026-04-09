@@ -53,19 +53,26 @@ socket.on('connect', () => {
 });
 
 // ── Team joined ───────────────────────────────────────────────────────────────
-socket.on('team-joined', ({ team, eventStatus }) => {
+socket.on('team-joined', ({ team, eventStatus, allTeams }) => {
   const isReconnect = hasJoinedThisSession;
   hasJoinedThisSession = true;
   myTeam = team;
   myTeamId = team.id;
   localStorage.setItem(`quiz_team_${code}`, team.id);
 
-  // On reconnect the server will send the appropriate question/reveal events —
-  // only update the screen for fresh joins
   if (!isReconnect) {
     if (eventStatus === 'running') showWaiting();
     else if (eventStatus === 'finished') showScreen('screen-gameover-play');
-    else showScreen('screen-selfie');
+    else {
+      showScreen('screen-selfie');
+      // Pre-populate existing teams (joined before us)
+      if (allTeams) {
+        document.getElementById('teams-in-lobby').innerHTML = '';
+        allTeams.forEach(t => addTeamChip(t, false));
+        const countEl = document.getElementById('lobby-teams-count');
+        if (countEl) countEl.textContent = allTeams.length;
+      }
+    }
   }
 });
 
@@ -113,7 +120,7 @@ function fileToBase64(file) {
   });
 }
 
-function showWaiting() {
+function showWaiting(statusText) {
   showScreen('screen-waiting');
   const initials = myTeam.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('waiting-team-name').textContent = myTeam.name;
@@ -123,35 +130,60 @@ function showWaiting() {
     document.getElementById('waiting-selfie').classList.remove('hidden');
     document.getElementById('waiting-initials').classList.add('hidden');
   }
+  if (statusText) document.getElementById('lobby-status-text').textContent = statusText;
+}
+
+function addTeamChip(team, animate) {
+  const grid = document.getElementById('teams-in-lobby');
+  if (document.querySelector(`[data-chip="${team.id}"]`)) return;
+  const chip = document.createElement('div');
+  chip.className = 'lobby-team-chip' + (animate ? ' chip-pop' : '');
+  chip.dataset.chip = team.id;
+  const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+  chip.innerHTML = `
+    <div class="chip-avatar">
+      ${team.selfie ? `<img src="${escapeHtml(team.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
+    </div>
+    <span class="chip-name">${escapeHtml(team.name)}</span>
+  `;
+  if (team.id === myTeamId) chip.classList.add('chip-mine');
+  grid.appendChild(chip);
 }
 
 // ── Team arrived in lobby ─────────────────────────────────────────────────────
-socket.on('team-arrived', ({ team }) => {
-  const lobby = document.getElementById('teams-in-lobby');
-  if (!document.querySelector(`[data-chip="${team.id}"]`)) {
-    const chip = document.createElement('div');
-    chip.className = 'lobby-team-chip';
-    chip.dataset.chip = team.id;
-    chip.textContent = team.name;
-    lobby.appendChild(chip);
-  }
+socket.on('team-arrived', ({ team, totalTeams }) => {
+  addTeamChip(team, true);
+  const countEl = document.getElementById('lobby-teams-count');
+  if (countEl) countEl.textContent = totalTeams;
 });
 
 // ── Round started ─────────────────────────────────────────────────────────────
 socket.on('round-started', ({ roundNum, total }) => {
-  showScreen('screen-waiting');
-  if (myTeam) document.getElementById('waiting-team-name').textContent = myTeam.name;
-  const pulse = document.querySelector('.waiting-pulse p');
-  if (pulse) pulse.textContent = `Round ${roundNum} starting — ${total} questions. Get ready!`;
+  roundEnded = false;
+  if (myTeam) showWaiting(`Round ${roundNum} starting — ${total} questions. Get ready!`);
 });
 
 // ── Round over ────────────────────────────────────────────────────────────────
-socket.on('round-over', ({ roundNum }) => {
+let roundEnded = false; // guards against countdown callback overriding waiting screen
+
+socket.on('round-over', ({ scores, roundNum }) => {
+  roundEnded = true;
   stopTimer();
-  showScreen('screen-waiting');
-  const pulse = document.querySelector('#screen-waiting .waiting-pulse p');
-  if (pulse) pulse.textContent = `Round ${roundNum} complete! Waiting for host...`;
+  countdownActive = false;
+  document.getElementById('countdown-overlay').classList.add('hidden');
+  showRoundOver(scores, roundNum);
 });
+
+function showRoundOver(scores, roundNum) {
+  showScreen('screen-round-over-play');
+  document.getElementById('round-complete-badge').textContent = `Round ${roundNum} complete!`;
+  document.getElementById('round-over-scores-play').innerHTML = (scores || []).map((t, i) => `
+    <div class="reveal-score-row ${t.id === myTeamId ? 'my-team' : ''}">
+      <span class="reveal-score-rank">${rankEmoji(i)}</span>
+      <span class="reveal-score-name">${escapeHtml(t.name)}</span>
+      <span class="reveal-score-pts">${t.score} pts</span>
+    </div>`).join('');
+}
 
 socket.on('scoreboard-shown', ({ scores, roundNum }) => {
   showScreen('screen-round-over-play');
@@ -225,7 +257,7 @@ function startCountdown(onDone) {
       setTimeout(() => {
         overlay.classList.add('hidden');
         countdownActive = false;
-        onDone();
+        if (!roundEnded) onDone();
       }, 900);
     }
   }
@@ -277,11 +309,7 @@ socket.on('game-over', ({ scores }) => {
 
 // ── Standby / waiting screens ─────────────────────────────────────────────────
 function showWaitingForQuestion() {
-  // Reuse waiting screen with different message
-  showScreen('screen-waiting');
-  document.getElementById('waiting-team-name').textContent = myTeam?.name || '';
-  const pulse = document.querySelector('.waiting-pulse p');
-  if (pulse) pulse.textContent = 'Get ready! Question coming soon...';
+  if (myTeam) showWaiting('Get ready! Question coming soon...');
 }
 
 // ── Show question text only (no answers yet) ──────────────────────────────────

@@ -1,8 +1,9 @@
 // ── Create Game ───────────────────────────────────────────────────────────────
-document.getElementById('create-btn').addEventListener('click', async () => {
+async function createGame() {
   const btn = document.getElementById('create-btn');
-  btn.disabled = true;
-  btn.textContent = 'Creating...';
+  const btn2 = document.getElementById('create-btn-2');
+  [btn, btn2].forEach(b => { if (b) { b.disabled = true; b.textContent = 'Creating...'; } });
+
   try {
     const res = await fetch('/api/event/create', { method: 'POST' });
     const { code, hostToken } = await res.json();
@@ -14,21 +15,34 @@ document.getElementById('create-btn').addEventListener('click', async () => {
     document.getElementById('share-link').value = gameUrl;
     document.getElementById('host-link').href = hostUrl;
 
-    new QRCode(document.getElementById('qr-div'), {
+    const qrDiv = document.getElementById('qr-div');
+    qrDiv.innerHTML = '';
+    new QRCode(qrDiv, {
       text: gameUrl,
-      width: 180,
-      height: 180,
+      width: 160,
+      height: 160,
       colorDark: '#7c3aed',
       colorLight: '#ffffff'
     });
 
-    document.getElementById('landing-options').classList.add('hidden');
-    document.getElementById('created-card').classList.remove('hidden');
+    document.getElementById('created-overlay').classList.remove('hidden');
   } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Create Game';
-    alert('Error: ' + e.message);
+    alert('Error creating game: ' + e.message);
+  } finally {
+    [btn, btn2].forEach(b => { if (b) { b.disabled = false; b.textContent = 'Start a Game →'; } });
   }
+}
+
+document.getElementById('create-btn').addEventListener('click', createGame);
+document.getElementById('create-btn-2').addEventListener('click', createGame);
+
+document.getElementById('created-close').addEventListener('click', () => {
+  document.getElementById('created-overlay').classList.add('hidden');
+});
+
+// Close overlay on backdrop click
+document.getElementById('created-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
 });
 
 document.getElementById('copy-btn').addEventListener('click', () => {
@@ -39,20 +53,18 @@ document.getElementById('copy-btn').addEventListener('click', () => {
 });
 
 // ── Join Game ─────────────────────────────────────────────────────────────────
-document.getElementById('join-btn').addEventListener('click', () => {
+function joinGame() {
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
-  if (code.length < 4) {
-    document.getElementById('join-code-input').focus();
-    return;
-  }
+  if (code.length < 4) { document.getElementById('join-code-input').focus(); return; }
   location.href = `/game/${code}`;
-});
+}
+
+document.getElementById('join-btn').addEventListener('click', joinGame);
 
 document.getElementById('join-code-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('join-btn').click();
+  if (e.key === 'Enter') joinGame();
 });
 
-// Auto-uppercase as user types
 document.getElementById('join-code-input').addEventListener('input', e => {
-  e.target.value = e.target.value.toUpperCase();
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 });
