@@ -119,12 +119,10 @@ const questions = [
     en: {
       question: 'Order these European capitals from west to east:',
       words: ['Lisbon', 'Madrid', 'Paris', 'Berlin'],
-      hint: 'From the Iberian Peninsula to Central Europe',
     },
     de: {
       question: 'Ordne diese europäischen Hauptstädte von West nach Ost:',
       words: ['Lissabon', 'Madrid', 'Paris', 'Berlin'],
-      hint: 'Von der Iberischen Halbinsel nach Mitteleuropa',
     },
   },
   {
@@ -132,12 +130,10 @@ const questions = [
     en: {
       question: 'Order these Alpine peaks from tallest to shortest:',
       words: ['Mont Blanc', 'Matterhorn', 'Jungfrau', 'Zugspitze'],
-      hint: 'Heights: 4808 m, 4478 m, 4158 m, 2962 m',
     },
     de: {
       question: 'Ordne diese Alpengipfel vom höchsten zum niedrigsten:',
       words: ['Mont Blanc', 'Matterhorn', 'Jungfrau', 'Zugspitze'],
-      hint: 'Höhen: 4808 m, 4478 m, 4158 m, 2962 m',
     },
   },
 
@@ -229,12 +225,10 @@ const questions = [
     en: {
       question: 'Order these planets from largest to smallest by diameter:',
       words: ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Earth'],
-      hint: 'Jupiter is by far the largest',
     },
     de: {
       question: 'Ordne diese Planeten vom größten zum kleinsten nach ihrem Durchmesser:',
       words: ['Jupiter', 'Saturn', 'Uranus', 'Neptun', 'Erde'],
-      hint: 'Jupiter ist bei weitem der größte',
     },
   },
   {
@@ -242,12 +236,10 @@ const questions = [
     en: {
       question: 'Order these elements by atomic number, lowest first:',
       words: ['Carbon', 'Oxygen', 'Iron', 'Gold'],
-      hint: 'Atomic numbers: 6, 8, 26, 79',
     },
     de: {
       question: 'Ordne diese Elemente nach ihrer Ordnungszahl, kleinste zuerst:',
       words: ['Kohlenstoff', 'Sauerstoff', 'Eisen', 'Gold'],
-      hint: 'Ordnungszahlen: 6, 8, 26, 79',
     },
   },
 
@@ -339,12 +331,10 @@ const questions = [
     en: {
       question: 'Order these films by release year, oldest first:',
       words: ['The Godfather', 'Pulp Fiction', 'The Dark Knight', 'Parasite'],
-      hint: 'Years: 1972, 1994, 2008, 2019',
     },
     de: {
       question: 'Ordne diese Filme nach ihrem Erscheinungsjahr (ältestes zuerst):',
       words: ['Der Pate', 'Pulp Fiction', 'The Dark Knight', 'Parasite'],
-      hint: 'Jahre: 1972, 1994, 2008, 2019',
     },
   },
   {
@@ -352,12 +342,10 @@ const questions = [
     en: {
       question: 'Order these video game series by their first release year, oldest first:',
       words: ['Pong', 'Pac-Man', 'Super Mario', 'Minecraft'],
-      hint: 'Years: 1972, 1980, 1985, 2011',
     },
     de: {
       question: 'Ordne diese Videospielreihen nach dem Jahr ihrer Erstveröffentlichung (ältestes zuerst):',
       words: ['Pong', 'Pac-Man', 'Super Mario', 'Minecraft'],
-      hint: 'Jahre: 1972, 1980, 1985, 2011',
     },
   },
 
@@ -449,12 +437,10 @@ const questions = [
     en: {
       question: 'Order these football clubs by UEFA Champions League titles, most first:',
       words: ['Real Madrid', 'AC Milan', 'Bayern Munich', 'Barcelona'],
-      hint: 'Titles: 14, 7, 6, 5',
     },
     de: {
       question: 'Ordne diese Fußballklubs nach ihren UEFA-Champions-League-Titeln (meiste zuerst):',
       words: ['Real Madrid', 'AC Mailand', 'Bayern München', 'FC Barcelona'],
-      hint: 'Titel: 14, 7, 6, 5',
     },
   },
   {
@@ -462,12 +448,10 @@ const questions = [
     en: {
       question: 'Order these sporting events by year of their first edition, oldest first:',
       words: ['Tour de France', 'FIFA World Cup', 'UEFA Champions League', 'Super Bowl'],
-      hint: 'First editions: 1903, 1930, 1955/56, 1967',
     },
     de: {
       question: 'Ordne diese Sportereignisse nach dem Jahr ihrer ersten Austragung (ältestes zuerst):',
       words: ['Tour de France', 'FIFA-Weltmeisterschaft', 'UEFA Champions League', 'Super Bowl'],
-      hint: 'Erste Austragung: 1903, 1930, 1955/56, 1967',
     },
   },
 
@@ -559,12 +543,10 @@ const questions = [
     en: {
       question: 'Order these historical events chronologically, earliest first:',
       words: ['American Independence', 'French Revolution', 'WWI begins', 'Moon Landing'],
-      hint: 'Years: 1776, 1789, 1914, 1969',
     },
     de: {
       question: 'Ordne diese historischen Ereignisse chronologisch (frühestes zuerst):',
       words: ['Amerikanische Unabhängigkeit', 'Französische Revolution', 'Beginn des 1. Weltkriegs', 'Mondlandung'],
-      hint: 'Jahre: 1776, 1789, 1914, 1969',
     },
   },
   {
@@ -572,12 +554,10 @@ const questions = [
     en: {
       question: 'Order these European revolutions chronologically, earliest first:',
       words: ['Glorious Revolution', 'French Revolution', 'Russian Revolution', 'Fall of Berlin Wall'],
-      hint: 'Years: 1688, 1789, 1917, 1989',
     },
     de: {
       question: 'Ordne diese europäischen Revolutionen chronologisch (früheste zuerst):',
       words: ['Glorious Revolution', 'Französische Revolution', 'Russische Revolution', 'Mauerfall'],
-      hint: 'Jahre: 1688, 1789, 1917, 1989',
     },
   },
 
@@ -669,12 +649,10 @@ const questions = [
     en: {
       question: 'Order these drinks by alcohol content, highest first:',
       words: ['Port wine', 'Red wine', 'Champagne', 'Light beer'],
-      hint: 'Approximate %: 20, 13, 12, 4',
     },
     de: {
       question: 'Ordne diese Getränke nach ihrem Alkoholgehalt (höchster zuerst):',
       words: ['Portwein', 'Rotwein', 'Champagner', 'Leichtbier'],
-      hint: 'Ungefähre Prozentzahl: 20, 13, 12, 4',
     },
   },
   {
@@ -682,12 +660,10 @@ const questions = [
     en: {
       question: 'Order these cheeses alphabetically by their country of origin:',
       words: ['Brie', 'Feta', 'Gouda', 'Manchego'],
-      hint: 'Countries: France, Greece, Netherlands, Spain',
     },
     de: {
       question: 'Ordne diese Käsesorten alphabetisch nach ihrem Herkunftsland:',
       words: ['Brie', 'Feta', 'Gouda', 'Manchego'],
-      hint: 'Länder: Frankreich, Griechenland, Niederlande, Spanien',
     },
   },
 ];
