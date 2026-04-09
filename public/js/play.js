@@ -4,6 +4,7 @@ const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAtt
 
 let myTeam = null;
 let myTeamId = localStorage.getItem(`quiz_team_${code}`);
+let hasJoinedThisSession = false; // true once team-joined fires for the first time
 let questionStartTime = null;
 let timerInterval = null;
 let currentQuestion = null;
@@ -41,15 +42,18 @@ socket.on('disconnect', () => {
 
 socket.on('connect', () => {
   reconnectBanner.classList.add('hidden');
-  // If we already have a team (i.e. this is a reconnect), silently rejoin
+  // If we've already joined this session or have a stored ID (page refresh), silently rejoin
   if (myTeam) {
     socket.emit('team-join', { code, teamId: myTeam.id });
+  } else if (hasJoinedThisSession && myTeamId) {
+    socket.emit('team-join', { code, teamId: myTeamId });
   }
 });
 
 // ── Team joined ───────────────────────────────────────────────────────────────
 socket.on('team-joined', ({ team, eventStatus }) => {
-  const isReconnect = !!myTeam;
+  const isReconnect = hasJoinedThisSession;
+  hasJoinedThisSession = true;
   myTeam = team;
   myTeamId = team.id;
   localStorage.setItem(`quiz_team_${code}`, team.id);
@@ -629,11 +633,3 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Connect / Reconnect ───────────────────────────────────────────────────────
-// Re-join the room every time the socket connects (handles initial + reconnects).
-// On mobile, sockets drop/reconnect and lose room membership silently.
-socket.on('connect', () => {
-  if (myTeamId) {
-    socket.emit('team-join', { code, teamId: myTeamId });
-  }
-});
