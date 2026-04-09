@@ -71,7 +71,7 @@ function updateTeam(id, fields) {
 
 function addScore(teamId, pts) {
   if (!store.teams[teamId]) return;
-  store.teams[teamId].score = Math.max(0, (store.teams[teamId].score || 0) + pts);
+  store.teams[teamId].score = (store.teams[teamId].score || 0) + pts;
   save();
 }
 

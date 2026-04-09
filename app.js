@@ -7,7 +7,13 @@ const fs = require('fs');
 
 const db = require('./db');
 const { loadQuestions } = require('./questions-db');
-let questions = []; // populated async before server starts
+const questionsByLang = { en: [], de: [] }; // loaded at startup
+
+// Returns the question list for a given game code (falls back to 'en')
+function getQ(code) {
+  const lang = gameState[code]?.lang || 'en';
+  return questionsByLang[lang] || questionsByLang.en;
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -44,7 +50,7 @@ function correctAnswer(q) {
 }
 
 // In-memory game state (ephemeral, not persisted)
-const gameState = {}; // code -> { buzzedTeams: [], timerInterval }
+const gameState = {}; // code -> { lang, buzzedTeams, timerInterval, ... }
 
 // ─── REST Routes ──────────────────────────────────────────────────────────────
 
@@ -81,8 +87,10 @@ app.post('/api/team/:teamId/selfie', express.json({ limit: '8mb' }), (req, res) 
 });
 
 app.get('/api/questions', (req, res) => {
-  const categories = [...new Set(questions.map(q => q.category))];
-  res.json({ total: questions.length, categories });
+  const lang = req.query.lang || 'en';
+  const qs = questionsByLang[lang] || questionsByLang.en;
+  const categories = [...new Set(qs.map(q => q.category))];
+  res.json({ total: qs.length, categories });
 });
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
@@ -107,10 +115,13 @@ io.on('connection', (socket) => {
     socket.data = { role: 'host', code };
 
     const teams = db.getTeamsByEvent(code);
+    const lang = gameState[code]?.lang || 'en';
+    const qs = questionsByLang[lang] || questionsByLang.en;
     socket.emit('host-joined', {
       event,
       teams,
-      questions: questions.map((q, i) => ({ index: i, category: q.category, type: q.type, question: q.question })),
+      lang,
+      questions: qs.map((q, i) => ({ index: i, category: q.category, type: q.type, question: q.question })),
       currentQuestionIndex: event.current_question_index
     });
   });
@@ -138,9 +149,9 @@ io.on('connection', (socket) => {
     if (event.status === 'running') {
       const state = gameState[code];
       const qIndex = event.current_question_index;
-      const q = questions[qIndex];
+      const q = getQ(code)[qIndex];
       if (q && state) {
-        const safe = { ...safeQuestion(q, qIndex, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
+        const safe = { ...safeQuestion(q, qIndex, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
         const alreadyAnswered = db.hasAnswered(code, team.id, qIndex);
 
         if (state.currentStep === 'question-text') {
@@ -173,7 +184,7 @@ io.on('connection', (socket) => {
     const prev = gameState[code] || {};
     const roundNum = (prev.roundNum || 0) + 1;
 
-    const indices = questions
+    const indices = getQ(code)
       .map((q, i) => ({ q, i }))
       .filter(({ q }) => categories.includes(q.category) && q.type === questionType)
       .map(({ i }) => i)
@@ -186,14 +197,15 @@ io.on('connection', (socket) => {
     }
 
     gameState[code] = {
+      lang: prev.lang || 'en',  // preserve language across rounds
       firstCorrectTeam: null, firstCorrectPoints: 0,
       roundQuestionIndices: indices,
       roundIndex: 0,
       roundNum,
       pointsCorrect: Math.max(1, parseInt(pointsCorrect) || 1),
       pointsBonus: Math.max(0, parseInt(pointsBonus) || 0),
-      currentStep: null,       // 'question-text' | 'answers-shown' | 'revealed'
-      questionStartedAt: null, // timestamp when timer began
+      currentStep: null,
+      questionStartedAt: null,
     };
 
     db.updateEvent(code, { status: 'running', current_question_index: indices[0] });
@@ -206,10 +218,10 @@ io.on('connection', (socket) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event) return;
-    const q = questions[event.current_question_index];
+    const q = getQ(code)[event.current_question_index];
     if (!q) return;
     const state = gameState[code] || {};
-    const safe = { ...safeQuestion(q, event.current_question_index, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
+    const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-text', safe);
     io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
     if (gameState[code]) gameState[code].currentStep = 'question-text';
@@ -220,10 +232,10 @@ io.on('connection', (socket) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event) return;
-    const q = questions[event.current_question_index];
+    const q = getQ(code)[event.current_question_index];
     if (!q) return;
     const state = gameState[code] || {};
-    const safe = { ...safeQuestion(q, event.current_question_index, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
+    const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
     io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: q.time_limit });
     io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
@@ -241,7 +253,7 @@ io.on('connection', (socket) => {
     if (!event || event.status !== 'running') return;
 
     const qIndex = event.current_question_index;
-    const q = questions[qIndex];
+    const q = getQ(code)[qIndex];
     if (!q) return;
 
     if (db.hasAnswered(code, teamId, qIndex)) return;
@@ -283,7 +295,7 @@ io.on('connection', (socket) => {
     if (!event) return;
 
     const qIndex = event.current_question_index;
-    const q = questions[qIndex];
+    const q = getQ(code)[qIndex];
     if (!q) return;
 
     // Handle estimation winner
@@ -405,6 +417,33 @@ io.on('connection', (socket) => {
     io.to(`room:${code}`).emit('scores-updated', { scores });
   });
 
+  // ── Set language (lobby only) ────────────────────────────────────────────────
+  socket.on('set-language', ({ code, lang }) => {
+    if (socket.data?.role !== 'host') return;
+    const event = db.getEvent(code);
+    if (!event || event.status === 'running') return; // can't change mid-game
+    if (!questionsByLang[lang]) return;
+    if (!gameState[code]) gameState[code] = {};
+    gameState[code].lang = lang;
+    const qs = questionsByLang[lang];
+    socket.emit('language-changed', {
+      lang,
+      questions: qs.map((q, i) => ({ index: i, category: q.category, type: q.type })),
+    });
+  });
+
+  // ── End round early ─────────────────────────────────────────────────────────
+  socket.on('end-round', ({ code }) => {
+    if (socket.data?.role !== 'host') return;
+    const event = db.getEvent(code);
+    if (!event || event.status !== 'running') return;
+    const state = gameState[code];
+    if (!state) return;
+    db.updateEvent(code, { status: 'round-over' });
+    const scores = db.getScoresByEvent(code);
+    io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum });
+  });
+
   // ── End game ────────────────────────────────────────────────────────────────
   socket.on('end-game', ({ code }) => {
     if (socket.data?.role !== 'host') return;
@@ -415,7 +454,7 @@ io.on('connection', (socket) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function sendQuestion(code, index) {
-  const q = questions[index];
+  const q = getQ(code)[index];
   if (!q) return;
   const state = gameState[code] || {};
   const roundIndex = state.roundIndex ?? 0;
@@ -434,7 +473,9 @@ function endGame(code) {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-loadQuestions('en').then(qs => { // change to 'de' for German
-  questions = qs;
-  server.listen(PORT, () => console.log(`\nQuiz App running at http://localhost:${PORT}\n`));
+Promise.all([loadQuestions('en'), loadQuestions('de')]).then(([en, de]) => {
+  questionsByLang.en = en;
+  questionsByLang.de = de;
+  console.log(`Loaded ${en.length} EN + ${de.length} DE questions`);
+  server.listen(PORT, () => console.log(`Quiz App running at http://localhost:${PORT}`));
 }).catch(err => { console.error('Failed to load questions:', err); process.exit(1); });

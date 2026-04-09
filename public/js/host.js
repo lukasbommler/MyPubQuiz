@@ -30,14 +30,14 @@ function showScreen(id) {
 
 // ── Host button steps ─────────────────────────────────────────────────────────
 function setStep(step) {
-  ['btn-send-question','btn-show-answers','btn-reveal','btn-next'].forEach(id =>
+  ['btn-send-question','btn-show-answers','btn-reveal','btn-next','btn-end-round'].forEach(id =>
     document.getElementById(id).classList.add('hidden'));
   document.getElementById('correct-reveal').classList.add('hidden');
 
   if (step === 'idle')      document.getElementById('btn-send-question').classList.remove('hidden');
-  if (step === 'sent')      document.getElementById('btn-show-answers').classList.remove('hidden');
-  if (step === 'answering') { document.getElementById('btn-reveal').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
-  if (step === 'revealed')  { document.getElementById('btn-next').classList.remove('hidden'); stopTimer(); document.getElementById('correct-reveal').classList.remove('hidden'); }
+  if (step === 'sent')      { document.getElementById('btn-show-answers').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); }
+  if (step === 'answering') { document.getElementById('btn-reveal').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
+  if (step === 'revealed')  { document.getElementById('btn-next').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); stopTimer(); document.getElementById('correct-reveal').classList.remove('hidden'); }
 }
 
 // ── Config panel ──────────────────────────────────────────────────────────────
@@ -95,9 +95,10 @@ function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId) {
 socket.emit('host-join', { code, hostToken });
 socket.on('error', ({ message }) => alert('Error: ' + message));
 
-socket.on('host-joined', ({ event, teams: teamList, questions }) => {
+socket.on('host-joined', ({ event, teams: teamList, questions, lang }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
+  document.getElementById('lang-select').value = lang || 'en';
 
   const gameUrl = `${location.origin}/game/${code}`;
   document.getElementById('lobby-share-link').value = gameUrl;
@@ -110,10 +111,29 @@ socket.on('host-joined', ({ event, teams: teamList, questions }) => {
 
   teamList.forEach(t => addTeam(t));
 
-  if (event.status === 'running') showScreen('screen-game');
+  if (event.status === 'running') { lockLangSelect(true); showScreen('screen-game'); }
   else if (event.status === 'round-over') showScreen('screen-round-over');
   else if (event.status === 'finished') showScreen('screen-gameover');
   else showScreen('screen-lobby');
+});
+
+// ── Language selector ─────────────────────────────────────────────────────────
+function lockLangSelect(locked) {
+  const sel = document.getElementById('lang-select');
+  sel.disabled = locked;
+  sel.classList.toggle('locked', locked);
+}
+
+document.getElementById('lang-select').addEventListener('change', (e) => {
+  socket.emit('set-language', { code, lang: e.target.value });
+});
+
+socket.on('language-changed', ({ lang, questions }) => {
+  allQuestions = questions;
+  document.getElementById('lang-select').value = lang;
+  const allCats = [...new Set(questions.map(q => q.category))];
+  buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
+  buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
 });
 
 document.getElementById('lobby-copy-btn').addEventListener('click', () => {
@@ -188,6 +208,10 @@ document.getElementById('btn-show-scoreboard').addEventListener('click', () => {
   socket.emit('show-scoreboard', { code });
 });
 
+document.getElementById('btn-end-round').addEventListener('click', () => {
+  if (confirm('End this round early and go to standings?')) socket.emit('end-round', { code });
+});
+
 document.getElementById('btn-end').addEventListener('click', () => {
   if (confirm('End game?')) socket.emit('end-game', { code });
 });
@@ -198,6 +222,7 @@ document.getElementById('btn-final-end').addEventListener('click', () => {
 // ── Round started ─────────────────────────────────────────────────────────────
 socket.on('round-started', ({ roundNum, total }) => {
   currentRound = roundNum;
+  lockLangSelect(true);
   showScreen('screen-game');
 });
 
@@ -318,12 +343,16 @@ function renderHostDistribution(dist) {
   }
 }
 
-socket.on('scores-updated', ({ scores }) => updateScoreboard('scoreboard', scores));
+socket.on('scores-updated', ({ scores }) => {
+  updateScoreboard('scoreboard', scores);
+  updateScoreboard('round-over-scoreboard', scores);
+});
 socket.on('first-correct', ({ team, points }) => showBuzz(team, points));
 
 // ── Round over ────────────────────────────────────────────────────────────────
 socket.on('round-over', ({ scores, roundNum }) => {
   stopTimer();
+  lockLangSelect(false);
   showScreen('screen-round-over');
   document.getElementById('round-over-badge').textContent = `Round ${roundNum} Complete!`;
   updateScoreboard('round-over-scoreboard', scores);
@@ -399,8 +428,8 @@ function updateScoreboard(elId, scores) {
       <span class="score-name">${escapeHtml(t.name)}</span>
       <span class="score-pts">${t.score}</span>
       <div class="score-adj">
-        <button onclick="adjustScore('${t.id}',50)">+</button>
-        <button onclick="adjustScore('${t.id}',-50)">-</button>
+        <button onclick="adjustScore('${t.id}',1)">+</button>
+        <button onclick="adjustScore('${t.id}',-1)">-</button>
       </div>
     </div>`;
   }).join('');
