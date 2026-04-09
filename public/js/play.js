@@ -152,6 +152,7 @@ socket.on('question-answers', (q) => {
   currentQuestion = q;
   showAnswerOptions(q);
   questionStartTime = Date.now();
+  Sounds.questionStart();
 });
 
 socket.on('question-start', ({ timeLimit }) => {
@@ -167,6 +168,7 @@ socket.on('answer-revealed', ({ correct, scores }) => {
 // ── First correct flash (after reveal) ───────────────────────────────────────
 socket.on('first-correct', ({ team, points }) => {
   showBuzz(team, points);
+  Sounds.buzz();
 });
 
 // ── Game over ─────────────────────────────────────────────────────────────────
@@ -293,7 +295,6 @@ function setupWordOrderScreen(q, showAnswers) {
   document.getElementById('wo-category').textContent = q.category;
   document.getElementById('wo-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('wo-question-text').textContent = q.question;
-  document.getElementById('wo-hint').textContent = q.hint ? `Hint: ${q.hint}` : '';
   document.getElementById('wo-feedback').classList.add('hidden');
   document.getElementById('wo-timer-fill').style.width = '100%';
   document.getElementById('wo-timer-fill').className = 'play-timer-fill';
@@ -375,6 +376,7 @@ function showLockedIn(fbId, text) {
 function submitAnswer(answer) {
   const timeTaken = Date.now() - (questionStartTime || Date.now());
   socket.emit('submit-answer', { code, answer, timeTaken });
+  Sounds.submit();
 }
 
 socket.on('answer-acknowledged', () => {
@@ -407,6 +409,7 @@ function showReveal(correct, scores) {
 
     resultEl.textContent = answered ? (wasCorrect ? '✓ Correct!' : '✗ Wrong') : '— Not answered';
     resultEl.className = `reveal-result ${wasCorrect ? 'win' : 'lose'}`;
+    if (answered) wasCorrect ? Sounds.correct() : Sounds.wrong();
 
     const correctAnswerEl = document.getElementById('reveal-correct-answer');
     if (currentQuestion?.type === 'multiple_choice') {
@@ -450,6 +453,8 @@ function startAllTimers(seconds) {
       f.style.width = `${pct}%`;
       f.className = pct < 30 ? 'play-timer-fill danger' : pct < 60 ? 'play-timer-fill warning' : 'play-timer-fill';
     });
+    if (remaining <= 3 && remaining > 0) Sounds.urgentTick();
+    else if (pct < 60 && remaining > 0) Sounds.tick();
     if (remaining <= 0) stopTimer();
   }, 1000);
 }

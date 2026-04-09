@@ -1,4 +1,5 @@
 node_modules/
 quiz-data.json
 public/uploads/
+CLAUDE.md
 *.db
