@@ -252,21 +252,29 @@ io.on('connection', (socket) => {
     if (!q) return;
 
     // Handle estimation winner
+    let estimationWinnerId = null;
     if (q.type === 'estimation') {
       const answers = db.getAnswersByQuestion(code, qIndex);
-      let closest = null, closestDiff = Infinity;
+      let minDiff = Infinity;
       for (const a of answers) {
-        const diff = Math.abs(parseInt(a.answer) - q.correct_value);
-        if (diff < closestDiff) { closestDiff = diff; closest = a; }
+        const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
+        if (diff < minDiff) minDiff = diff;
       }
-      if (closest) {
+      // All teams with the closest answer (ties)
+      const tied = answers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
+      tied.sort((a, b) => a.time_ms - b.time_ms); // fastest first
+      const winner = tied[0];
+      if (winner) {
         const pts = gameState[code]?.pointsCorrect ?? 1;
-        db.addScore(closest.team_id, pts);
-        db.updateAnswer(closest.id, { is_correct: 1, points_awarded: pts });
-        const winner = db.getTeam(closest.team_id);
+        const bonus = tied.length > 1 ? (gameState[code]?.pointsBonus ?? 0) : 0;
+        const total = pts + bonus;
+        db.addScore(winner.team_id, total);
+        db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
+        estimationWinnerId = winner.team_id;
+        const winnerTeam = db.getTeam(winner.team_id);
         if (gameState[code]) {
-          gameState[code].firstCorrectTeam = winner;
-          gameState[code].firstCorrectPoints = pts;
+          gameState[code].firstCorrectTeam = winnerTeam;
+          gameState[code].firstCorrectPoints = total;
         }
       }
     }
@@ -276,7 +284,8 @@ io.on('connection', (socket) => {
     // Send results to players first
     io.to(`room:${code}`).emit('answer-revealed', {
       correct: q.correct ?? q.correct_value ?? q.correct_order,
-      scores
+      scores,
+      estimationWinnerId,
     });
 
     // Flash fastest correct team after a short delay

@@ -160,9 +160,9 @@ socket.on('question-start', ({ timeLimit }) => {
 });
 
 // ── STEP 3: Host reveals results ──────────────────────────────────────────────
-socket.on('answer-revealed', ({ correct, scores }) => {
+socket.on('answer-revealed', ({ correct, scores, estimationWinnerId }) => {
   stopTimer();
-  showReveal(correct, scores);
+  showReveal(correct, scores, estimationWinnerId);
 });
 
 // ── First correct flash (after reveal) ───────────────────────────────────────
@@ -232,10 +232,11 @@ function setupMCScreen(q, showAnswers) {
     return;
   }
 
-  container.innerHTML = q.answers.map((a, i) => `
-    <button class="mc-btn" data-index="${i}">
-      <span class="mc-letter">${letters[i]}</span>
-      ${escapeHtml(a)}
+  const shuffled = q.answers.map((_, i) => i).sort(() => Math.random() - 0.5);
+  container.innerHTML = shuffled.map((origIdx, displayIdx) => `
+    <button class="mc-btn" data-index="${origIdx}">
+      <span class="mc-letter">${letters[displayIdx]}</span>
+      ${escapeHtml(q.answers[origIdx])}
     </button>
   `).join('');
 
@@ -384,12 +385,12 @@ socket.on('answer-acknowledged', () => {
 });
 
 // ── Reveal screen ─────────────────────────────────────────────────────────────
-function showReveal(correct, scores) {
+function showReveal(correct, scores, estimationWinnerId) {
   // Show correct/wrong on the answer screen briefly before switching to reveal
   if (currentQuestion?.type === 'multiple_choice') {
-    document.querySelectorAll('.mc-btn').forEach((btn, i) => {
+    document.querySelectorAll('.mc-btn').forEach(btn => {
       btn.disabled = true;
-      if (i === correct) btn.classList.add('correct');
+      if (parseInt(btn.dataset.index) === correct) btn.classList.add('correct');
       else if (btn.classList.contains('selected')) btn.classList.add('wrong');
     });
     // Reset inline style from showLockedIn
@@ -402,10 +403,14 @@ function showReveal(correct, scores) {
 
     // Was my answer correct?
     const resultEl = document.getElementById('reveal-result');
-    // Check from MC button state
-    const correctBtn = document.querySelector('.mc-btn.correct.selected');
-    const wasCorrect = correctBtn != null ||
-      (currentQuestion?.type !== 'multiple_choice' && myAnswerCorrect);
+    let wasCorrect = false;
+    if (currentQuestion?.type === 'multiple_choice') {
+      wasCorrect = document.querySelector('.mc-btn.correct.selected') != null;
+    } else if (currentQuestion?.type === 'word_order') {
+      wasCorrect = JSON.stringify(wordOrder) === JSON.stringify(correct);
+    } else if (currentQuestion?.type === 'estimation') {
+      wasCorrect = estimationWinnerId != null && estimationWinnerId === myTeamId;
+    }
 
     resultEl.textContent = answered ? (wasCorrect ? '✓ Correct!' : '✗ Wrong') : '— Not answered';
     resultEl.className = `reveal-result ${wasCorrect ? 'win' : 'lose'}`;
