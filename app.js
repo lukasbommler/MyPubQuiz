@@ -131,8 +131,31 @@ io.on('connection', (socket) => {
     io.to(`host:${code}`).emit('team-arrived', { team });
 
     if (event.status === 'running') {
-      const q = questions[event.current_question_index];
-      if (q) socket.emit('question', safeQuestion(q, event.current_question_index, questions.length));
+      const state = gameState[code];
+      const qIndex = event.current_question_index;
+      const q = questions[qIndex];
+      if (q && state) {
+        const safe = { ...safeQuestion(q, qIndex, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
+        const alreadyAnswered = db.hasAnswered(code, team.id, qIndex);
+
+        if (state.currentStep === 'question-text') {
+          socket.emit('question-text', safe);
+        } else if (state.currentStep === 'answers-shown') {
+          socket.emit('question-text', safe);
+          socket.emit('question-answers', safe);
+          if (!alreadyAnswered) {
+            const elapsed = Math.floor((Date.now() - (state.questionStartedAt || Date.now())) / 1000);
+            const remaining = Math.max(1, q.time_limit - elapsed);
+            socket.emit('question-start', { index: qIndex, timeLimit: remaining });
+          }
+        } else if (state.currentStep === 'revealed') {
+          const scores = db.getScoresByEvent(code);
+          const correct = q.correct ?? q.correct_value ?? q.correct_order;
+          socket.emit('question-text', safe);
+          socket.emit('question-answers', safe);
+          socket.emit('answer-revealed', { correct, scores, estimationWinnerId: state.estimationWinnerId ?? null });
+        }
+      }
     }
   });
 
@@ -163,7 +186,9 @@ io.on('connection', (socket) => {
       roundIndex: 0,
       roundNum,
       pointsCorrect: Math.max(1, parseInt(pointsCorrect) || 1),
-      pointsBonus: Math.max(0, parseInt(pointsBonus) || 0)
+      pointsBonus: Math.max(0, parseInt(pointsBonus) || 0),
+      currentStep: null,       // 'question-text' | 'answers-shown' | 'revealed'
+      questionStartedAt: null, // timestamp when timer began
     };
 
     db.updateEvent(code, { status: 'running', current_question_index: indices[0] });
@@ -182,6 +207,7 @@ io.on('connection', (socket) => {
     const safe = { ...safeQuestion(q, event.current_question_index, questions.length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-text', safe);
     io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
+    if (gameState[code]) gameState[code].currentStep = 'question-text';
   });
 
   // ── Host reveals answer options to players (step 2) ───────────────────────
@@ -196,6 +222,10 @@ io.on('connection', (socket) => {
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
     io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: q.time_limit });
     io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
+    if (gameState[code]) {
+      gameState[code].currentStep = 'answers-shown';
+      gameState[code].questionStartedAt = Date.now();
+    }
   });
 
   // ── Submit answer ───────────────────────────────────────────────────────────
@@ -275,11 +305,14 @@ io.on('connection', (socket) => {
         if (gameState[code]) {
           gameState[code].firstCorrectTeam = winnerTeam;
           gameState[code].firstCorrectPoints = total;
+          gameState[code].estimationWinnerId = estimationWinnerId;
         }
       }
     }
 
     const scores = db.getScoresByEvent(code);
+
+    if (gameState[code]) gameState[code].currentStep = 'revealed';
 
     // Send results to players first
     io.to(`room:${code}`).emit('answer-revealed', {
@@ -310,6 +343,9 @@ io.on('connection', (socket) => {
     state.roundIndex++;
     state.firstCorrectTeam = null;
     state.firstCorrectPoints = 0;
+    state.estimationWinnerId = null;
+    state.currentStep = null;
+    state.questionStartedAt = null;
 
     if (state.roundIndex >= state.roundQuestionIndices.length) {
       db.updateEvent(code, { status: 'round-over' });

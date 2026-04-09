@@ -1,3 +1,18 @@
+/* ── Reconnect banner ────────────────────────────────────────────────────── */
+.reconnect-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--yellow);
+  color: #000;
+  text-align: center;
+  padding: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  z-index: 9999;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
 /* ── Play body ────────────────────────────────────────────────────────────── */
 body.play-body {
   min-height: 100vh;

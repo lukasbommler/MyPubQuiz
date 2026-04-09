@@ -1,6 +1,6 @@
 // ── Init ──────────────────────────────────────────────────────────────────────
 const code = location.pathname.split('/').pop();
-const socket = io();
+const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity });
 
 let myTeam = null;
 let myTeamId = localStorage.getItem(`quiz_team_${code}`);
@@ -32,15 +32,35 @@ document.getElementById('team-name-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('join-btn').click();
 });
 
+// ── Connection / reconnection ─────────────────────────────────────────────────
+const reconnectBanner = document.getElementById('reconnect-banner');
+
+socket.on('disconnect', () => {
+  reconnectBanner.classList.remove('hidden');
+});
+
+socket.on('connect', () => {
+  reconnectBanner.classList.add('hidden');
+  // If we already have a team (i.e. this is a reconnect), silently rejoin
+  if (myTeam) {
+    socket.emit('team-join', { code, teamId: myTeam.id });
+  }
+});
+
 // ── Team joined ───────────────────────────────────────────────────────────────
 socket.on('team-joined', ({ team, eventStatus }) => {
+  const isReconnect = !!myTeam;
   myTeam = team;
   myTeamId = team.id;
   localStorage.setItem(`quiz_team_${code}`, team.id);
 
-  if (eventStatus === 'running') showWaiting();
-  else if (eventStatus === 'finished') showScreen('screen-gameover-play');
-  else showScreen('screen-selfie');
+  // On reconnect the server will send the appropriate question/reveal events —
+  // only update the screen for fresh joins
+  if (!isReconnect) {
+    if (eventStatus === 'running') showWaiting();
+    else if (eventStatus === 'finished') showScreen('screen-gameover-play');
+    else showScreen('screen-selfie');
+  }
 });
 
 // ── Selfie ────────────────────────────────────────────────────────────────────
