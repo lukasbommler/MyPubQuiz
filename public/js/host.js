@@ -207,6 +207,8 @@ socket.on('question-host', (q) => {
   document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
   document.getElementById('question-text').textContent = q.question;
   document.getElementById('answers-log').innerHTML = '';
+  document.getElementById('host-distribution').classList.add('hidden');
+  document.getElementById('host-distribution').innerHTML = '';
   document.getElementById('timer-fill').style.width = '100%';
   document.getElementById('timer-fill').className = 'timer-fill';
 
@@ -267,14 +269,51 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
 });
 
 // ── Reveal ────────────────────────────────────────────────────────────────────
-socket.on('answer-revealed', ({ correct, scores }) => {
+socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   setStep('revealed');
   const cv = document.getElementById('correct-value');
   if (currentQuestion?.type === 'multiple_choice') cv.textContent = currentQuestion.answers[correct];
   else if (currentQuestion?.type === 'estimation') cv.textContent = `${correct} ${currentQuestion.unit || ''}`;
   else if (currentQuestion?.type === 'word_order') cv.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
   updateScoreboard('scoreboard', scores);
+  renderHostDistribution(distribution);
 });
+
+function renderHostDistribution(dist) {
+  const el = document.getElementById('host-distribution');
+  if (!dist || !el) return;
+  el.classList.remove('hidden');
+
+  if (dist.type === 'multiple_choice') {
+    const max = Math.max(...dist.counts, 1);
+    el.innerHTML = dist.labels.map((label, i) => {
+      const count = dist.counts[i];
+      const pct = Math.round((count / max) * 100);
+      const isCorrect = i === dist.correct;
+      return `<div class="host-dist-row ${isCorrect ? 'host-dist-correct' : ''}">
+        <span class="host-dist-label">${escapeHtml(label)}</span>
+        <div class="host-dist-bar-wrap">
+          <div class="host-dist-bar" style="width:${pct}%"></div>
+        </div>
+        <span class="host-dist-count">${count}</span>
+      </div>`;
+    }).join('');
+  } else if (dist.type === 'estimation') {
+    el.innerHTML = dist.submissions.map(s => `
+      <div class="host-dist-est-row ${s.value === dist.correctValue ? 'host-dist-correct' : ''}">
+        <span>${escapeHtml(s.name)}</span>
+        <span>${s.value} ${dist.unit}</span>
+      </div>`).join('') || '<span style="color:var(--text2);font-size:.85rem">No submissions</span>';
+  } else if (dist.type === 'word_order') {
+    const pct = dist.total ? Math.round((dist.correct / dist.total) * 100) : 0;
+    el.innerHTML = `<div class="host-dist-wo">
+      <div class="host-dist-wo-bar">
+        <div style="width:${pct}%;background:var(--green);height:100%;border-radius:4px;transition:width .6s"></div>
+      </div>
+      <span style="font-size:.85rem;color:var(--text2)">✓ ${dist.correct} correct &nbsp; ✗ ${dist.wrong} wrong</span>
+    </div>`;
+  }
+}
 
 socket.on('scores-updated', ({ scores }) => updateScoreboard('scoreboard', scores));
 socket.on('first-correct', ({ team, points }) => showBuzz(team, points));

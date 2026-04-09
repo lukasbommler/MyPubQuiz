@@ -153,7 +153,7 @@ io.on('connection', (socket) => {
           const correct = q.correct ?? q.correct_value ?? q.correct_order;
           socket.emit('question-text', safe);
           socket.emit('question-answers', safe);
-          socket.emit('answer-revealed', { correct, scores, estimationWinnerId: state.estimationWinnerId ?? null });
+          socket.emit('answer-revealed', { correct, scores, estimationWinnerId: state.estimationWinnerId ?? null, distribution: state.distribution ?? null });
         }
       }
     }
@@ -312,13 +312,37 @@ io.on('connection', (socket) => {
 
     const scores = db.getScoresByEvent(code);
 
-    if (gameState[code]) gameState[code].currentStep = 'revealed';
+    // Compute answer distribution for display
+    const allAnswers = db.getAnswersByQuestion(code, qIndex);
+    let distribution = null;
+    if (q.type === 'multiple_choice') {
+      const counts = new Array(q.answers.length).fill(0);
+      for (const a of allAnswers) {
+        const idx = parseInt(a.answer);
+        if (idx >= 0 && idx < counts.length) counts[idx]++;
+      }
+      distribution = { type: 'multiple_choice', counts, labels: q.answers, correct: q.correct };
+    } else if (q.type === 'estimation') {
+      const submissions = allAnswers
+        .map(a => ({ name: db.getTeam(a.team_id)?.name || '?', value: parseFloat(a.answer) }))
+        .sort((a, b) => a.value - b.value);
+      distribution = { type: 'estimation', submissions, correctValue: q.correct_value, unit: q.unit || '' };
+    } else if (q.type === 'word_order') {
+      const correct = allAnswers.filter(a => a.is_correct).length;
+      distribution = { type: 'word_order', correct, wrong: allAnswers.length - correct, total: allAnswers.length };
+    }
+
+    if (gameState[code]) {
+      gameState[code].currentStep = 'revealed';
+      gameState[code].distribution = distribution;
+    }
 
     // Send results to players first
     io.to(`room:${code}`).emit('answer-revealed', {
       correct: q.correct ?? q.correct_value ?? q.correct_order,
       scores,
       estimationWinnerId,
+      distribution,
     });
 
     // Flash fastest correct team after a short delay
@@ -346,6 +370,7 @@ io.on('connection', (socket) => {
     state.estimationWinnerId = null;
     state.currentStep = null;
     state.questionStartedAt = null;
+    state.distribution = null;
 
     if (state.roundIndex >= state.roundQuestionIndices.length) {
       db.updateEvent(code, { status: 'round-over' });

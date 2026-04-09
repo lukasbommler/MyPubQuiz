@@ -227,9 +227,9 @@ function startCountdown(onDone) {
 }
 
 // ── STEP 3: Host reveals results ──────────────────────────────────────────────
-socket.on('answer-revealed', ({ correct, scores, estimationWinnerId }) => {
+socket.on('answer-revealed', ({ correct, scores, estimationWinnerId, distribution }) => {
   stopTimer();
-  showReveal(correct, scores, estimationWinnerId);
+  showReveal(correct, scores, estimationWinnerId, distribution);
 });
 
 // ── First correct flash (after reveal) ───────────────────────────────────────
@@ -452,7 +452,7 @@ socket.on('answer-acknowledged', () => {
 });
 
 // ── Reveal screen ─────────────────────────────────────────────────────────────
-function showReveal(correct, scores, estimationWinnerId) {
+function showReveal(correct, scores, estimationWinnerId, distribution) {
   // Show correct/wrong on the answer screen briefly before switching to reveal
   if (currentQuestion?.type === 'multiple_choice') {
     document.querySelectorAll('.mc-btn').forEach(btn => {
@@ -494,8 +494,80 @@ function showReveal(correct, scores, estimationWinnerId) {
 
     document.getElementById('reveal-points').textContent = '';
 
+    renderDistribution(distribution);
+
     document.getElementById('reveal-scoreboard').innerHTML = '';
   }, 800);
+}
+
+// ── Answer distribution ───────────────────────────────────────────────────────
+function renderDistribution(dist) {
+  const el = document.getElementById('reveal-distribution');
+  if (!dist || !el) { el?.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+
+  if (dist.type === 'multiple_choice') {
+    const max = Math.max(...dist.counts, 1);
+    el.innerHTML = dist.labels.map((label, i) => {
+      const count = dist.counts[i];
+      const pct   = Math.round((count / max) * 100);
+      const isCorrect = i === dist.correct;
+      return `
+        <div class="dist-row ${isCorrect ? 'dist-correct' : ''}">
+          <span class="dist-label">${escapeHtml(label)}</span>
+          <div class="dist-bar-wrap">
+            <div class="dist-bar" style="width:${pct}%"></div>
+          </div>
+          <span class="dist-count">${count}</span>
+        </div>`;
+    }).join('');
+
+  } else if (dist.type === 'estimation') {
+    if (!dist.submissions.length) { el.classList.add('hidden'); return; }
+    const values  = dist.submissions.map(s => s.value);
+    const allVals = [...values, dist.correctValue];
+    const min = Math.min(...allVals);
+    const max = Math.max(...allVals);
+    const range = max - min || 1;
+    const pos = v => Math.round(((v - min) / range) * 100);
+
+    el.innerHTML = `
+      <div class="dist-numberline">
+        <div class="dist-nl-track">
+          <div class="dist-nl-correct" style="left:${pos(dist.correctValue)}%" title="Correct: ${dist.correctValue}"></div>
+          ${dist.submissions.map(s => `
+            <div class="dist-nl-dot ${s.value === dist.correctValue ? 'dist-nl-winner' : ''}"
+                 style="left:${pos(s.value)}%"
+                 title="${escapeHtml(s.name)}: ${s.value}">
+            </div>`).join('')}
+        </div>
+        <div class="dist-nl-labels">
+          ${dist.submissions.map(s => `
+            <div class="dist-nl-chip ${s.value === dist.correctValue ? 'dist-nl-winner' : ''}"
+                 style="left:${pos(s.value)}%">
+              ${s.value}
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="dist-nl-legend">
+        <span class="dist-nl-correct-label">▼ ${dist.correctValue} ${dist.unit}</span>
+      </div>`;
+
+  } else if (dist.type === 'word_order') {
+    const total = dist.total || 1;
+    const pct   = Math.round((dist.correct / total) * 100);
+    el.innerHTML = `
+      <div class="dist-wo">
+        <div class="dist-wo-bar-wrap">
+          <div class="dist-wo-correct" style="width:${pct}%"></div>
+          <div class="dist-wo-wrong"   style="width:${100 - pct}%"></div>
+        </div>
+        <div class="dist-wo-labels">
+          <span class="dist-wo-c">✓ ${dist.correct} got it right</span>
+          <span class="dist-wo-w">✗ ${dist.wrong} wrong</span>
+        </div>
+      </div>`;
+  }
 }
 
 // ── Buzz overlay ──────────────────────────────────────────────────────────────
