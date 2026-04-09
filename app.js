@@ -34,8 +34,13 @@ function safeQuestion(q, index, total) {
   const safe = { ...q, index, total };
   delete safe.correct;
   delete safe.correct_value;
-  delete safe.correct_order;
   return safe;
+}
+
+// For word_order the correct answer is [0,1,2,...] — the words array in order
+function correctAnswer(q) {
+  if (q.type === 'word_order') return q.words.map((_, i) => i);
+  return q.correct ?? q.correct_value;
 }
 
 // In-memory game state (ephemeral, not persisted)
@@ -150,7 +155,7 @@ io.on('connection', (socket) => {
           }
         } else if (state.currentStep === 'revealed') {
           const scores = db.getScoresByEvent(code);
-          const correct = q.correct ?? q.correct_value ?? q.correct_order;
+          const correct = correctAnswer(q);
           socket.emit('question-text', safe);
           socket.emit('question-answers', safe);
           socket.emit('answer-revealed', { correct, scores, estimationWinnerId: state.estimationWinnerId ?? null, distribution: state.distribution ?? null });
@@ -245,7 +250,7 @@ io.on('connection', (socket) => {
     if (q.type === 'multiple_choice') {
       isCorrect = parseInt(answer) === q.correct;
     } else if (q.type === 'word_order') {
-      try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(q.correct_order); } catch (e) {}
+      try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(correctAnswer(q)); } catch (e) {}
     }
 
     const state = gameState[code];
@@ -339,7 +344,7 @@ io.on('connection', (socket) => {
 
     // Send results to players first
     io.to(`room:${code}`).emit('answer-revealed', {
-      correct: q.correct ?? q.correct_value ?? q.correct_order,
+      correct: correctAnswer(q),
       scores,
       estimationWinnerId,
       distribution,

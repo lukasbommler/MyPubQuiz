@@ -225,6 +225,20 @@ body.landing {
 /* ── Trophy ──────────────────────────────────────────────────────────────── */
 .trophy { font-size: 5rem; text-align: center; }
 
+/* ── Confetti ────────────────────────────────────────────────────────────── */
+.confetti-piece {
+  position: fixed;
+  top: -20px;
+  z-index: 9998;
+  pointer-events: none;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0%   { top: -20px; opacity: 1; }
+  80%  { opacity: 1; }
+  100% { top: 110vh; opacity: 0; }
+}
+
 /* ── Text input ──────────────────────────────────────────────────────────── */
 .text-input {
   width: 100%;

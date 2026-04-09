@@ -103,5 +103,35 @@ const Sounds = (() => {
         tone(f, 'sine', t + i * 0.08, 0.18, 0.5, 0.001);
       });
     },
+
+    // Victory fanfare — rising arpeggio + sustained top note
+    victory() {
+      const t = now();
+      [523, 659, 784, 1047, 1319].forEach((f, i) => {
+        tone(f, 'sine', t + i * 0.1, 0.25, 0.5, 0.001);
+      });
+      tone(1047, 'sine', t + 0.65, 0.5, 0.35, 0.001);
+    },
+
+    // Confetti particle burst — pure DOM, no audio
+    launchConfetti() {
+      const colors = ['#7c3aed','#a855f7','#f59e0b','#10b981','#3b82f6','#ef4444','#fff','#fbbf24'];
+      for (let i = 0; i < 110; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `
+          left:${Math.random() * 100}%;
+          background:${colors[i % colors.length]};
+          width:${5 + Math.random() * 8}px;
+          height:${8 + Math.random() * 12}px;
+          border-radius:${Math.random() > 0.4 ? '2px' : '50%'};
+          animation-duration:${1.8 + Math.random() * 2.2}s;
+          animation-delay:${Math.random() * 1.8}s;
+          transform:rotate(${Math.random() * 360}deg);
+        `;
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove(), { once: true });
+      }
+    },
   };
 })();

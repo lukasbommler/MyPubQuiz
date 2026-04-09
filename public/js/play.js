@@ -14,9 +14,11 @@ let myAnswerCorrect = false; // remembered for reveal screen
 
 // ── Screen helper ─────────────────────────────────────────────────────────────
 function showScreen(id) {
-  document.querySelectorAll('.play-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.play-screen').forEach(s => s.classList.remove('active', 'screen-enter'));
   const el = document.getElementById(id);
-  if (el) el.classList.add('active');
+  if (!el) return;
+  el.classList.add('active', 'screen-enter');
+  el.addEventListener('animationend', () => el.classList.remove('screen-enter'), { once: true });
 }
 
 // ── Page setup ────────────────────────────────────────────────────────────────
@@ -246,13 +248,31 @@ socket.on('first-correct', ({ team, points }) => {
 socket.on('game-over', ({ scores }) => {
   stopTimer();
   showScreen('screen-gameover-play');
+
+  const myRank = scores.findIndex(t => t.id === myTeamId) + 1;
+  const myScore = scores.find(t => t.id === myTeamId)?.score ?? 0;
+
+  const rankBadge = document.getElementById('gameover-rank-badge');
+  const scoreDisplay = document.getElementById('gameover-score-display');
+
+  if (myRank === 1)      { rankBadge.textContent = '🥇 You Won!';   rankBadge.className = 'gameover-rank-badge gold'; }
+  else if (myRank === 2) { rankBadge.textContent = '🥈 2nd Place';  rankBadge.className = 'gameover-rank-badge silver'; }
+  else if (myRank === 3) { rankBadge.textContent = '🥉 3rd Place';  rankBadge.className = 'gameover-rank-badge bronze'; }
+  else if (myRank > 0)   { rankBadge.textContent = `#${myRank}`;    rankBadge.className = 'gameover-rank-badge'; }
+  rankBadge.classList.remove('hidden');
+
+  scoreDisplay.textContent = `${myScore} pts`;
+  scoreDisplay.classList.remove('hidden');
+
   document.getElementById('final-scores-play').innerHTML = scores.map((t, i) => `
-    <div class="final-score-row ${i === 0 ? 'winner' : ''}">
+    <div class="final-score-row ${i === 0 ? 'winner' : ''} ${t.id === myTeamId ? 'my-team' : ''}">
       <span class="final-score-rank">${rankEmoji(i)}</span>
       <span class="final-score-name">${escapeHtml(t.name)}</span>
       <span class="final-score-pts">${t.score} pts</span>
     </div>
   `).join('');
+
+  if (myRank > 0 && myRank <= 3) setTimeout(() => Sounds.launchConfetti(), 400);
 });
 
 // ── Standby / waiting screens ─────────────────────────────────────────────────

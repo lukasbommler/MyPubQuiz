@@ -21,8 +21,11 @@ const TYPE_LABELS = {
 
 // ── Screens ───────────────────────────────────────────────────────────────────
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'screen-enter'));
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active', 'screen-enter');
+  el.addEventListener('animationend', () => el.classList.remove('screen-enter'), { once: true });
 }
 
 // ── Host button steps ─────────────────────────────────────────────────────────
@@ -334,16 +337,53 @@ socket.on('round-over', ({ scores, roundNum }) => {
 socket.on('game-over', ({ scores }) => {
   stopTimer();
   showScreen('screen-gameover');
+
   const top3 = scores.slice(0, 3);
-  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
-  document.getElementById('final-podium').innerHTML = order.map(t => {
-    const rank = t === top3[0] ? 1 : t === top3[1] ? 2 : 3;
-    return `<div class="podium-item ${rank===1?'first':''}">
-      <span class="podium-rank">${rankEmoji(rank-1)}</span>
-      <span class="podium-name">${escapeHtml(t.name)}</span>
-      <span class="podium-score">${t.score} pts</span>
-    </div>`;
-  }).join('');
+  // Classic Olympic layout: 2nd left, 1st centre, 3rd right
+  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const rankOf = t => scores.indexOf(t) + 1;
+  const blockHeights = { 1: 140, 2: 95, 3: 65 };
+  const blockDelays  = { 1: 1.3, 2: 0.7, 3: 0.4 };
+  const entryDelays  = { 1: 1.45, 2: 0.85, 3: 0.5 };
+
+  let html = `<div class="podium-stage">
+    <div class="podium-entries">`;
+
+  for (const t of podiumOrder) {
+    const rank = rankOf(t);
+    const initials = t.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    html += `
+      <div class="podium-entry p${rank}" style="--entry-delay:${entryDelays[rank]}s">
+        <div class="podium-avatar">
+          ${t.selfie ? `<img src="${escapeHtml(t.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
+        </div>
+        <div class="podium-name">${escapeHtml(t.name)}</div>
+        <div class="podium-score">${t.score} pts</div>
+      </div>`;
+  }
+
+  html += `</div><div class="podium-blocks">`;
+  for (const t of podiumOrder) {
+    const rank = rankOf(t);
+    html += `<div class="podium-block b${rank}" style="--block-height:${blockHeights[rank]}px;--block-delay:${blockDelays[rank]}s">${rankEmoji(rank - 1)}</div>`;
+  }
+  html += `</div></div>`;
+
+  // Full standings below podium
+  html += `<div class="podium-all-scores">` +
+    scores.map((t, i) => `
+      <div class="podium-score-row ${i === 0 ? 'winner' : ''}">
+        <span class="psr-rank">${rankEmoji(i)}</span>
+        <span class="psr-name">${escapeHtml(t.name)}</span>
+        <span class="psr-pts">${t.score} pts</span>
+      </div>`).join('') +
+    `</div>`;
+
+  document.getElementById('final-podium').innerHTML = html;
+
+  // Staggered: fanfare when 1st place block starts rising, confetti just after
+  setTimeout(() => Sounds.victory(), 1300);
+  setTimeout(() => Sounds.launchConfetti(), 1500);
 });
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────

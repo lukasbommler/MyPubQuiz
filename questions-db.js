@@ -11,6 +11,7 @@ async function getDb() {
   const SQL = await initSqlJs({
     locateFile: file => path.join(__dirname, 'node_modules/sql.js/dist', file),
   });
+  // Load from disk if available (written by seed script), otherwise create empty
   if (fs.existsSync(dbPath)) {
     _db = new SQL.Database(fs.readFileSync(dbPath));
   } else {
@@ -19,25 +20,16 @@ async function getDb() {
   _db.run(`
     CREATE TABLE IF NOT EXISTS questions (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      category      TEXT    NOT NULL,
       type          TEXT    NOT NULL,
-      time_limit    INTEGER NOT NULL DEFAULT 20,
-      correct_index INTEGER,
-      correct_value REAL,
-      correct_order TEXT
-    )
-  `);
-  _db.run(`
-    CREATE TABLE IF NOT EXISTS translations (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      question_id   INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
-      lang          TEXT    NOT NULL,
-      question_text TEXT    NOT NULL,
+      category      TEXT    NOT NULL,
+      language      TEXT    NOT NULL DEFAULT 'en',
+      question      TEXT    NOT NULL,
       answers       TEXT,
-      words         TEXT,
-      hint          TEXT,
+      correct       INTEGER,
+      correct_value REAL,
       unit          TEXT,
-      UNIQUE(question_id, lang)
+      words         TEXT,
+      time_limit    INTEGER NOT NULL DEFAULT 20
     )
   `);
   return _db;
@@ -51,13 +43,7 @@ function save() {
 async function loadQuestions(lang = 'en') {
   const db = await getDb();
   const stmt = db.prepare(`
-    SELECT
-      q.id, q.category, q.type, q.time_limit,
-      q.correct_index, q.correct_value, q.correct_order,
-      t.question_text, t.answers, t.words, t.hint, t.unit
-    FROM questions q
-    JOIN translations t ON t.question_id = q.id AND t.lang = ?
-    ORDER BY q.id
+    SELECT * FROM questions WHERE language = ? ORDER BY id
   `);
   stmt.bind([lang]);
   const rows = [];
@@ -69,14 +55,12 @@ async function loadQuestions(lang = 'en') {
     category:      r.category,
     type:          r.type,
     time_limit:    r.time_limit,
-    question:      r.question_text,
+    question:      r.question,
     answers:       r.answers       ? JSON.parse(r.answers)       : undefined,
-    correct:       r.correct_index !== null ? r.correct_index    : undefined,
+    correct:       r.correct       !== null ? r.correct          : undefined,
     correct_value: r.correct_value !== null ? r.correct_value    : undefined,
     unit:          r.unit          || undefined,
     words:         r.words         ? JSON.parse(r.words)         : undefined,
-    correct_order: r.correct_order ? JSON.parse(r.correct_order) : undefined,
-    hint:          r.hint          || undefined,
   }));
 }
 

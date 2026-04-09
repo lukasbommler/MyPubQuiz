@@ -1,3 +1,12 @@
+/* ── Screen transitions ──────────────────────────────────────────────────── */
+@keyframes screen-enter-anim {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.play-screen.screen-enter {
+  animation: screen-enter-anim 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* ── Countdown overlay ───────────────────────────────────────────────────── */
 .countdown-overlay {
   position: fixed;
@@ -457,13 +466,33 @@ body.play-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 1.25rem;
   padding: 3rem 2rem;
   max-width: 400px;
   width: 100%;
   margin: auto;
 }
 .gameover-play-container h1 { font-size: 2.5rem; font-weight: 800; text-align: center; }
+
+.gameover-rank-badge {
+  font-size: 1.6rem;
+  font-weight: 800;
+  padding: 0.5rem 1.75rem;
+  border-radius: 30px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  animation: screen-enter-anim 0.5s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.gameover-rank-badge.gold   { background: rgba(245,158,11,0.15); border-color: var(--yellow); color: var(--yellow); }
+.gameover-rank-badge.silver { background: rgba(148,163,184,0.15); border-color: #94a3b8; color: #cbd5e1; }
+.gameover-rank-badge.bronze { background: rgba(180,83,9,0.15); border-color: #cd7f32; color: #d97706; }
+
+.gameover-score-display {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--accent2);
+  animation: screen-enter-anim 0.5s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
 .final-scores {
   width: 100%;
@@ -481,6 +510,7 @@ body.play-body {
   border: 1px solid var(--border);
 }
 .final-score-row.winner { border-color: var(--yellow); background: rgba(245,158,11,0.1); }
+.final-score-row.my-team { border-color: var(--accent); background: rgba(124,58,237,0.12); }
 .final-score-rank { font-size: 1.5rem; width: 36px; }
 .final-score-name { flex: 1; font-weight: 700; font-size: 1.1rem; }
 .final-score-pts { font-weight: 700; font-size: 1.1rem; color: var(--accent2); }
