@@ -31,6 +31,20 @@ const Sounds = (() => {
   function now() { return getCtx().currentTime; }
 
   return {
+    // Countdown tick — 3, 2, 1
+    countdownTick() {
+      const t = now();
+      tone(440, 'sine', t, 0.12, 0.4, 0.001);
+    },
+
+    // GO! — bright rising chord
+    countdownGo() {
+      const t = now();
+      tone(523, 'sine', t,        0.12, 0.5, 0.001);
+      tone(659, 'sine', t + 0.05, 0.12, 0.5, 0.001);
+      tone(784, 'sine', t + 0.1,  0.18, 0.5, 0.001);
+    },
+
     // Question appears — rising two-note chime
     questionStart() {
       const t = now();

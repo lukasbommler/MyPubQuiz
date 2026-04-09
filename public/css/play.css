@@ -1,3 +1,32 @@
+/* ── Countdown overlay ───────────────────────────────────────────────────── */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 500;
+}
+.countdown-number {
+  font-size: 7rem;
+  font-weight: 900;
+  color: #fff;
+  animation: countdown-pop 0.9s ease-out forwards;
+  text-shadow: 0 0 40px var(--accent2);
+}
+.countdown-number.go {
+  font-size: 5rem;
+  color: var(--green);
+  text-shadow: 0 0 40px var(--green);
+}
+@keyframes countdown-pop {
+  0%   { transform: scale(1.6); opacity: 0; }
+  20%  { transform: scale(1.0); opacity: 1; }
+  75%  { transform: scale(1.0); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0; }
+}
+
 /* ── Reconnect banner ────────────────────────────────────────────────────── */
 .reconnect-banner {
   position: fixed;

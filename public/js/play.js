@@ -167,17 +167,64 @@ socket.on('question-text', (q) => {
   showQuestionText(q);
 });
 
-// ── STEP 2: Host shows answer options ─────────────────────────────────────────
+// ── STEP 2: Host shows answer options — with 3-2-1-GO countdown ──────────────
+let pendingTimeLimit = null;
+let countdownActive = false;
+
 socket.on('question-answers', (q) => {
   currentQuestion = q;
-  showAnswerOptions(q);
-  questionStartTime = Date.now();
-  Sounds.questionStart();
+  startCountdown(() => {
+    showAnswerOptions(q);
+    questionStartTime = Date.now();
+    Sounds.questionStart();
+    if (pendingTimeLimit !== null) {
+      startAllTimers(pendingTimeLimit);
+      pendingTimeLimit = null;
+    }
+  });
 });
 
 socket.on('question-start', ({ timeLimit }) => {
-  startAllTimers(timeLimit);
+  if (countdownActive) {
+    pendingTimeLimit = timeLimit; // held until countdown finishes
+  } else {
+    startAllTimers(timeLimit);
+  }
 });
+
+function startCountdown(onDone) {
+  const overlay = document.getElementById('countdown-overlay');
+  const numEl   = document.getElementById('countdown-number');
+  const steps   = [3, 2, 1, 'GO'];
+  let i = 0;
+  countdownActive = true;
+  overlay.classList.remove('hidden');
+
+  function tick() {
+    const val = steps[i];
+    numEl.textContent = val;
+    numEl.className = 'countdown-number' + (val === 'GO' ? ' go' : '');
+    // restart animation
+    numEl.style.animation = 'none';
+    numEl.offsetHeight; // reflow
+    numEl.style.animation = '';
+
+    if (val === 'GO') Sounds.countdownGo();
+    else Sounds.countdownTick();
+
+    i++;
+    if (i < steps.length) {
+      setTimeout(tick, 900);
+    } else {
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        countdownActive = false;
+        onDone();
+      }, 900);
+    }
+  }
+  tick();
+}
 
 // ── STEP 3: Host reveals results ──────────────────────────────────────────────
 socket.on('answer-revealed', ({ correct, scores, estimationWinnerId }) => {
