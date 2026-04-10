@@ -651,8 +651,28 @@ function startAllTimers(seconds) {
     });
     if (remaining <= 3 && remaining > 0) Sounds.urgentTick();
     else if (pct < 60 && remaining > 0) Sounds.tick();
-    if (remaining <= 0) stopTimer();
+    if (remaining <= 0) { stopTimer(); lockAnswers(); }
   }, 1000);
+}
+
+function lockAnswers() {
+  // Disable all interactive answer elements
+  document.querySelectorAll('.mc-btn').forEach(b => b.disabled = true);
+  document.getElementById('est-submit-btn').disabled = true;
+  document.getElementById('est-input').disabled = true;
+  document.getElementById('wo-submit-btn').disabled = true;
+  // Show "Time's up!" only if the player hasn't answered yet
+  if (!answered) {
+    ['mc-feedback', 'est-feedback', 'wo-feedback'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = '⏰ Time\'s up!';
+        el.style.background = '';
+        el.style.color = '';
+        el.classList.remove('hidden');
+      }
+    });
+  }
 }
 
 function stopTimer() {

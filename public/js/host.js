@@ -36,13 +36,13 @@ function showScreen(id) {
 
 // ── Host button steps ─────────────────────────────────────────────────────────
 function setStep(step) {
-  ['btn-send-question','btn-show-answers','btn-reveal','btn-next','btn-end-round'].forEach(id =>
+  ['btn-send-question','btn-replace','btn-show-answers','btn-next','btn-end-round'].forEach(id =>
     document.getElementById(id).classList.add('hidden'));
   document.getElementById('correct-reveal').classList.add('hidden');
 
-  if (step === 'idle')      document.getElementById('btn-send-question').classList.remove('hidden');
+  if (step === 'idle')      { document.getElementById('btn-send-question').classList.remove('hidden'); document.getElementById('btn-replace').classList.remove('hidden'); }
   if (step === 'sent')      { document.getElementById('btn-show-answers').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); }
-  if (step === 'answering') { document.getElementById('btn-reveal').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
+  if (step === 'answering') { document.getElementById('btn-end-round').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
   if (step === 'revealed')  { document.getElementById('btn-next').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); stopTimer(); document.getElementById('correct-reveal').classList.remove('hidden'); }
 }
 
@@ -101,7 +101,7 @@ function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId) {
 socket.emit('host-join', { code, hostToken });
 socket.on('error', ({ message }) => alert('Error: ' + message));
 
-socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId: savedHostTeamId }) => {
+socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId: savedHostTeamId, reconnectState }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
   document.getElementById('lang-select').value = lang || 'en';
@@ -125,11 +125,79 @@ socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId:
 
   teamList.forEach(t => addTeam(t));
 
-  if (event.status === 'running') { lockLangSelect(true); showScreen('screen-game'); }
-  else if (event.status === 'round-over') showScreen('screen-round-over');
-  else if (event.status === 'finished') showScreen('screen-gameover');
-  else showScreen('screen-lobby');
+  if (event.status === 'running') {
+    lockLangSelect(true);
+    showScreen('screen-game');
+    if (reconnectState) restoreHostGame(reconnectState);
+  } else if (event.status === 'round-over') {
+    showScreen('screen-round-over');
+    buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+  } else if (event.status === 'finished') {
+    showScreen('screen-gameover');
+  } else {
+    showScreen('screen-lobby');
+  }
 });
+
+function restoreHostGame(rs) {
+  const q = rs.currentQuestion;
+  if (!q) return;
+
+  currentQuestion = q;
+  currentRound = (q.roundIndex ?? 0) + 1;
+
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
+  document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
+  document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
+  document.getElementById('timer-fill').style.width = '100%';
+  document.getElementById('timer-fill').className = 'timer-fill';
+  document.getElementById('answers-log').innerHTML = '';
+  document.getElementById('host-distribution').classList.add('hidden');
+  document.getElementById('host-answer-area').classList.add('hidden');
+  document.getElementById('host-answer-feedback').classList.add('hidden');
+  document.getElementById('answers-preview').classList.add('hidden');
+  document.getElementById('words-preview').classList.add('hidden');
+  document.getElementById('estimation-preview').classList.add('hidden');
+
+  // Restore answers log
+  rs.answers.forEach(({ teamId, answer, isCorrect, points }) => {
+    const team = teams[teamId];
+    if (!team) return;
+    const row = document.createElement('div');
+    row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
+    const display = q.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
+    row.innerHTML = `
+      <span class="answer-log-name">${escapeHtml(team.name)}</span>
+      <span style="color:var(--text2);font-size:.8rem">${display}</span>
+      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
+    document.getElementById('answers-log').appendChild(row);
+  });
+
+  const step = rs.currentStep;
+
+  if (step === 'question-text') {
+    renderQuestionPreview(q);
+    setStep('sent');
+  } else if (step === 'answers-shown') {
+    renderQuestionPreview(q);
+    setStep('answering');
+    if (rs.timerRemaining > 0) startTimer(rs.timerRemaining);
+  } else if (step === 'revealed') {
+    renderQuestionPreview(q);
+    const cv = document.getElementById('correct-value');
+    if (q.type === 'multiple_choice') cv.textContent = q.answers[rs.correct];
+    else if (q.type === 'estimation') cv.textContent = `${rs.correct} ${q.unit || ''}`;
+    else if (q.type === 'word_order') cv.textContent = rs.correct.map(i => q.words[i]).join(' → ');
+    updateScoreboard('scoreboard', rs.scores);
+    renderHostDistribution(rs.distribution);
+    setStep('revealed');
+  } else {
+    // step is null — question arrived at host but not yet sent to players
+    renderQuestionPreview(q);
+    setStep('idle');
+  }
+}
 
 // ── Language selector ─────────────────────────────────────────────────────────
 function lockLangSelect(locked) {
@@ -405,8 +473,8 @@ function showHostAnswerFeedback(text) {
 
 // ── Step buttons ──────────────────────────────────────────────────────────────
 document.getElementById('btn-send-question').addEventListener('click', () => socket.emit('send-question', { code }));
+document.getElementById('btn-replace').addEventListener('click', () => socket.emit('replace-question', { code }));
 document.getElementById('btn-show-answers').addEventListener('click', () => socket.emit('show-answers', { code }));
-document.getElementById('btn-reveal').addEventListener('click', () => socket.emit('reveal-answer', { code }));
 document.getElementById('btn-next').addEventListener('click', () => socket.emit('next-question', { code }));
 
 socket.on('host-step', ({ step }) => {

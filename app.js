@@ -117,13 +117,37 @@ io.on('connection', (socket) => {
     const teams = db.getTeamsByEvent(code);
     const lang = gameState[code]?.lang || 'en';
     const qs = questionsByLang[lang] || questionsByLang.en;
+    const state = gameState[code];
+
+    // Build reconnect snapshot so the host panel can restore itself
+    let reconnectState = null;
+    if (state && event.status === 'running') {
+      const qIndex = event.current_question_index;
+      const q = qs[qIndex];
+      const elapsed = state.questionStartedAt ? Math.floor((Date.now() - state.questionStartedAt) / 1000) : 0;
+      const remaining = q ? Math.max(0, q.time_limit - elapsed) : 0;
+      const scores = db.getScoresByEvent(code);
+      const answers = db.getAnswersByQuestion(code, qIndex);
+      reconnectState = {
+        currentStep: state.currentStep,
+        currentQuestion: q ? { ...q, index: qIndex, roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 } : null,
+        timerRemaining: remaining,
+        scores,
+        answers: answers.map(a => ({ teamId: a.team_id, answer: a.answer, isCorrect: !!a.is_correct, points: a.points_awarded })),
+        distribution: state.distribution ?? null,
+        correct: q ? correctAnswer(q) : null,
+        estimationWinnerId: state.estimationWinnerId ?? null,
+      };
+    }
+
     socket.emit('host-joined', {
       event,
       teams,
       lang,
       questions: qs.map((q, i) => ({ index: i, category: q.category, type: q.type, question: q.question })),
       currentQuestionIndex: event.current_question_index,
-      hostTeamId: gameState[code]?.hostTeamId || null,
+      hostTeamId: state?.hostTeamId || null,
+      reconnectState,
     });
   });
 
@@ -245,6 +269,49 @@ io.on('connection', (socket) => {
     if (gameState[code]) gameState[code].currentStep = 'question-text';
   });
 
+  // ── Replace current question (idle step only, before it's sent to players) ─
+  socket.on('replace-question', ({ code }) => {
+    if (socket.data?.role !== 'host') return;
+    const event = db.getEvent(code);
+    if (!event || event.status !== 'running') return;
+    const state = gameState[code];
+    if (!state || state.currentStep !== null) return; // only before question is sent
+
+    const currentIndex = event.current_question_index;
+    const currentQ = getQ(code)[currentIndex];
+    if (!currentQ) return;
+
+    // Find a replacement with same type + category that hasn't been used
+    const candidates = getQ(code)
+      .map((q, i) => ({ q, i }))
+      .filter(({ q, i }) =>
+        i !== currentIndex &&
+        !state.usedIndices.has(i) &&
+        q.type === currentQ.type &&
+        q.category === currentQ.category
+      );
+
+    if (!candidates.length) {
+      socket.emit('error', { message: 'No replacement available for this type and category.' });
+      return;
+    }
+
+    const { q: newQ, i: newIndex } = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // Swap indices: return old to the pool, mark new as used
+    state.usedIndices.delete(currentIndex);
+    state.usedIndices.add(newIndex);
+
+    const roundPos = state.roundQuestionIndices.indexOf(currentIndex);
+    if (roundPos !== -1) state.roundQuestionIndices[roundPos] = newIndex;
+
+    db.updateEvent(code, { current_question_index: newIndex });
+
+    io.to(`host:${code}`).emit('question-host', {
+      ...newQ, index: newIndex, roundIndex: state.roundIndex, roundTotal: state.roundQuestionIndices.length
+    });
+  });
+
   // ── Host reveals answer options to players (step 2) ───────────────────────
   socket.on('show-answers', ({ code }) => {
     if (socket.data?.role !== 'host') return;
@@ -260,6 +327,8 @@ io.on('connection', (socket) => {
     if (gameState[code]) {
       gameState[code].currentStep = 'answers-shown';
       gameState[code].questionStartedAt = Date.now();
+      // Auto-reveal once the time limit expires
+      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), q.time_limit * 1000);
     }
   });
 
@@ -306,90 +375,10 @@ io.on('connection', (socket) => {
     socket.emit('answer-acknowledged', { received: true });
   });
 
-  // ── Reveal results (step 3) ───────────────────────────────────────────────
+  // ── Reveal results (step 3) — now triggered automatically by timer ────────
   socket.on('reveal-answer', ({ code }) => {
     if (socket.data?.role !== 'host') return;
-    const event = db.getEvent(code);
-    if (!event) return;
-
-    const qIndex = event.current_question_index;
-    const q = getQ(code)[qIndex];
-    if (!q) return;
-
-    // Handle estimation winner
-    let estimationWinnerId = null;
-    if (q.type === 'estimation') {
-      const answers = db.getAnswersByQuestion(code, qIndex);
-      let minDiff = Infinity;
-      for (const a of answers) {
-        const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
-        if (diff < minDiff) minDiff = diff;
-      }
-      // All teams with the closest answer (ties)
-      const tied = answers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
-      tied.sort((a, b) => a.time_ms - b.time_ms); // fastest first
-      const winner = tied[0];
-      if (winner) {
-        const pts = gameState[code]?.pointsCorrect ?? 1;
-        const bonus = tied.length > 1 ? (gameState[code]?.pointsBonus ?? 0) : 0;
-        const total = pts + bonus;
-        db.addScore(winner.team_id, total);
-        db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
-        estimationWinnerId = winner.team_id;
-        const winnerTeam = db.getTeam(winner.team_id);
-        if (gameState[code]) {
-          gameState[code].firstCorrectTeam = winnerTeam;
-          gameState[code].firstCorrectPoints = total;
-          gameState[code].estimationWinnerId = estimationWinnerId;
-        }
-      }
-    }
-
-    const scores = db.getScoresByEvent(code);
-
-    // Compute answer distribution for display
-    const allAnswers = db.getAnswersByQuestion(code, qIndex);
-    let distribution = null;
-    if (q.type === 'multiple_choice') {
-      const counts = new Array(q.answers.length).fill(0);
-      for (const a of allAnswers) {
-        const idx = parseInt(a.answer);
-        if (idx >= 0 && idx < counts.length) counts[idx]++;
-      }
-      distribution = { type: 'multiple_choice', counts, labels: q.answers, correct: q.correct };
-    } else if (q.type === 'estimation') {
-      const submissions = allAnswers
-        .map(a => ({ name: db.getTeam(a.team_id)?.name || '?', value: parseFloat(a.answer) }))
-        .sort((a, b) => a.value - b.value);
-      distribution = { type: 'estimation', submissions, correctValue: q.correct_value, unit: q.unit || '' };
-    } else if (q.type === 'word_order') {
-      const correct = allAnswers.filter(a => a.is_correct).length;
-      distribution = { type: 'word_order', correct, wrong: allAnswers.length - correct, total: allAnswers.length };
-    }
-
-    if (gameState[code]) {
-      gameState[code].currentStep = 'revealed';
-      gameState[code].distribution = distribution;
-    }
-
-    // Send results to players first
-    io.to(`room:${code}`).emit('answer-revealed', {
-      correct: correctAnswer(q),
-      scores,
-      estimationWinnerId,
-      distribution,
-    });
-
-    // Flash fastest correct team after a short delay
-    const state = gameState[code];
-    if (state?.firstCorrectTeam) {
-      setTimeout(() => {
-        io.to(`room:${code}`).emit('first-correct', {
-          team: state.firstCorrectTeam,
-          points: state.firstCorrectPoints
-        });
-      }, 1500);
-    }
+    doRevealAnswer(code);
   });
 
   // ── Next question ───────────────────────────────────────────────────────────
@@ -399,6 +388,7 @@ io.on('connection', (socket) => {
     if (!event) return;
 
     const state = gameState[code];
+    if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
     state.roundIndex++;
     state.firstCorrectTeam = null;
     state.firstCorrectPoints = 0;
@@ -456,6 +446,7 @@ io.on('connection', (socket) => {
     const event = db.getEvent(code);
     if (!event || event.status !== 'running') return;
     const state = gameState[code] || {};
+    if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
     db.updateEvent(code, { status: 'round-over' });
     const scores = db.getScoresByEvent(code);
     io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum ?? 1 });
@@ -510,6 +501,87 @@ io.on('connection', (socket) => {
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function doRevealAnswer(code) {
+  const state = gameState[code];
+  // Guard against double-reveal (e.g. timeout fires after host already moved on)
+  if (!state || state.currentStep === 'revealed') return;
+
+  // Cancel pending timeout if called early (e.g. from socket handler)
+  if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
+
+  const event = db.getEvent(code);
+  if (!event) return;
+  const qIndex = event.current_question_index;
+  const q = getQ(code)[qIndex];
+  if (!q) return;
+
+  // Handle estimation winner
+  let estimationWinnerId = null;
+  if (q.type === 'estimation') {
+    const answers = db.getAnswersByQuestion(code, qIndex);
+    let minDiff = Infinity;
+    for (const a of answers) {
+      const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
+      if (diff < minDiff) minDiff = diff;
+    }
+    const tied = answers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
+    tied.sort((a, b) => a.time_ms - b.time_ms);
+    const winner = tied[0];
+    if (winner) {
+      const pts = state.pointsCorrect ?? 1;
+      const bonus = tied.length > 1 ? (state.pointsBonus ?? 0) : 0;
+      const total = pts + bonus;
+      db.addScore(winner.team_id, total);
+      db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
+      estimationWinnerId = winner.team_id;
+      const winnerTeam = db.getTeam(winner.team_id);
+      state.firstCorrectTeam = winnerTeam;
+      state.firstCorrectPoints = total;
+      state.estimationWinnerId = estimationWinnerId;
+    }
+  }
+
+  const scores = db.getScoresByEvent(code);
+
+  const allAnswers = db.getAnswersByQuestion(code, qIndex);
+  let distribution = null;
+  if (q.type === 'multiple_choice') {
+    const counts = new Array(q.answers.length).fill(0);
+    for (const a of allAnswers) {
+      const idx = parseInt(a.answer);
+      if (idx >= 0 && idx < counts.length) counts[idx]++;
+    }
+    distribution = { type: 'multiple_choice', counts, labels: q.answers, correct: q.correct };
+  } else if (q.type === 'estimation') {
+    const submissions = allAnswers
+      .map(a => ({ name: db.getTeam(a.team_id)?.name || '?', value: parseFloat(a.answer) }))
+      .sort((a, b) => a.value - b.value);
+    distribution = { type: 'estimation', submissions, correctValue: q.correct_value, unit: q.unit || '' };
+  } else if (q.type === 'word_order') {
+    const correct = allAnswers.filter(a => a.is_correct).length;
+    distribution = { type: 'word_order', correct, wrong: allAnswers.length - correct, total: allAnswers.length };
+  }
+
+  state.currentStep = 'revealed';
+  state.distribution = distribution;
+
+  io.to(`room:${code}`).emit('answer-revealed', {
+    correct: correctAnswer(q),
+    scores,
+    estimationWinnerId,
+    distribution,
+  });
+
+  if (state.firstCorrectTeam) {
+    setTimeout(() => {
+      io.to(`room:${code}`).emit('first-correct', {
+        team: state.firstCorrectTeam,
+        points: state.firstCorrectPoints
+      });
+    }, 1500);
+  }
+}
 
 function sendQuestion(code, index) {
   const q = getQ(code)[index];
