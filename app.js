@@ -122,7 +122,8 @@ io.on('connection', (socket) => {
       teams,
       lang,
       questions: qs.map((q, i) => ({ index: i, category: q.category, type: q.type, question: q.question })),
-      currentQuestionIndex: event.current_question_index
+      currentQuestionIndex: event.current_question_index,
+      hostTeamId: gameState[code]?.hostTeamId || null,
     });
   });
 
@@ -177,7 +178,7 @@ io.on('connection', (socket) => {
   });
 
   // ── Start round (works from lobby and between rounds) ───────────────────────
-  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus }) => {
+  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, hostPlayerName }) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event || event.status === 'running' || event.status === 'finished') return;
@@ -185,6 +186,17 @@ io.on('connection', (socket) => {
     const prev = gameState[code] || {};
     const roundNum = (prev.roundNum || 0) + 1;
     const usedIndices = prev.usedIndices || new Set();
+
+    // Host player team — create on first round if playing
+    let hostTeamId = prev.hostTeamId || null;
+    if (hostPlayerName && !hostTeamId) {
+      const hostTeam = db.createTeam(uuidv4(), code, hostPlayerName.trim().substring(0, 30));
+      hostTeamId = hostTeam.id;
+      socket.join(`team:${hostTeamId}`);
+      const allTeams = db.getTeamsByEvent(code);
+      io.to(`room:${code}`).emit('team-arrived', { team: hostTeam, totalTeams: allTeams.length });
+    }
+    if (hostTeamId) socket.emit('host-team-created', { teamId: hostTeamId });
 
     const indices = getQ(code)
       .map((q, i) => ({ q, i }))
@@ -202,7 +214,8 @@ io.on('connection', (socket) => {
 
     gameState[code] = {
       lang: prev.lang || 'en',
-      usedIndices,              // persists across rounds for the whole game
+      usedIndices,
+      hostTeamId,
       firstCorrectTeam: null, firstCorrectPoints: 0,
       roundQuestionIndices: indices,
       roundIndex: 0,
@@ -446,6 +459,47 @@ io.on('connection', (socket) => {
     db.updateEvent(code, { status: 'round-over' });
     const scores = db.getScoresByEvent(code);
     io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum ?? 1 });
+  });
+
+  // ── Host submits answer (when playing along) ────────────────────────────────
+  socket.on('host-submit-answer', ({ code, answer, timeTaken }) => {
+    if (socket.data?.role !== 'host') return;
+    const state = gameState[code];
+    if (!state?.hostTeamId) return;
+    const teamId = state.hostTeamId;
+
+    const event = db.getEvent(code);
+    if (!event || event.status !== 'running') return;
+
+    const qIndex = event.current_question_index;
+    const q = getQ(code)[qIndex];
+    if (!q || db.hasAnswered(code, teamId, qIndex)) return;
+
+    let isCorrect = false;
+    if (q.type === 'multiple_choice') {
+      isCorrect = parseInt(answer) === q.correct;
+    } else if (q.type === 'word_order') {
+      try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(correctAnswer(q)); } catch (e) {}
+    }
+
+    const basePoints = state.pointsCorrect ?? 1;
+    const bonusPoints = state.pointsBonus ?? 0;
+    const isFirst = isCorrect && !state.firstCorrectTeam;
+    let points = 0;
+
+    if (isCorrect) {
+      points = basePoints + (isFirst ? bonusPoints : 0);
+      db.addScore(teamId, points);
+    }
+
+    db.recordAnswer(code, teamId, qIndex, String(answer), isCorrect, points, timeTaken);
+
+    if (isFirst) {
+      state.firstCorrectTeam = db.getTeam(teamId);
+      state.firstCorrectPoints = points;
+    }
+
+    socket.emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
   });
 
   // ── End game ────────────────────────────────────────────────────────────────

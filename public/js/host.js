@@ -9,6 +9,12 @@ let teams = {};
 let allQuestions = []; // { index, category, type } — received from server
 let currentRound = 0;
 
+// ── Host-plays mode ───────────────────────────────────────────────────────────
+let hostPlaysMode = false;
+let hostTeamId = null;
+let hostAnswered = false;
+let hostAnswerStartTime = null;
+
 const CATEGORY_ICONS = {
   'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
   'Sports': '⚽', 'History': '📜', 'Food & Drink': '🍽️'
@@ -95,10 +101,18 @@ function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId) {
 socket.emit('host-join', { code, hostToken });
 socket.on('error', ({ message }) => alert('Error: ' + message));
 
-socket.on('host-joined', ({ event, teams: teamList, questions, lang }) => {
+socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId: savedHostTeamId }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
   document.getElementById('lang-select').value = lang || 'en';
+
+  // Restore host-plays state on reconnect
+  if (savedHostTeamId) {
+    hostTeamId = savedHostTeamId;
+    hostPlaysMode = true;
+    document.getElementById('host-plays-toggle').checked = true;
+    document.getElementById('host-player-name').classList.remove('hidden');
+  }
 
   const gameUrl = `${location.origin}/game/${code}`;
   document.getElementById('lobby-share-link').value = gameUrl;
@@ -134,6 +148,18 @@ socket.on('language-changed', ({ lang, questions }) => {
   const allCats = [...new Set(questions.map(q => q.category))];
   buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
   buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+});
+
+// ── Host-plays toggle ─────────────────────────────────────────────────────────
+document.getElementById('host-plays-toggle').addEventListener('change', (e) => {
+  hostPlaysMode = e.target.checked;
+  document.getElementById('host-player-name').classList.toggle('hidden', !hostPlaysMode);
+  if (hostPlaysMode) document.getElementById('host-player-name').focus();
+});
+
+// ── Server confirms host team ─────────────────────────────────────────────────
+socket.on('host-team-created', ({ teamId }) => {
+  hostTeamId = teamId;
 });
 
 document.getElementById('lobby-copy-btn').addEventListener('click', () => {
@@ -195,7 +221,14 @@ function addTeam(team) {
 document.getElementById('start-btn').addEventListener('click', () => {
   const { categories, questionType, pointsCorrect, pointsBonus } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus');
   if (!categories.length || !questionType) return;
-  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus });
+  // Only send hostPlayerName if playing and team not yet created
+  const hostPlayerName = (hostPlaysMode && !hostTeamId)
+    ? document.getElementById('host-player-name').value.trim() : null;
+  if (hostPlaysMode && !hostTeamId && !hostPlayerName) {
+    document.getElementById('host-player-name').focus(); return;
+  }
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus,
+    ...(hostPlayerName ? { hostPlayerName } : {}) });
 });
 
 document.getElementById('btn-next-round').addEventListener('click', () => {
@@ -229,40 +262,146 @@ socket.on('round-started', ({ roundNum, total }) => {
 // ── Question (host only) ──────────────────────────────────────────────────────
 socket.on('question-host', (q) => {
   currentQuestion = q;
+  hostAnswered = false;
+
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
   document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
   document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
-  document.getElementById('question-text').textContent = q.question;
   document.getElementById('answers-log').innerHTML = '';
   document.getElementById('host-distribution').classList.add('hidden');
   document.getElementById('host-distribution').innerHTML = '';
   document.getElementById('timer-fill').style.width = '100%';
   document.getElementById('timer-fill').className = 'timer-fill';
+  document.getElementById('answers-preview').classList.add('hidden');
+  document.getElementById('words-preview').classList.add('hidden');
+  document.getElementById('estimation-preview').classList.add('hidden');
+  document.getElementById('host-answer-area').classList.add('hidden');
+  document.getElementById('host-answer-feedback').classList.add('hidden');
 
-  const answersPreview = document.getElementById('answers-preview');
-  const wordsPreview = document.getElementById('words-preview');
-  const estimationPreview = document.getElementById('estimation-preview');
-  answersPreview.classList.add('hidden');
-  wordsPreview.classList.add('hidden');
-  estimationPreview.classList.add('hidden');
+  if (hostPlaysMode) {
+    // Hide question content until it's sent to players
+    document.getElementById('question-text').textContent = '⏳ Question ready — send it when you\'re ready';
+  } else {
+    renderQuestionPreview(q);
+  }
+  setStep('idle');
+});
 
+// Renders question text + answer options in the host preview panel.
+// In play mode only called after reveal (shows correct answer then).
+function renderQuestionPreview(q) {
+  document.getElementById('question-text').textContent = q.question;
   if (q.type === 'multiple_choice') {
-    answersPreview.classList.remove('hidden');
-    answersPreview.innerHTML = q.answers.map((a, i) => `
+    const el = document.getElementById('answers-preview');
+    el.classList.remove('hidden');
+    el.innerHTML = q.answers.map((a, i) => `
       <div class="answer-option${i === q.correct ? ' correct' : ''}">
         <span class="answer-letter">${'ABCD'[i]}</span>${escapeHtml(a)}
       </div>`).join('');
   } else if (q.type === 'word_order') {
-    wordsPreview.classList.remove('hidden');
-    wordsPreview.innerHTML = q.words.map(w => `<span class="word-chip-preview">${escapeHtml(w)}</span>`).join('');
+    const el = document.getElementById('words-preview');
+    el.classList.remove('hidden');
+    el.innerHTML = q.words.map(w => `<span class="word-chip-preview">${escapeHtml(w)}</span>`).join('');
   } else if (q.type === 'estimation') {
-    estimationPreview.classList.remove('hidden');
+    const el = document.getElementById('estimation-preview');
+    el.classList.remove('hidden');
     document.getElementById('estimation-submissions').innerHTML = '';
     document.getElementById('correct-value').textContent = `${q.correct_value} ${q.unit || ''}`;
   }
-  setStep('idle');
-});
+}
+
+// ── Host answer submission (playing mode) ─────────────────────────────────────
+function showHostAnswerOptions(q) {
+  const area = document.getElementById('host-answer-area');
+  const opts = document.getElementById('host-answer-options');
+  area.classList.remove('hidden');
+  document.getElementById('host-answer-feedback').classList.add('hidden');
+  hostAnswerStartTime = Date.now();
+
+  if (q.type === 'multiple_choice') {
+    opts.innerHTML = q.answers.map((a, i) => `
+      <button class="host-answer-btn" data-index="${i}">
+        <span class="answer-letter">${'ABCD'[i]}</span>
+        <span>${escapeHtml(a)}</span>
+      </button>`).join('');
+    opts.querySelectorAll('.host-answer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (hostAnswered) return;
+        hostAnswered = true;
+        opts.querySelectorAll('.host-answer-btn').forEach(b => b.disabled = true);
+        btn.classList.add('host-answer-selected');
+        socket.emit('host-submit-answer', { code, answer: String(btn.dataset.index),
+          timeTaken: Date.now() - hostAnswerStartTime });
+        showHostAnswerFeedback('✓ Locked in! Waiting for reveal...');
+      });
+    });
+
+  } else if (q.type === 'estimation') {
+    opts.innerHTML = `
+      <div class="host-est-row">
+        <input type="number" id="host-est-input" class="host-est-input" placeholder="Your estimate...">
+        <span class="host-est-unit">${escapeHtml(q.unit || '')}</span>
+        <button class="btn btn-primary" id="host-est-submit">Submit</button>
+      </div>`;
+    document.getElementById('host-est-submit').addEventListener('click', () => {
+      if (hostAnswered) return;
+      const val = document.getElementById('host-est-input').value.trim();
+      if (!val || isNaN(val)) { document.getElementById('host-est-input').focus(); return; }
+      hostAnswered = true;
+      document.getElementById('host-est-submit').disabled = true;
+      socket.emit('host-submit-answer', { code, answer: val,
+        timeTaken: Date.now() - hostAnswerStartTime });
+      showHostAnswerFeedback(`✓ Submitted: ${val} ${q.unit || ''}`);
+    });
+
+  } else if (q.type === 'word_order') {
+    let wordOrder = [];
+    opts.innerHTML = `
+      <div class="host-wo-zone" id="host-wo-zone"><span class="wo-hint">Tap words to order them</span></div>
+      <div class="host-wo-chips" id="host-wo-chips"></div>
+      <button class="btn btn-primary" id="host-wo-submit" style="margin-top:0.5rem">Submit Order</button>`;
+    const chipsEl = document.getElementById('host-wo-chips');
+    const zoneEl  = document.getElementById('host-wo-zone');
+
+    [...q.words.keys()].sort(() => Math.random() - 0.5).forEach(origIdx => {
+      const chip = document.createElement('div');
+      chip.className = 'host-wo-chip';
+      chip.textContent = q.words[origIdx];
+      chip.dataset.wordIndex = origIdx;
+      chip.addEventListener('click', () => {
+        if (hostAnswered) return;
+        if (chip.classList.contains('in-zone')) {
+          wordOrder = wordOrder.filter(i => i !== origIdx);
+          chip.classList.remove('in-zone');
+          chipsEl.appendChild(chip);
+        } else {
+          wordOrder.push(origIdx);
+          chip.classList.add('in-zone');
+          zoneEl.querySelector('.wo-hint')?.remove();
+          zoneEl.appendChild(chip);
+        }
+      });
+      chipsEl.appendChild(chip);
+    });
+
+    document.getElementById('host-wo-submit').addEventListener('click', () => {
+      if (hostAnswered) return;
+      if (wordOrder.length !== q.words.length) return;
+      hostAnswered = true;
+      document.getElementById('host-wo-submit').disabled = true;
+      socket.emit('host-submit-answer', { code, answer: JSON.stringify(wordOrder),
+        timeTaken: Date.now() - hostAnswerStartTime });
+      showHostAnswerFeedback('✓ Order submitted!');
+    });
+  }
+}
+
+function showHostAnswerFeedback(text) {
+  const fb = document.getElementById('host-answer-feedback');
+  fb.textContent = text;
+  fb.classList.remove('hidden');
+}
 
 // ── Step buttons ──────────────────────────────────────────────────────────────
 document.getElementById('btn-send-question').addEventListener('click', () => socket.emit('send-question', { code }));
@@ -271,8 +410,26 @@ document.getElementById('btn-reveal').addEventListener('click', () => socket.emi
 document.getElementById('btn-next').addEventListener('click', () => socket.emit('next-question', { code }));
 
 socket.on('host-step', ({ step }) => {
-  if (step === 'question-sent') setStep('sent');
-  if (step === 'answers-shown') setStep('answering');
+  if (step === 'question-sent') {
+    setStep('sent');
+    if (hostPlaysMode && currentQuestion) {
+      // Now reveal question text — same moment as players
+      document.getElementById('question-text').textContent = currentQuestion.question;
+      if (currentQuestion.type === 'estimation') {
+        // Show the estimation preview shell but NOT the correct value yet
+        const el = document.getElementById('estimation-preview');
+        el.classList.remove('hidden');
+        document.getElementById('estimation-submissions').innerHTML = '';
+        document.getElementById('correct-value').textContent = '';
+      }
+    }
+  }
+  if (step === 'answers-shown') {
+    setStep('answering');
+    if (hostPlaysMode && currentQuestion && !hostAnswered) {
+      showHostAnswerOptions(currentQuestion);
+    }
+  }
 });
 
 // ── Answers log ───────────────────────────────────────────────────────────────
@@ -305,6 +462,17 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   else if (currentQuestion?.type === 'word_order') cv.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
   updateScoreboard('scoreboard', scores);
   renderHostDistribution(distribution);
+
+  if (hostPlaysMode && currentQuestion) {
+    // Now show the full answer preview with correct answer highlighted
+    renderQuestionPreview(currentQuestion);
+    // Mark host's own answer button as correct or wrong
+    document.querySelectorAll('.host-answer-btn').forEach(btn => {
+      const idx = parseInt(btn.dataset.index);
+      if (idx === correct) btn.classList.add('host-answer-correct');
+      else if (btn.classList.contains('host-answer-selected')) btn.classList.add('host-answer-wrong');
+    });
+  }
 });
 
 function renderHostDistribution(dist) {

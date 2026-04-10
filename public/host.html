@@ -74,6 +74,16 @@
             </div>
           </div>
 
+          <div class="config-section">
+            <div class="config-label">Host</div>
+            <label class="checkbox-label" id="host-plays-label">
+              <input type="checkbox" id="host-plays-toggle">
+              <span class="cat-icon">🎮</span>
+              <span>I'm playing too</span>
+            </label>
+            <input type="text" id="host-player-name" class="text-input hidden" placeholder="Your team name" maxlength="30" style="margin-top:0.5rem">
+          </div>
+
           <button class="btn btn-primary btn-lg" id="start-btn" disabled>
             Start Game
           </button>
@@ -101,6 +111,12 @@
           <div class="estimation-preview hidden" id="estimation-preview">
             <p>Teams submit a number — closest wins!</p>
             <div id="estimation-submissions"></div>
+          </div>
+          <!-- Shown in playing mode after answers are sent to players -->
+          <div id="host-answer-area" class="host-answer-area hidden">
+            <div class="host-answer-label">Your answer</div>
+            <div id="host-answer-options"></div>
+            <div class="host-answer-feedback hidden" id="host-answer-feedback"></div>
           </div>
         </div>
         <div class="correct-answer-reveal hidden" id="correct-reveal">
