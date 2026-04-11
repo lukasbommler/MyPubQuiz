@@ -89,13 +89,14 @@ function updateCount(checkboxesId, radiosId, countId) {
   return { cats, type, count };
 }
 
-function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId, timeLimitId) {
+function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId, pointsSpecialId, timeLimitId) {
   const cats = [...document.querySelectorAll(`#${checkboxesId} .cat-cb:checked`)].map(cb => cb.value);
   const typeEl = document.querySelector(`#${radiosId} .type-radio:checked`);
   const pointsCorrect = parseInt(document.getElementById(pointsCorrectId)?.value) || 1;
   const pointsBonus = parseInt(document.getElementById(pointsBonusId)?.value) || 0;
+  const pointsSpecial = Math.max(0, parseInt(document.getElementById(pointsSpecialId)?.value) || 0);
   const timeLimitSecs = Math.max(5, Math.min(300, parseInt(document.getElementById(timeLimitId)?.value) || 20));
-  return { categories: cats, questionType: typeEl?.value, pointsCorrect, pointsBonus, timeLimitSecs };
+  return { categories: cats, questionType: typeEl?.value, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs };
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ function addTeam(team) {
 
 // ── Start / next round ────────────────────────────────────────────────────────
 document.getElementById('start-btn').addEventListener('click', () => {
-  const { categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus', 'time-limit');
+  const { categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus', 'pts-special', 'time-limit');
   if (!categories.length || !questionType) return;
   // Only send hostPlayerName if playing and team not yet created
   const hostPlayerName = (hostPlaysMode && !hostTeamId)
@@ -296,14 +297,14 @@ document.getElementById('start-btn').addEventListener('click', () => {
   if (hostPlaysMode && !hostTeamId && !hostPlayerName) {
     document.getElementById('host-player-name').focus(); return;
   }
-  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs,
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs,
     ...(hostPlayerName ? { hostPlayerName } : {}) });
 });
 
 document.getElementById('btn-next-round').addEventListener('click', () => {
-  const { categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs } = getConfig('ro-category-checkboxes', 'ro-type-radios', 'ro-pts-correct', 'ro-pts-bonus', 'ro-time-limit');
+  const { categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs } = getConfig('ro-category-checkboxes', 'ro-type-radios', 'ro-pts-correct', 'ro-pts-bonus', 'ro-pts-special', 'ro-time-limit');
   if (!categories.length || !questionType) return;
-  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs });
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs });
 });
 
 document.getElementById('btn-show-scoreboard').addEventListener('click', () => {
@@ -702,6 +703,18 @@ function showBuzz(team, points) {
   const overlay = document.getElementById('buzz-overlay');
   overlay.classList.remove('hidden');
   setTimeout(() => overlay.classList.add('hidden'), 3500);
+}
+
+// ── Special animations ────────────────────────────────────────────────────────
+socket.on('lone-hero', ({ team, points }) => showSpecialOverlay('lone-hero-overlay', 'lone-hero-team', 'lone-hero-points', team, points));
+socket.on('precise-estimate', ({ team, points }) => showSpecialOverlay('precise-overlay', 'precise-team', 'precise-points', team, points));
+
+function showSpecialOverlay(overlayId, teamId, ptsId, team, points) {
+  document.getElementById(teamId).textContent = team.name;
+  document.getElementById(ptsId).textContent = points > 0 ? `+${points} pts` : '';
+  const overlay = document.getElementById(overlayId);
+  overlay.classList.remove('hidden');
+  setTimeout(() => overlay.classList.add('hidden'), 4000);
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────

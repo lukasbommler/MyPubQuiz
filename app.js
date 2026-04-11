@@ -202,7 +202,7 @@ io.on('connection', (socket) => {
   });
 
   // ── Start round (works from lobby and between rounds) ───────────────────────
-  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs, hostPlayerName }) => {
+  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs, hostPlayerName }) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event || event.status === 'running' || event.status === 'finished') return;
@@ -246,6 +246,7 @@ io.on('connection', (socket) => {
       roundNum,
       pointsCorrect: Math.max(1, parseInt(pointsCorrect) || 1),
       pointsBonus: Math.max(0, parseInt(pointsBonus) || 0),
+      pointsSpecial: Math.max(0, parseInt(pointsSpecial) || 0),
       timeLimitSecs: Math.max(5, Math.min(300, parseInt(timeLimitSecs) || 20)),
       currentStep: null,
       questionStartedAt: null,
@@ -398,6 +399,10 @@ io.on('connection', (socket) => {
     state.firstCorrectTeam = null;
     state.firstCorrectPoints = 0;
     state.estimationWinnerId = null;
+    state.loneHeroTeam = null;
+    state.loneHeroPoints = 0;
+    state.preciseTeam = null;
+    state.precisePoints = 0;
     state.currentStep = null;
     state.questionStartedAt = null;
     state.distribution = null;
@@ -524,35 +529,60 @@ function doRevealAnswer(code) {
   const q = getQ(code)[qIndex];
   if (!q) return;
 
-  // Handle estimation winner
+  const allAnswers = db.getAnswersByQuestion(code, qIndex);
+  const specialPts = state.pointsSpecial ?? 0;
+
+  // ── Estimation: closest wins; speed bonus only if multiple tied; precision bonus if within 2% ──
   let estimationWinnerId = null;
   if (q.type === 'estimation') {
-    const answers = db.getAnswersByQuestion(code, qIndex);
-    let minDiff = Infinity;
-    for (const a of answers) {
-      const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
-      if (diff < minDiff) minDiff = diff;
-    }
-    const tied = answers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
-    tied.sort((a, b) => a.time_ms - b.time_ms);
-    const winner = tied[0];
-    if (winner) {
-      const pts = state.pointsCorrect ?? 1;
-      const bonus = tied.length > 1 ? (state.pointsBonus ?? 0) : 0;
-      const total = pts + bonus;
-      db.addScore(winner.team_id, total);
-      db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
-      estimationWinnerId = winner.team_id;
-      const winnerTeam = db.getTeam(winner.team_id);
-      state.firstCorrectTeam = winnerTeam;
-      state.firstCorrectPoints = total;
-      state.estimationWinnerId = estimationWinnerId;
+    if (allAnswers.length > 0) {
+      let minDiff = Infinity;
+      for (const a of allAnswers) {
+        const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
+        if (diff < minDiff) minDiff = diff;
+      }
+      const tied = allAnswers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
+      tied.sort((a, b) => a.time_ms - b.time_ms);
+      const winner = tied[0];
+      if (winner) {
+        const pts = state.pointsCorrect ?? 1;
+        // Speed bonus only when multiple teams tie for closest
+        const speedBonus = tied.length > 1 ? (state.pointsBonus ?? 0) : 0;
+        const total = pts + speedBonus;
+        db.addScore(winner.team_id, total);
+        db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
+        estimationWinnerId = winner.team_id;
+        const winnerTeam = db.getTeam(winner.team_id);
+        state.firstCorrectTeam = winnerTeam;
+        state.firstCorrectPoints = total;
+        state.estimationWinnerId = estimationWinnerId;
+
+        // Precision bonus: winner's answer is within 2% of correct value
+        if (specialPts > 0 && q.correct_value !== 0) {
+          const pct = Math.abs(parseFloat(winner.answer) - q.correct_value) / Math.abs(q.correct_value);
+          if (pct <= 0.02) {
+            db.addScore(winner.team_id, specialPts);
+            state.preciseTeam = winnerTeam;
+            state.precisePoints = specialPts;
+          }
+        }
+      }
     }
   }
 
+  // ── MC / Word Order: lone correct bonus if exactly 1 team answered correctly ──
+  if (q.type === 'multiple_choice' || q.type === 'word_order') {
+    const correctAnswerers = allAnswers.filter(a => a.is_correct);
+    if (correctAnswerers.length === 1) {
+      if (specialPts > 0) db.addScore(correctAnswerers[0].team_id, specialPts);
+      state.loneHeroTeam = db.getTeam(correctAnswerers[0].team_id);
+      state.loneHeroPoints = specialPts;
+    }
+  }
+
+  // Fetch scores after all bonuses have been awarded
   const scores = db.getScoresByEvent(code);
 
-  const allAnswers = db.getAnswersByQuestion(code, qIndex);
   let distribution = null;
   if (q.type === 'multiple_choice') {
     const counts = new Array(q.answers.length).fill(0);
@@ -581,6 +611,7 @@ function doRevealAnswer(code) {
     distribution,
   });
 
+  // First-correct buzz at 1500ms (buzz shows for 3500ms, ends ~5000ms after reveal)
   if (state.firstCorrectTeam) {
     setTimeout(() => {
       io.to(`room:${code}`).emit('first-correct', {
@@ -588,6 +619,26 @@ function doRevealAnswer(code) {
         points: state.firstCorrectPoints
       });
     }, 1500);
+  }
+
+  // Special animation at 5500ms — after buzz has finished
+  const hasBuzz = !!state.firstCorrectTeam;
+  const specialDelay = hasBuzz ? 5500 : 1000;
+
+  if (state.loneHeroTeam) {
+    setTimeout(() => {
+      io.to(`room:${code}`).emit('lone-hero', {
+        team: state.loneHeroTeam,
+        points: state.loneHeroPoints
+      });
+    }, specialDelay);
+  } else if (state.preciseTeam) {
+    setTimeout(() => {
+      io.to(`room:${code}`).emit('precise-estimate', {
+        team: state.preciseTeam,
+        points: state.precisePoints
+      });
+    }, specialDelay);
   }
 }
 

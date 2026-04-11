@@ -64,12 +64,16 @@
             <div class="config-label">Points</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="pts-correct">Correct answer</label>
+                <label for="pts-correct">Correct / Closest</label>
                 <input type="number" id="pts-correct" min="0" value="1">
               </div>
               <div class="points-field">
                 <label for="pts-bonus">Fastest bonus</label>
                 <input type="number" id="pts-bonus" min="0" value="1">
+              </div>
+              <div class="points-field">
+                <label for="pts-special">Sole correct / Precise</label>
+                <input type="number" id="pts-special" min="0" value="2">
               </div>
             </div>
           </div>
@@ -180,12 +184,16 @@
             <div class="config-label">Points</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="ro-pts-correct">Correct answer</label>
+                <label for="ro-pts-correct">Correct / Closest</label>
                 <input type="number" id="ro-pts-correct" min="0" value="1">
               </div>
               <div class="points-field">
                 <label for="ro-pts-bonus">Fastest bonus</label>
                 <input type="number" id="ro-pts-bonus" min="0" value="1">
+              </div>
+              <div class="points-field">
+                <label for="ro-pts-special">Sole correct / Precise</label>
+                <input type="number" id="ro-pts-special" min="0" value="2">
               </div>
             </div>
           </div>
@@ -228,6 +236,28 @@
       <div class="buzz-team-name" id="buzz-team-name"></div>
       <div class="buzz-points" id="buzz-points"></div>
       <div class="buzz-label">First correct!</div>
+    </div>
+  </div>
+
+  <!-- Lone hero overlay (MC/WO: only one team correct) -->
+  <div id="lone-hero-overlay" class="special-overlay hidden">
+    <div class="special-content">
+      <div class="special-icon">🦸</div>
+      <div class="special-title">Solo Correct!</div>
+      <div class="special-team" id="lone-hero-team"></div>
+      <div class="special-subtitle">The only team who got it right</div>
+      <div class="special-points" id="lone-hero-points"></div>
+    </div>
+  </div>
+
+  <!-- Precise estimate overlay (Estimation: within 2% of correct value) -->
+  <div id="precise-overlay" class="special-overlay precise hidden">
+    <div class="special-content">
+      <div class="special-icon">🎯</div>
+      <div class="special-title">Spot On!</div>
+      <div class="special-team" id="precise-team"></div>
+      <div class="special-subtitle">Within 2% of the correct answer</div>
+      <div class="special-points" id="precise-points"></div>
     </div>
   </div>
 

@@ -276,6 +276,18 @@ socket.on('first-correct', ({ team, points }) => {
   Sounds.buzz();
 });
 
+// ── Lone hero / Precise estimate animations ───────────────────────────────────
+socket.on('lone-hero', ({ team, points }) => showPlaySpecial('play-lone-hero-overlay', 'play-lone-hero-team', 'play-lone-hero-points', team, points));
+socket.on('precise-estimate', ({ team, points }) => showPlaySpecial('play-precise-overlay', 'play-precise-team', 'play-precise-points', team, points));
+
+function showPlaySpecial(overlayId, teamElId, ptsElId, team, points) {
+  document.getElementById(teamElId).textContent = team.name;
+  document.getElementById(ptsElId).textContent = points > 0 ? `+${points} pts` : '';
+  const overlay = document.getElementById(overlayId);
+  overlay.classList.remove('hidden');
+  setTimeout(() => overlay.classList.add('hidden'), 4000);
+}
+
 // ── Game over ─────────────────────────────────────────────────────────────────
 socket.on('game-over', ({ scores }) => {
   stopTimer();

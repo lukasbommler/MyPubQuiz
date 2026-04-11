@@ -163,6 +163,77 @@ html, body {
 .buzz-points { font-size: 1.5rem; font-weight: 700; color: var(--green); }
 .buzz-label { font-size: 1rem; color: var(--text2); }
 
+/* ── Special overlays (lone hero / precise estimate) ─────────────────────── */
+.special-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  animation: specialIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.special-overlay.hidden { display: none; }
+
+@keyframes specialIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.special-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+}
+
+.special-icon {
+  font-size: 5rem;
+  animation: specialIconPulse 0.6s ease 0.1s both;
+}
+@keyframes specialIconPulse {
+  0%   { transform: scale(0) rotate(-20deg); }
+  70%  { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.special-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f59e0b, #fbbf24, #fde68a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.01em;
+}
+
+/* Precise variant uses green tones */
+.special-overlay.precise .special-title {
+  background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.special-team {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.special-subtitle {
+  font-size: 1rem;
+  color: var(--text2);
+}
+.special-points {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--yellow);
+  margin-top: 0.25rem;
+}
+.special-overlay.precise .special-points { color: var(--green); }
+
 /* ── Trophy ──────────────────────────────────────────────────────────────── */
 .trophy { font-size: 5rem; text-align: center; }
 
