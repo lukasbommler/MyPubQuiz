@@ -89,12 +89,13 @@ function updateCount(checkboxesId, radiosId, countId) {
   return { cats, type, count };
 }
 
-function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId) {
+function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId, timeLimitId) {
   const cats = [...document.querySelectorAll(`#${checkboxesId} .cat-cb:checked`)].map(cb => cb.value);
   const typeEl = document.querySelector(`#${radiosId} .type-radio:checked`);
   const pointsCorrect = parseInt(document.getElementById(pointsCorrectId)?.value) || 1;
   const pointsBonus = parseInt(document.getElementById(pointsBonusId)?.value) || 0;
-  return { categories: cats, questionType: typeEl?.value, pointsCorrect, pointsBonus };
+  const timeLimitSecs = Math.max(5, Math.min(300, parseInt(document.getElementById(timeLimitId)?.value) || 20));
+  return { categories: cats, questionType: typeEl?.value, pointsCorrect, pointsBonus, timeLimitSecs };
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
@@ -287,7 +288,7 @@ function addTeam(team) {
 
 // ── Start / next round ────────────────────────────────────────────────────────
 document.getElementById('start-btn').addEventListener('click', () => {
-  const { categories, questionType, pointsCorrect, pointsBonus } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus');
+  const { categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs } = getConfig('category-checkboxes', 'type-radios', 'pts-correct', 'pts-bonus', 'time-limit');
   if (!categories.length || !questionType) return;
   // Only send hostPlayerName if playing and team not yet created
   const hostPlayerName = (hostPlaysMode && !hostTeamId)
@@ -295,14 +296,14 @@ document.getElementById('start-btn').addEventListener('click', () => {
   if (hostPlaysMode && !hostTeamId && !hostPlayerName) {
     document.getElementById('host-player-name').focus(); return;
   }
-  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus,
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs,
     ...(hostPlayerName ? { hostPlayerName } : {}) });
 });
 
 document.getElementById('btn-next-round').addEventListener('click', () => {
-  const { categories, questionType, pointsCorrect, pointsBonus } = getConfig('ro-category-checkboxes', 'ro-type-radios', 'ro-pts-correct', 'ro-pts-bonus');
+  const { categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs } = getConfig('ro-category-checkboxes', 'ro-type-radios', 'ro-pts-correct', 'ro-pts-bonus', 'ro-time-limit');
   if (!categories.length || !questionType) return;
-  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus });
+  socket.emit('start-round', { code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs });
 });
 
 document.getElementById('btn-show-scoreboard').addEventListener('click', () => {

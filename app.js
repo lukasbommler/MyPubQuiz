@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
       const answers = db.getAnswersByQuestion(code, qIndex);
       reconnectState = {
         currentStep: state.currentStep,
-        currentQuestion: q ? { ...q, index: qIndex, roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 } : null,
+        currentQuestion: q ? { ...q, index: qIndex, roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1, time_limit: state.timeLimitSecs ?? q.time_limit } : null,
         timerRemaining: remaining,
         scores,
         answers: answers.map(a => ({ teamId: a.team_id, answer: a.answer, isCorrect: !!a.is_correct, points: a.points_awarded })),
@@ -202,7 +202,7 @@ io.on('connection', (socket) => {
   });
 
   // ── Start round (works from lobby and between rounds) ───────────────────────
-  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, hostPlayerName }) => {
+  socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, timeLimitSecs, hostPlayerName }) => {
     if (socket.data?.role !== 'host') return;
     const event = db.getEvent(code);
     if (!event || event.status === 'running' || event.status === 'finished') return;
@@ -246,6 +246,7 @@ io.on('connection', (socket) => {
       roundNum,
       pointsCorrect: Math.max(1, parseInt(pointsCorrect) || 1),
       pointsBonus: Math.max(0, parseInt(pointsBonus) || 0),
+      timeLimitSecs: Math.max(5, Math.min(300, parseInt(timeLimitSecs) || 20)),
       currentStep: null,
       questionStartedAt: null,
     };
@@ -321,14 +322,15 @@ io.on('connection', (socket) => {
     if (!q) return;
     const state = gameState[code] || {};
     const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
+    const effectiveTimeLimit = state.timeLimitSecs ?? q.time_limit;
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
-    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: q.time_limit });
+    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit });
     io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
     if (gameState[code]) {
       gameState[code].currentStep = 'answers-shown';
       gameState[code].questionStartedAt = Date.now();
       // Auto-reveal once the time limit expires
-      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), q.time_limit * 1000);
+      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000);
     }
   });
 
@@ -373,6 +375,9 @@ io.on('connection', (socket) => {
     io.to(`host:${code}`).emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
     // Tell team their answer is locked in — correctness hidden until reveal
     socket.emit('answer-acknowledged', { received: true });
+
+    // Auto-reveal early if every team has now answered
+    checkAllAnswered(code, qIndex);
   });
 
   // ── Reveal results (step 3) — now triggered automatically by timer ────────
@@ -491,6 +496,9 @@ io.on('connection', (socket) => {
     }
 
     socket.emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
+
+    // Auto-reveal early if every team has now answered
+    checkAllAnswered(code, qIndex);
   });
 
   // ── End game ────────────────────────────────────────────────────────────────
@@ -583,15 +591,29 @@ function doRevealAnswer(code) {
   }
 }
 
+function checkAllAnswered(code, qIndex) {
+  const state = gameState[code];
+  if (!state || state.currentStep !== 'answers-shown') return;
+  const totalTeams = db.getTeamsByEvent(code).length;
+  const answeredCount = db.getAnswersByQuestion(code, qIndex).length;
+  if (answeredCount >= totalTeams) {
+    // Cancel the scheduled timer and reveal immediately
+    if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
+    doRevealAnswer(code);
+  }
+}
+
 function sendQuestion(code, index) {
   const q = getQ(code)[index];
   if (!q) return;
   const state = gameState[code] || {};
   const roundIndex = state.roundIndex ?? 0;
   const roundTotal = state.roundQuestionIndices?.length ?? 1;
+  // Override time_limit with host-configured value so the host timer is correct
+  const time_limit = state.timeLimitSecs ?? q.time_limit;
   // Only send to host — players receive via send-question / show-answers
   io.to(`host:${code}`).emit('question-host', {
-    ...q, index, roundIndex, roundTotal
+    ...q, index, roundIndex, roundTotal, time_limit
   });
 }
 
