@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — QuizNight</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <style>
+    .content-page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+    .page-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .page-back:hover { color: var(--accent2); }
+    .page-title {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--text2);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+
+    /* ── Blog grid ── */
+    .blog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .blog-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+    .blog-card:hover {
+      border-color: rgba(124,58,237,0.45);
+      transform: translateY(-3px);
+    }
+    .blog-card-hero {
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .blog-card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+    }
+    .blog-tag {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 20px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      width: fit-content;
+    }
+    .blog-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .blog-card-excerpt {
+      font-size: 0.85rem;
+      color: var(--text2);
+      line-height: 1.6;
+      flex: 1;
+    }
+    .blog-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text2);
+      border-top: 1px solid var(--border);
+      padding-top: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    .blog-card-meta span { font-weight: 500; }
+
+    /* ── Article overlay ── */
+    .article-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem 1rem;
+      overflow-y: auto;
+      animation: fadeIn 0.2s ease;
+    }
+    .article-overlay.hidden { display: none; }
+    .article-modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 680px;
+      padding: 2rem;
+      position: relative;
+      animation: fadeIn 0.25s ease;
+    }
+    .article-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text2);
+      font-size: 1rem;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .article-close:hover { background: var(--card); color: var(--text); }
+    .article-header { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .article-tag { width: fit-content; }
+    .article-title { font-size: 1.4rem; font-weight: 800; line-height: 1.3; padding-right: 2.5rem; }
+    .article-meta { font-size: 0.8rem; color: var(--text2); }
+    .article-body { color: var(--text2); font-size: 0.9rem; line-height: 1.75; }
+    .article-body h3 { color: var(--text); font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.4rem; }
+    .article-body p { margin-bottom: 0.75rem; }
+    .article-body ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+    .article-body ul li { margin-bottom: 0.3rem; }
+    .article-body strong { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .blog-grid { grid-template-columns: 1fr; }
+      .article-modal { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body class="landing-body">
+  <div class="content-page">
+    <a class="page-back" href="/">← Zurück zur Startseite</a>
+    <h1 class="page-title">Blog</h1>
+    <p class="page-subtitle">Tipps, Ideen und Neuigkeiten rund um QuizNight und Pub Quiz.</p>
+
+    <div class="blog-grid">
+
+      <div class="blog-card" onclick="openArticle('a1')">
+        <div class="blog-card-hero">🎤</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Tipps</span>
+          <div class="blog-card-title">10 Tipps für einen unvergesslichen Spieleabend</div>
+          <div class="blog-card-excerpt">Von der richtigen Raumaufteilung bis zum perfekten Abschluss: So wird dein QuizNight-Abend ein voller Erfolg.</div>
+          <div class="blog-card-meta">
+            <span>12. Januar 2025</span>
+            <span>5 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blog-card" onclick="openArticle('a2')">
+        <div class="blog-card-hero">🧠</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Kategorien</span>
+          <div class="blog-card-title">Die beliebtesten Quiz-Kategorien im Überblick</div>
+          <div class="blog-card-excerpt">Geographie, Popkultur oder Wissenschaft? Wir zeigen, welche Themen in Pub Quizzes am besten ankommen.</div>
+          <div class="blog-card-meta">
+            <span>3. Februar 2025</span>
+            <span>4 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blog-card" onclick="openArticle('a3')">
+        <div class="blog-card-hero">⚡</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Feature</span>
+          <div class="blog-card-title">Wie der Geschwindigkeitsbonus funktioniert</div>
+          <div class="blog-card-excerpt">Richtig ist nicht genug – wer am schnellsten antwortet, gewinnt Extra-Punkte. Alles zur Mechanik dahinter.</div>
+          <div class="blog-card-meta">
+            <span>18. Februar 2025</span>
+            <span>3 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blog-card" onclick="openArticle('a4')">
+        <div class="blog-card-hero">🏆</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Strategie</span>
+          <div class="blog-card-title">Team-Strategie: So gewinnt ihr das nächste Quiz</div>
+          <div class="blog-card-excerpt">Welche Teamgröße ist optimal? Wer übernimmt welches Thema? Profi-Tipps für echte Pub-Quiz-Veteranen.</div>
+          <div class="blog-card-meta">
+            <span>5. März 2025</span>
+            <span>4 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blog-card" onclick="openArticle('a5')">
+        <div class="blog-card-hero">📸</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Feature</span>
+          <div class="blog-card-title">Team-Selfies: die kleine Geste, die alles ändert</div>
+          <div class="blog-card-excerpt">Warum das Teamfoto beim ersten richtigen Buzzer so viel Spaß macht – und wie ihr es am besten einsetzt.</div>
+          <div class="blog-card-meta">
+            <span>22. März 2025</span>
+            <span>3 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blog-card" onclick="openArticle('a6')">
+        <div class="blog-card-hero">🌍</div>
+        <div class="blog-card-body">
+          <span class="blog-tag">Neuigkeiten</span>
+          <div class="blog-card-title">Neue Fragenkategorien: Geographie &amp; Weltatlas</div>
+          <div class="blog-card-excerpt">Über 80 neue Schätzfragen und Multiple-Choice-Aufgaben zur Weltgeographie sind im Katalog verfügbar.</div>
+          <div class="blog-card-meta">
+            <span>10. April 2025</span>
+            <span>2 Min. Lesezeit</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Article modal ── -->
+  <div id="article-overlay" class="article-overlay hidden" onclick="closeArticleOnBackdrop(event)">
+    <div class="article-modal">
+      <button class="article-close" onclick="closeArticle()">✕</button>
+      <div id="article-content"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <nav class="footer-nav">
+      <a href="/faq.html">FAQ</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/impressum.html">Impressum</a>
+      <a href="/datenschutz.html">Datenschutz</a>
+    </nav>
+    <span class="footer-copy">© 2025 QuizNight</span>
+  </footer>
+
+  <script>
+    const articles = {
+      a1: {
+        tag: 'Tipps',
+        title: '10 Tipps für einen unvergesslichen Spieleabend',
+        date: '12. Januar 2025',
+        readTime: '5 Min. Lesezeit',
+        body: `
+          <h3>1. Räumlichkeiten richtig vorbereiten</h3>
+          <p>Sorge dafür, dass alle Tische gut platziert sind und jedes Team einen eigenen Bereich hat. Zu enge Sitzanordnungen verleiten zum Abgucken und nehmen den Spaß.</p>
+          <h3>2. QR-Code groß ausdrucken</h3>
+          <p>Drucke den QR-Code in DIN A4 aus und hänge ihn gut sichtbar auf. So können alle Teams sofort beitreten, ohne den Code abtippen zu müssen.</p>
+          <h3>3. Kategorien im Voraus wählen</h3>
+          <p>Überlege dir schon vor dem Abend, welche Kategorien du pro Runde spielst. Eine gute Mischung aus Allgemeinwissen, Popkultur und einer Spezialkategorie hält alle bei der Stange.</p>
+          <h3>4. Schätzfragen zum Aufwärmen nutzen</h3>
+          <p>Starte mit einer lockeren Schätzfrage, um alle ins Spiel zu bringen. Schätzfragen sind niedrigschwellig – alle können mitspielen, auch ohne Vorwissen.</p>
+          <h3>5. Geschwindigkeitsbonus kommunizieren</h3>
+          <p>Erkläre zu Beginn kurz, wie der Speed-Bonus funktioniert. Teams, die das verstehen, werden motivierter und schneller antworten.</p>
+          <h3>6. Zwischen den Runden kurze Pausen einplanen</h3>
+          <p>Gönne deinen Gästen zwischen den Runden 3–5 Minuten für Getränke, Diskussionen und Lachen. Das gibt Energie für die nächste Runde.</p>
+          <h3>7. Teamgröße begrenzen</h3>
+          <p>Teams mit 3–5 Personen sind ideal. Zu große Gruppen führen zu Diskussionen, die die Eingabe verlangsamen und den Spielfluss bremsen.</p>
+          <h3>8. Musik als Atmosphäre-Booster</h3>
+          <p>Leise Hintergrundmusik während der Denkphasen erhöht die Stimmung spürbar. QuizNight hat eingebaute Soundeffekte – ergänze sie durch eine passende Spotify-Playlist.</p>
+          <h3>9. Den Countdown ernst nehmen</h3>
+          <p>Kündige das Ende der Antwortzeit an. Die 3-2-1-Animation im Spiel hilft, aber ein kurzer Hinweis vom Host verstärkt die Spannung nochmals.</p>
+          <h3>10. Abschluss-Zeremonie zelebrieren</h3>
+          <p>Lass die Sieger-Konfetti-Animation vollständig laufen und applaudiere dem Gewinner-Team laut. Ein kleines, echtes Gewinner-Geschenk macht den Abend unvergesslich.</p>
+        `
+      },
+      a2: {
+        tag: 'Kategorien',
+        title: 'Die beliebtesten Quiz-Kategorien im Überblick',
+        date: '3. Februar 2025',
+        readTime: '4 Min. Lesezeit',
+        body: `
+          <h3>Geographie – der Klassiker</h3>
+          <p>Hauptstädte, Flüsse, Ländergrenzen: Geographie-Fragen sind bei fast allen Gruppen beliebt, weil sie ein gesundes Gleichgewicht zwischen Schulwissen und echten Überraschungen bieten.</p>
+          <h3>Popkultur – Spaß für alle</h3>
+          <p>Filme, Serien, Musik der letzten Jahrzehnte: Diese Kategorie ist besonders inklusiv, weil kein Fachwissen nötig ist. Schätzfragen wie „In welchem Jahr erschien dieser Song?" machen den Unterschied.</p>
+          <h3>Wissenschaft – für die Nerds im Raum</h3>
+          <p>Von Biologie bis Physik: Wissenschaftsfragen polarisieren – genau das macht sie spannend. Ein Team, das hier punktet, genießt echten Respekt.</p>
+          <h3>Geschichte – Zeitreise inklusive</h3>
+          <p>Daten, Persönlichkeiten, Ereignisse: Mit Schätzfragen zu Jahreszahlen ist Geschichte überraschend zugänglich und für alle Altersgruppen geeignet.</p>
+          <h3>Sport – der Stimmungsbooster</h3>
+          <p>Rekorde, Weltmeisterschaften, Sportler: Sportfragen erzeugen die lautesten Reaktionen. Empfehlung: Sport als letzte Runde für den emotionalen Höhepunkt einsetzen.</p>
+          <h3>Unsere Empfehlung</h3>
+          <p>Kombiniere pro Spielabend mindestens drei verschiedene Kategorien. Eine Mischung aus Geographie, Popkultur und einer Wildcard-Kategorie funktioniert für die meisten Gruppen am besten.</p>
+        `
+      },
+      a3: {
+        tag: 'Feature',
+        title: 'Wie der Geschwindigkeitsbonus funktioniert',
+        date: '18. Februar 2025',
+        readTime: '3 Min. Lesezeit',
+        body: `
+          <h3>Grundprinzip</h3>
+          <p>Richtig antworten reicht – aber wer als Erstes richtig antwortet, bekommt Extrapunkte. Der <strong>Geschwindigkeitsbonus</strong> wird vom Host vor jeder Runde festgelegt und ist unabhängig von den regulären Punkten für eine richtige Antwort.</p>
+          <h3>Wann startet die Zeit?</h3>
+          <p>Die Uhr beginnt zu laufen, sobald der Host auf <strong>„Antworten zeigen"</strong> klickt und die Countdown-Animation (3-2-1-LOS!) startet. Nicht beim Erscheinen der Frage – erst beim Erscheinen der Antwortmöglichkeiten.</p>
+          <h3>Zeitmessung</h3>
+          <p>Die Antwortzeit wird vom Server in Millisekunden gemessen. Das schließt Verzögerungen durch eine langsame Verbindung ein. Teams mit stabilem WLAN haben daher einen kleinen Vorteil.</p>
+          <h3>Erster Buzzer</h3>
+          <p>Sobald ein Team als erstes richtig antwortet, erscheint das Team-Selfie als großes Buzz-Overlay auf dem Host-Bildschirm. Das ist der emotionale Höhepunkt jeder Frage.</p>
+          <h3>Schätzfragen</h3>
+          <p>Bei Schätzfragen gibt es keinen klassischen Buzzer. Stattdessen gewinnt das Team, das dem Zielwert am nächsten liegt. Bei Gleichstand entscheidet die Antwortzeit.</p>
+        `
+      },
+      a4: {
+        tag: 'Strategie',
+        title: 'Team-Strategie: So gewinnt ihr das nächste Quiz',
+        date: '5. März 2025',
+        readTime: '4 Min. Lesezeit',
+        body: `
+          <h3>Optimale Teamgröße</h3>
+          <p>Drei bis vier Personen sind ideal. Mit fünf oder mehr wird die Entscheidungsfindung zu langsam für den Geschwindigkeitsbonus. Mit nur zwei Personen fehlt die Themenbreite.</p>
+          <h3>Rollenverteilung</h3>
+          <p>Teilt euch implizit auf: Wer ist stark in Geschichte? Wer in Popkultur? Lasst die jeweilige Person die Antwort absegnen, bevor jemand anderes tippt.</p>
+          <h3>Schnell sein vs. richtig sein</h3>
+          <p>Kalkuliert das Risiko: Bei 1 Punkt für richtig und 1 Punkt Speedbonus lohnt ein schneller, unsicherer Tipp. Bei 3 Punkten für richtig und nur 0,5 Speedbonus ist Genauigkeit wichtiger.</p>
+          <h3>Schätzfragen nicht überstürzen</h3>
+          <p>Diskutiert kurz. Bei Schätzfragen gewinnt der nächste Wert – ein schneller, weit falscher Tipp kostet mehr als eine bedächtige, nahe Schätzung.</p>
+          <h3>Psychologie nutzen</h3>
+          <p>Bei Multiple Choice: Wenn ihr zwischen zwei Antworten schwankt, tippt die, die sich intuitiv als falsch anfühlt – und überdenkt sie noch einmal. Oft ist die erste Intuition richtig.</p>
+        `
+      },
+      a5: {
+        tag: 'Feature',
+        title: 'Team-Selfies: die kleine Geste, die alles ändert',
+        date: '22. März 2025',
+        readTime: '3 Min. Lesezeit',
+        body: `
+          <h3>Warum Selfies?</h3>
+          <p>Ein Teamname ist anonym. Ein Gesicht ist eine Persönlichkeit. Wenn das Selfie eines Teams beim Buzzer auf dem großen Screen erscheint, gibt es Jubel, Gelächter und echte Momente – nicht nur Punkte auf einem Leaderboard.</p>
+          <h3>Wie es funktioniert</h3>
+          <p>Beim Beitreten können Teams über ihr Smartphone-Display ein Selfie aufnehmen. Das Bild wird sicher auf dem Server gespeichert und erscheint ausschließlich, wenn das Team als erstes richtig antwortet (Buzzer-Moment).</p>
+          <h3>Tipps für das beste Selfie</h3>
+          <ul>
+            <li>Macht das Foto zusammen – alle Teammitglieder rein!</li>
+            <li>Übertriebene Posen funktionieren am besten.</li>
+            <li>Gute Beleuchtung sorgt dafür, dass das Bild auf dem Host-Screen erkennbar ist.</li>
+          </ul>
+          <h3>Datenschutz</h3>
+          <p>Selfies sind nur innerhalb des laufenden Spiels sichtbar und werden automatisch 24 Stunden nach dem Spiel gelöscht. Mehr dazu in unserer <a href="/datenschutz.html" style="color:var(--accent2)">Datenschutzerklärung</a>.</p>
+        `
+      },
+      a6: {
+        tag: 'Neuigkeiten',
+        title: 'Neue Fragenkategorien: Geographie & Weltatlas',
+        date: '10. April 2025',
+        readTime: '2 Min. Lesezeit',
+        body: `
+          <h3>Was ist neu?</h3>
+          <p>Über <strong>80 neue Fragen</strong> sind ab sofort im QuizNight-Katalog verfügbar – sowohl auf Deutsch als auch auf Englisch. Der Schwerpunkt liegt auf Weltgeographie und Allgemeinwissen.</p>
+          <h3>Neue Fragetypen im Geographie-Paket</h3>
+          <ul>
+            <li><strong>Schätzfragen:</strong> Entfernungen zwischen Städten, Einwohnerzahlen, Höhenlagen.</li>
+            <li><strong>Multiple Choice:</strong> Hauptstädte, Nachbarländer, Flüsse und Meere.</li>
+            <li><strong>Wörter sortieren:</strong> Länder nach Größe oder Bevölkerung sortieren.</li>
+          </ul>
+          <h3>Wie komme ich zu den neuen Fragen?</h3>
+          <p>Einfach im Host-Panel beim Konfigurieren einer Runde die Kategorie <strong>„Geographie"</strong> auswählen. Die neuen Fragen sind automatisch im Pool enthalten.</p>
+          <h3>Ausblick</h3>
+          <p>Als nächstes planen wir neue Kategorien zu den Themen Filmgeschichte, Musik der 80er und Naturwissenschaften. Habt ihr Wünsche? Schreibt uns an <a href="mailto:hallo@quiznight.app" style="color:var(--accent2)">hallo@quiznight.app</a>.</p>
+        `
+      }
+    };
+
+    function openArticle(id) {
+      const a = articles[id];
+      if (!a) return;
+      document.getElementById('article-content').innerHTML = `
+        <div class="article-header">
+          <span class="blog-tag article-tag">${a.tag}</span>
+          <div class="article-title">${a.title}</div>
+          <div class="article-meta">${a.date} &nbsp;·&nbsp; ${a.readTime}</div>
+        </div>
+        <div class="article-body">${a.body}</div>
+      `;
+      document.getElementById('article-overlay').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeArticle() {
+      document.getElementById('article-overlay').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function closeArticleOnBackdrop(e) {
+      if (e.target === document.getElementById('article-overlay')) closeArticle();
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeArticle(); });
+  </script>
+</body>
+</html>

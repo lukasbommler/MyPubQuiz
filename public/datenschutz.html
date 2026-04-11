@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datenschutz — QuizNight</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <style>
+    .content-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+    .page-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .page-back:hover { color: var(--accent2); }
+    .page-title {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--text2);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+    .dsg-section {
+      margin-bottom: 2.25rem;
+    }
+    .dsg-section h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      color: var(--text);
+    }
+    .dsg-section h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1rem 0 0.4rem;
+      color: var(--text);
+    }
+    .dsg-section p, .dsg-section li {
+      color: var(--text2);
+      font-size: 0.9rem;
+      line-height: 1.75;
+    }
+    .dsg-section ul {
+      padding-left: 1.25rem;
+      margin-top: 0.25rem;
+    }
+    .dsg-section a { color: var(--accent2); text-decoration: none; }
+    .dsg-section a:hover { text-decoration: underline; }
+    .dsg-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+    .dsg-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 20px;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 2rem;
+    }
+    .last-updated {
+      color: var(--text2);
+      font-size: 0.8rem;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body class="landing-body">
+  <div class="content-page">
+    <a class="page-back" href="/">← Zurück zur Startseite</a>
+    <h1 class="page-title">Datenschutzerklärung</h1>
+    <p class="last-updated">Stand: Januar 2025</p>
+    <div class="dsg-badge">🔒 Kein Account, keine Tracker, keine Werbung</div>
+
+    <div class="dsg-section">
+      <h2>1. Verantwortlicher</h2>
+      <p>
+        Verantwortlicher im Sinne der DSGVO ist:<br>
+        QuizNight, Musterstraße 1, 12345 Musterstadt<br>
+        E-Mail: <a href="mailto:hallo@quiznight.app">hallo@quiznight.app</a>
+      </p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>2. Welche Daten wir erheben und warum</h2>
+
+      <h3>Spielbezogene Daten</h3>
+      <p>Wenn du ein Spiel erstellst oder beitrittst, werden folgende Daten vorübergehend gespeichert:</p>
+      <ul>
+        <li>Teamname (von dir frei gewählt)</li>
+        <li>Abgegebene Antworten und Punktestände</li>
+        <li>Zeitstempel der Antworten (für den Geschwindigkeitsbonus)</li>
+        <li>Optionales Team-Selfie (nur wenn du es freiwillig hochlädst)</li>
+      </ul>
+      <p style="margin-top:0.5rem">Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung / Bereitstellung des Dienstes).</p>
+
+      <h3>Technische Daten</h3>
+      <p>
+        Beim Aufrufen der Website wird durch deinen Browser automatisch die IP-Adresse sowie Datum, Uhrzeit und aufgerufene Seite im Server-Log erfasst. Diese Daten dienen ausschließlich der technischen Bereitstellung und Fehleranalyse und werden nicht mit anderen Daten verknüpft.
+      </p>
+
+      <h3>Lokaler Browserspeicher (localStorage)</h3>
+      <p>
+        Damit du bei einem Verbindungsabbruch automatisch wieder dem Spiel beitreten kannst, speichert QuizNight deine Team-ID im localStorage deines Browsers (<code style="font-size:0.8rem;color:var(--text)">quiz_team_&lt;spielcode&gt;</code>). Diese Daten liegen ausschließlich auf deinem Gerät und werden nicht an uns übermittelt.
+      </p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>3. Speicherdauer</h2>
+      <p>
+        Alle spielbezogenen Daten – einschließlich Teamnamen, Antworten, Punkte und hochgeladene Selfies – werden <strong style="color:var(--text)">automatisch 24 Stunden nach Spielerstellung</strong> unwiderruflich gelöscht. Es erfolgt keine Langzeitspeicherung personenbezogener Daten.
+      </p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>4. Weitergabe an Dritte</h2>
+      <p>
+        Wir geben deine Daten nicht an Dritte weiter. Es werden keine Analyse-Dienste (Google Analytics o. ä.), Werbenetzwerke oder Social-Media-Plugins eingesetzt.
+      </p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>5. Cookies</h2>
+      <p>
+        QuizNight setzt keine Cookies. Stattdessen wird localStorage für die Reconnect-Funktionalität verwendet (siehe Abschnitt 2). Da localStorage keine Tracking-Funktion übernimmt und ausschließlich auf deinem Gerät bleibt, ist keine Cookie-Einwilligung erforderlich.
+      </p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>6. Deine Rechte</h2>
+      <p>Du hast nach der DSGVO folgende Rechte:</p>
+      <ul>
+        <li><strong style="color:var(--text)">Auskunft</strong> (Art. 15 DSGVO) – Welche Daten speichern wir über dich?</li>
+        <li><strong style="color:var(--text)">Berichtigung</strong> (Art. 16 DSGVO) – Unrichtige Daten korrigieren lassen.</li>
+        <li><strong style="color:var(--text)">Löschung</strong> (Art. 17 DSGVO) – Daten löschen lassen. Da Spieldaten nach 24 h automatisch gelöscht werden, ist dies meist bereits erfüllt.</li>
+        <li><strong style="color:var(--text)">Einschränkung der Verarbeitung</strong> (Art. 18 DSGVO)</li>
+        <li><strong style="color:var(--text)">Beschwerde</strong> – Du hast das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</li>
+      </ul>
+      <p style="margin-top:0.5rem">Für alle Anfragen wende dich per E-Mail an: <a href="mailto:hallo@quiznight.app">hallo@quiznight.app</a></p>
+    </div>
+
+    <hr class="dsg-divider">
+
+    <div class="dsg-section">
+      <h2>7. Änderungen dieser Datenschutzerklärung</h2>
+      <p>
+        Wir behalten uns vor, diese Datenschutzerklärung anzupassen, wenn sich die Rechtslage oder der Dienst ändert. Die jeweils aktuelle Version ist stets auf dieser Seite abrufbar. Das Datum der letzten Aktualisierung ist oben angegeben.
+      </p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <nav class="footer-nav">
+      <a href="/faq.html">FAQ</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/impressum.html">Impressum</a>
+      <a href="/datenschutz.html">Datenschutz</a>
+    </nav>
+    <span class="footer-copy">© 2025 QuizNight</span>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — QuizNight</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <style>
+    .content-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+    .page-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .page-back:hover { color: var(--accent2); }
+    .page-title {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--text2);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    details {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    details[open] { border-color: rgba(124,58,237,0.4); }
+    summary {
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+';
+      font-size: 1.25rem;
+      color: var(--accent2);
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    details[open] summary::after {
+      content: '−';
+    }
+    .faq-answer {
+      padding: 0 1.25rem 1.1rem;
+      color: var(--text2);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+    .faq-answer a { color: var(--accent2); text-decoration: none; }
+    .faq-answer a:hover { text-decoration: underline; }
+    .faq-category {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent2);
+      margin: 2rem 0 0.75rem;
+    }
+    .faq-category:first-of-type { margin-top: 0; }
+  </style>
+</head>
+<body class="landing-body">
+  <div class="content-page">
+    <a class="page-back" href="/">← Zurück zur Startseite</a>
+    <h1 class="page-title">Häufige Fragen</h1>
+    <p class="page-subtitle">Alles, was du über QuizNight wissen musst.</p>
+
+    <p class="faq-category">Allgemeines</p>
+    <div class="faq-list">
+      <details>
+        <summary>Was ist QuizNight?</summary>
+        <div class="faq-answer">
+          QuizNight ist eine kostenlose, browserbasierte Pub-Quiz-Plattform. Ein Host erstellt ein Spiel und teilt einen Code oder QR-Code mit den Mitspielerinnen und Mitspielern. Die Teams antworten in Echtzeit über ihr Smartphone – ganz ohne App-Download oder Account.
+        </div>
+      </details>
+      <details>
+        <summary>Kostet QuizNight etwas?</summary>
+        <div class="faq-answer">
+          Nein. QuizNight ist vollständig kostenlos. Es gibt keine Premium-Pläne, keine versteckten Gebühren und keine Werbung.
+        </div>
+      </details>
+      <details>
+        <summary>Muss ich ein Konto erstellen?</summary>
+        <div class="faq-answer">
+          Nein. Weder der Host noch die Spielerinnen und Spieler brauchen einen Account. Der Host erstellt ein Spiel per Klick, Teams treten über den Code bei – fertig.
+        </div>
+      </details>
+      <details>
+        <summary>Welche Geräte werden unterstützt?</summary>
+        <div class="faq-answer">
+          QuizNight läuft in jedem modernen Browser – auf Smartphones, Tablets und Laptops. Chrome, Firefox, Safari und Edge sind vollständig unterstützt. Eine Internetverbindung ist erforderlich.
+        </div>
+      </details>
+    </div>
+
+    <p class="faq-category">Spiel erstellen &amp; beitreten</p>
+    <div class="faq-list">
+      <details>
+        <summary>Wie erstelle ich ein Spiel?</summary>
+        <div class="faq-answer">
+          Klicke auf der Startseite auf <strong>„Spiel starten"</strong>. Du erhältst sofort einen 6-stelligen Code und einen QR-Code. Öffne das Host-Panel, konfiguriere die Runde (Kategorie, Fragetyp, Punkte) und warte auf die Teams.
+        </div>
+      </details>
+      <details>
+        <summary>Wie treten Teams einem Spiel bei?</summary>
+        <div class="faq-answer">
+          Teams können entweder den QR-Code scannen oder auf der Startseite den 6-stelligen Code eingeben und auf <strong>„Beitreten"</strong> klicken. Sie wählen einen Teamnamen, machen optional ein Selfie – und sind dabei.
+        </div>
+      </details>
+      <details>
+        <summary>Wie viele Teams können mitspielen?</summary>
+        <div class="faq-answer">
+          Es gibt keine feste Obergrenze. In der Praxis empfehlen wir bis zu 20 Teams für ein flüssiges Spielerlebnis, da Antworten und Punktestände in Echtzeit synchronisiert werden.
+        </div>
+      </details>
+      <details>
+        <summary>Kann der Host auch mitspielen?</summary>
+        <div class="faq-answer">
+          Ja. Im Host-Panel gibt es eine Option, den Host als teilnehmendes Team einzutragen. So kann die moderierende Person gleichzeitig spielen.
+        </div>
+      </details>
+    </div>
+
+    <p class="faq-category">Fragen &amp; Spielmodi</p>
+    <div class="faq-list">
+      <details>
+        <summary>Welche Fragetypen gibt es?</summary>
+        <div class="faq-answer">
+          QuizNight unterstützt drei Typen:
+          <ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2">
+            <li><strong>Multiple Choice</strong> – vier Antwortmöglichkeiten, eine ist richtig.</li>
+            <li><strong>Schätzfrage</strong> – numerische Eingabe, das Team mit dem nächsten Wert gewinnt.</li>
+            <li><strong>Wörter sortieren</strong> – vorgegebene Wörter in die richtige Reihenfolge bringen.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>In welchen Sprachen sind Fragen verfügbar?</summary>
+        <div class="faq-answer">
+          Der Fragenkatalog ist auf Deutsch und Englisch verfügbar. Die Sprache kann der Host vor dem Spielstart im Lobby-Bildschirm wählen.
+        </div>
+      </details>
+      <details>
+        <summary>Wie funktioniert das Punktesystem?</summary>
+        <div class="faq-answer">
+          Der Host legt vor jeder Runde fest, wie viele Punkte eine richtige Antwort gibt und ob es einen Geschwindigkeitsbonus für die schnellste korrekte Antwort gibt. Bei Schätzfragen gewinnt das Team, das dem Zielwert am nächsten liegt.
+        </div>
+      </details>
+      <details>
+        <summary>Was passiert, wenn ich die Verbindung verliere?</summary>
+        <div class="faq-answer">
+          QuizNight verbindet dich automatisch wieder, sobald die Verbindung wiederhergestellt ist. Dein Teamfortschritt bleibt erhalten, da die Team-ID im Browser gespeichert wird.
+        </div>
+      </details>
+    </div>
+
+    <p class="faq-category">Datenschutz &amp; Sicherheit</p>
+    <div class="faq-list">
+      <details>
+        <summary>Welche Daten werden gespeichert?</summary>
+        <div class="faq-answer">
+          Wir speichern nur spielbezogene Daten: Teamnamen, abgegebene Antworten, Punktestände und optional ein Team-Selfie. Spiele werden 24 Stunden nach Erstellung automatisch gelöscht. Weitere Details findest du in unserer <a href="/datenschutz.html">Datenschutzerklärung</a>.
+        </div>
+      </details>
+      <details>
+        <summary>Sind Team-Selfies öffentlich sichtbar?</summary>
+        <div class="faq-answer">
+          Selfies werden nur innerhalb des aktiven Spiels angezeigt – für den Host und alle Teammitglieder, die am selben Spiel teilnehmen. Nach 24 Stunden werden Bilder automatisch vom Server gelöscht.
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <nav class="footer-nav">
+      <a href="/faq.html">FAQ</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/impressum.html">Impressum</a>
+      <a href="/datenschutz.html">Datenschutz</a>
+    </nav>
+    <span class="footer-copy">© 2025 QuizNight</span>
+  </footer>
+</body>
+</html>
