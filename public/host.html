@@ -15,6 +15,10 @@
       <span class="game-code-badge">Code: <strong id="header-code">---</strong></span>
     </div>
     <div class="header-right">
+      <div class="lang-bar lang-bar-compact">
+        <button class="lang-btn" data-lang="en" onclick="setLang('en')">🇬🇧</button>
+        <button class="lang-btn" data-lang="de" onclick="setLang('de')">🇩🇪</button>
+      </div>
       <select id="lang-select" class="lang-select" title="Question language">
         <option value="en">🇬🇧 EN</option>
         <option value="de">🇩🇪 DE</option>
@@ -29,11 +33,11 @@
 
       <!-- Left: share -->
       <div class="lobby-left">
-        <h2>Waiting for teams...</h2>
-        <p class="hint">Share this link or QR code:</p>
+        <h2 data-i18n="waiting_teams">Waiting for teams...</h2>
+        <p class="hint" data-i18n="share_hint">Share this link or QR code:</p>
         <div class="share-link-box">
           <input type="text" id="lobby-share-link" readonly>
-          <button class="btn btn-secondary" id="lobby-copy-btn">Copy</button>
+          <button class="btn btn-secondary" id="lobby-copy-btn" data-i18n="copy_host_btn">Copy</button>
         </div>
         <div id="lobby-qr"></div>
 
@@ -46,62 +50,62 @@
       <!-- Right: config -->
       <div class="lobby-right">
         <div class="config-panel" id="lobby-config">
-          <h2>Configure Round</h2>
+          <h2 data-i18n="configure_round">Configure Round</h2>
 
           <div class="config-section">
-            <div class="config-label">Categories <span class="config-hint">(select one or more)</span></div>
+            <div class="config-label"><span data-i18n="categories_label">Categories</span> <span class="config-hint" data-i18n="select_hint">(select one or more)</span></div>
             <div class="checkbox-grid" id="category-checkboxes"></div>
           </div>
 
           <div class="config-section">
-            <div class="config-label">Question Type</div>
+            <div class="config-label" data-i18n="question_type">Question Type</div>
             <div class="radio-group" id="type-radios"></div>
           </div>
 
           <div class="config-match-count" id="match-count">— questions selected</div>
 
           <div class="config-section">
-            <div class="config-label">Points</div>
+            <div class="config-label" data-i18n="points_label">Points</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="pts-correct">Correct / Closest</label>
+                <label for="pts-correct" data-i18n="correct_closest">Correct / Closest</label>
                 <input type="number" id="pts-correct" min="0" value="1">
               </div>
               <div class="points-field">
-                <label for="pts-bonus">Fastest bonus</label>
+                <label for="pts-bonus" data-i18n="fastest_bonus">Fastest bonus</label>
                 <input type="number" id="pts-bonus" min="0" value="1">
               </div>
               <div class="points-field">
-                <label for="pts-special">Sole correct / Precise</label>
+                <label for="pts-special" data-i18n="sole_correct_pts">Sole correct / Precise</label>
                 <input type="number" id="pts-special" min="0" value="2">
               </div>
             </div>
           </div>
 
           <div class="config-section">
-            <div class="config-label">Time limit</div>
+            <div class="config-label" data-i18n="time_limit_label">Time limit</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="time-limit">Seconds per question</label>
+                <label for="time-limit" data-i18n="seconds_per_q">Seconds per question</label>
                 <input type="number" id="time-limit" min="5" max="300" value="20">
               </div>
             </div>
           </div>
 
           <div class="config-section">
-            <div class="config-label">Host</div>
+            <div class="config-label" data-i18n="host_label">Host</div>
             <label class="checkbox-label" id="host-plays-label">
               <input type="checkbox" id="host-plays-toggle">
               <span class="cat-icon">🎮</span>
-              <span>I'm playing too</span>
+              <span data-i18n="playing_too">I'm playing too</span>
             </label>
-            <input type="text" id="host-player-name" class="text-input hidden" placeholder="Your team name" maxlength="30" style="margin-top:0.5rem">
+            <input type="text" id="host-player-name" class="text-input hidden" data-i18n-placeholder="host_name_ph" placeholder="Your team name" maxlength="30" style="margin-top:0.5rem">
           </div>
 
-          <button class="btn btn-primary btn-lg" id="start-btn" disabled>
+          <button class="btn btn-primary btn-lg" id="start-btn" disabled data-i18n="start_game">
             Start Game
           </button>
-          <p class="hint" id="start-hint">Need at least 1 team to start</p>
+          <p class="hint" id="start-hint" data-i18n="need_team_hint">Need at least 1 team to start</p>
         </div>
       </div>
     </div>
@@ -128,29 +132,29 @@
           </div>
           <!-- Shown in playing mode after answers are sent to players -->
           <div id="host-answer-area" class="host-answer-area hidden">
-            <div class="host-answer-label">Your answer</div>
+            <div class="host-answer-label" data-i18n="your_answer_label">Your answer</div>
             <div id="host-answer-options"></div>
             <div class="host-answer-feedback hidden" id="host-answer-feedback"></div>
           </div>
         </div>
         <div class="correct-answer-reveal hidden" id="correct-reveal">
-          <div class="correct-label">Correct Answer</div>
+          <div class="correct-label" data-i18n="correct_answer_label">Correct Answer</div>
           <div class="correct-value" id="correct-value"></div>
         </div>
         <div class="host-distribution hidden" id="host-distribution"></div>
         <div class="host-controls">
-          <button class="btn btn-secondary" id="btn-send-question">Send Question to Players →</button>
-          <button class="btn btn-secondary hidden" id="btn-replace">Replace Question ↺</button>
-          <button class="btn btn-warning hidden" id="btn-show-answers">Show Answer Options →</button>
-<button class="btn btn-primary hidden" id="btn-next">Next Question →</button>
-          <button class="btn btn-warning hidden" id="btn-end-round">End Round →</button>
-          <button class="btn btn-danger" id="btn-end">End Game</button>
+          <button class="btn btn-secondary" id="btn-send-question" data-i18n="send_question_btn">Send Question to Players →</button>
+          <button class="btn btn-secondary hidden" id="btn-replace" data-i18n="replace_btn">Replace Question ↺</button>
+          <button class="btn btn-warning hidden" id="btn-show-answers" data-i18n="show_answers_btn">Show Answer Options →</button>
+          <button class="btn btn-primary hidden" id="btn-next" data-i18n="next_question_btn">Next Question →</button>
+          <button class="btn btn-warning hidden" id="btn-end-round" data-i18n="end_round_btn">End Round →</button>
+          <button class="btn btn-danger" id="btn-end" data-i18n="end_game_btn">End Game</button>
         </div>
       </div>
       <div class="game-right">
-        <h3 class="section-label">Scoreboard</h3>
+        <h3 class="section-label" data-i18n="scoreboard_label">Scoreboard</h3>
         <div class="scoreboard" id="scoreboard"></div>
-        <h3 class="section-label" style="margin-top:1.5rem">Answers</h3>
+        <h3 class="section-label" style="margin-top:1.5rem" data-i18n="answers_label">Answers</h3>
         <div class="answers-log" id="answers-log"></div>
       </div>
     </div>
@@ -161,56 +165,56 @@
     <div class="round-over-layout">
       <div class="round-over-left">
         <div class="round-badge" id="round-over-badge">Round 1 Complete!</div>
-        <h3 class="section-label" style="margin-top:1.5rem">Standings</h3>
+        <h3 class="section-label" style="margin-top:1.5rem" data-i18n="scoreboard_label">Standings</h3>
         <div class="scoreboard" id="round-over-scoreboard"></div>
       </div>
       <div class="round-over-right">
         <div class="config-panel" id="roundover-config">
-          <h2>Next Round</h2>
+          <h2 data-i18n="next_round_header">Next Round</h2>
 
           <div class="config-section">
-            <div class="config-label">Categories</div>
+            <div class="config-label" data-i18n="categories_label">Categories</div>
             <div class="checkbox-grid" id="ro-category-checkboxes"></div>
           </div>
 
           <div class="config-section">
-            <div class="config-label">Question Type</div>
+            <div class="config-label" data-i18n="question_type">Question Type</div>
             <div class="radio-group" id="ro-type-radios"></div>
           </div>
 
           <div class="config-match-count" id="ro-match-count">— questions selected</div>
 
           <div class="config-section">
-            <div class="config-label">Points</div>
+            <div class="config-label" data-i18n="points_label">Points</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="ro-pts-correct">Correct / Closest</label>
+                <label for="ro-pts-correct" data-i18n="correct_closest">Correct / Closest</label>
                 <input type="number" id="ro-pts-correct" min="0" value="1">
               </div>
               <div class="points-field">
-                <label for="ro-pts-bonus">Fastest bonus</label>
+                <label for="ro-pts-bonus" data-i18n="fastest_bonus">Fastest bonus</label>
                 <input type="number" id="ro-pts-bonus" min="0" value="1">
               </div>
               <div class="points-field">
-                <label for="ro-pts-special">Sole correct / Precise</label>
+                <label for="ro-pts-special" data-i18n="sole_correct_pts">Sole correct / Precise</label>
                 <input type="number" id="ro-pts-special" min="0" value="2">
               </div>
             </div>
           </div>
 
           <div class="config-section">
-            <div class="config-label">Time limit</div>
+            <div class="config-label" data-i18n="time_limit_label">Time limit</div>
             <div class="points-row">
               <div class="points-field">
-                <label for="ro-time-limit">Seconds per question</label>
+                <label for="ro-time-limit" data-i18n="seconds_per_q">Seconds per question</label>
                 <input type="number" id="ro-time-limit" min="5" max="300" value="20">
               </div>
             </div>
           </div>
 
-          <button class="btn btn-secondary btn-lg" id="btn-show-scoreboard">Show Scoreboard to Players</button>
-          <button class="btn btn-primary btn-lg" id="btn-next-round" style="margin-top:0.5rem">Start Next Round</button>
-          <button class="btn btn-danger" id="btn-final-end" style="margin-top:0.5rem">End Game &amp; Final Results</button>
+          <button class="btn btn-secondary btn-lg" id="btn-show-scoreboard" data-i18n="show_scoreboard_btn">Show Scoreboard to Players</button>
+          <button class="btn btn-primary btn-lg" id="btn-next-round" style="margin-top:0.5rem" data-i18n="next_round_btn">Start Next Round</button>
+          <button class="btn btn-danger" id="btn-final-end" style="margin-top:0.5rem" data-i18n="final_end_btn">End Game &amp; Final Results</button>
         </div>
       </div>
     </div>
@@ -220,9 +224,9 @@
   <div id="screen-gameover" class="screen">
     <div class="gameover-container">
       <div class="trophy">🏆</div>
-      <h1>Game Over!</h1>
+      <h1 data-i18n="game_over">Game Over!</h1>
       <div class="final-podium" id="final-podium"></div>
-      <button class="btn btn-secondary" onclick="location.href='/'">New Game</button>
+      <button class="btn btn-secondary" id="new-game-btn" data-i18n="new_game_btn" onclick="location.href='/'">New Game</button>
     </div>
   </div>
 
@@ -235,7 +239,7 @@
       </div>
       <div class="buzz-team-name" id="buzz-team-name"></div>
       <div class="buzz-points" id="buzz-points"></div>
-      <div class="buzz-label">First correct!</div>
+      <div class="buzz-label" data-i18n="first_correct_label">First correct!</div>
     </div>
   </div>
 
@@ -243,9 +247,9 @@
   <div id="lone-hero-overlay" class="special-overlay hidden">
     <div class="special-content">
       <div class="special-icon">🦸</div>
-      <div class="special-title">Solo Correct!</div>
+      <div class="special-title" data-i18n="solo_correct_title_h">Solo Correct!</div>
       <div class="special-team" id="lone-hero-team"></div>
-      <div class="special-subtitle">The only team who got it right</div>
+      <div class="special-subtitle" data-i18n="only_team_right">The only team who got it right</div>
       <div class="special-points" id="lone-hero-points"></div>
     </div>
   </div>
@@ -254,15 +258,16 @@
   <div id="precise-overlay" class="special-overlay precise hidden">
     <div class="special-content">
       <div class="special-icon">🎯</div>
-      <div class="special-title">Spot On!</div>
+      <div class="special-title" data-i18n="spot_on_title_h">Spot On!</div>
       <div class="special-team" id="precise-team"></div>
-      <div class="special-subtitle">Within 2% of the correct answer</div>
+      <div class="special-subtitle" data-i18n="within_2pct">Within 2% of the correct answer</div>
       <div class="special-points" id="precise-points"></div>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/qrcode.min.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/sounds.js"></script>
   <script src="/js/host.js"></script>
 </body>

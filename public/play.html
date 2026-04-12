@@ -14,24 +14,24 @@
     <div class="join-container">
       <div class="logo-small-center">🎉 My Pub Quiz</div>
       <div class="game-code-display-sm">Game <strong id="join-code">------</strong></div>
-      <h2>Join the Game</h2>
-      <input type="text" id="team-name-input" placeholder="Your team name" maxlength="30" class="text-input">
-      <button class="btn btn-primary btn-lg" id="join-btn">Join Game</button>
+      <h2 data-i18n="join_title">Join the Game</h2>
+      <input type="text" id="team-name-input" data-i18n-placeholder="team_name_ph" placeholder="Your team name" maxlength="30" class="text-input">
+      <button class="btn btn-primary btn-lg" id="join-btn" data-i18n="join_game_btn">Join Game</button>
     </div>
   </div>
 
   <!-- Selfie Screen -->
   <div id="screen-selfie" class="screen play-screen">
     <div class="selfie-container">
-      <h2>Take a team photo! 📸</h2>
-      <p class="hint">When your team answers first, this photo shows on everyone's screen</p>
+      <h2 data-i18n="selfie_title">Take a team photo! 📸</h2>
+      <p class="hint" data-i18n="selfie_hint">When your team answers first, this photo shows on everyone's screen</p>
       <div class="selfie-preview-wrap">
         <img id="selfie-preview" src="" alt="" class="hidden">
         <div class="selfie-placeholder" id="selfie-placeholder">📷</div>
       </div>
       <input type="file" id="selfie-input" accept="image/*" capture="user" class="hidden">
-      <button class="btn btn-secondary" id="take-selfie-btn">Take Photo</button>
-      <button class="btn btn-primary btn-lg" id="selfie-done-btn">Continue →</button>
+      <button class="btn btn-secondary" id="take-selfie-btn" data-i18n="take_photo">Take Photo</button>
+      <button class="btn btn-primary btn-lg" id="selfie-done-btn" data-i18n="continue_btn">Continue →</button>
     </div>
   </div>
 
@@ -42,7 +42,7 @@
         <div class="lobby-logo">🎉 MyPubQuiz</div>
         <div class="lobby-status-line">
           <span class="lobby-pulse-dot"></span>
-          <span id="lobby-status-text">Waiting for host to start...</span>
+          <span id="lobby-status-text" data-i18n="lobby_waiting">Waiting for host to start...</span>
         </div>
       </div>
 
@@ -52,14 +52,14 @@
           <span id="waiting-initials"></span>
         </div>
         <div class="lobby-your-info">
-          <div class="lobby-your-label">You're in!</div>
+          <div class="lobby-your-label" data-i18n="youre_in">You're in!</div>
           <div class="lobby-your-name" id="waiting-team-name"></div>
         </div>
       </div>
 
       <div class="lobby-teams-section">
         <div class="lobby-teams-header">
-          <span class="lobby-teams-title">Teams joined</span>
+          <span class="lobby-teams-title" data-i18n="teams_joined">Teams joined</span>
           <span class="lobby-teams-count" id="lobby-teams-count">0</span>
         </div>
         <div class="lobby-teams-grid" id="teams-in-lobby"></div>
@@ -96,10 +96,10 @@
       <div class="play-timer-bar"><div class="play-timer-fill" id="est-timer-fill"></div></div>
       <h2 class="play-question-text" id="est-question-text"></h2>
       <div class="estimation-input-wrap">
-        <input type="number" id="est-input" class="estimation-input" placeholder="Your estimate...">
+        <input type="number" id="est-input" class="estimation-input" data-i18n-placeholder="est_placeholder" placeholder="Your estimate...">
         <span class="estimation-unit" id="est-unit"></span>
       </div>
-      <button class="btn btn-primary btn-lg" id="est-submit-btn">Submit</button>
+      <button class="btn btn-primary btn-lg" id="est-submit-btn" data-i18n="submit_btn">Submit</button>
       <div class="est-feedback hidden" id="est-feedback"></div>
     </div>
   </div>
@@ -115,11 +115,11 @@
       <h2 class="play-question-text" id="wo-question-text"></h2>
       <div class="word-order-area">
         <div class="word-drop-zone" id="word-drop-zone">
-          <p class="drop-hint">Drag words here in order →</p>
+          <p class="drop-hint" data-i18n="drag_hint">Drag words here in order →</p>
         </div>
         <div class="word-chips" id="word-chips"></div>
       </div>
-      <button class="btn btn-primary btn-lg" id="wo-submit-btn">Submit Order</button>
+      <button class="btn btn-primary btn-lg" id="wo-submit-btn" data-i18n="submit_order">Submit Order</button>
       <div class="wo-feedback hidden" id="wo-feedback"></div>
     </div>
   </div>
@@ -142,7 +142,7 @@
       <div class="round-over-scores" id="round-over-scores-play"></div>
       <div class="waiting-pulse" style="margin-top:1.5rem">
         <div class="pulse-dot"></div>
-        <p>Waiting for host to select next round...</p>
+        <p data-i18n="round_waiting">Waiting for host to select next round...</p>
       </div>
     </div>
   </div>
@@ -151,7 +151,7 @@
   <div id="screen-gameover-play" class="screen play-screen">
     <div class="gameover-play-container">
       <div class="trophy">🏆</div>
-      <h1>Game Over!</h1>
+      <h1 data-i18n="game_over">Game Over!</h1>
       <div class="gameover-rank-badge hidden" id="gameover-rank-badge"></div>
       <div class="gameover-score-display hidden" id="gameover-score-display"></div>
       <div class="final-scores" id="final-scores-play"></div>
@@ -167,7 +167,7 @@
       </div>
       <div class="buzz-team-name" id="play-buzz-team-name"></div>
       <div class="buzz-points" id="play-buzz-points"></div>
-      <div class="buzz-label">First correct! ⚡</div>
+      <div class="buzz-label" data-i18n="first_correct_label">First correct! ⚡</div>
     </div>
   </div>
 
@@ -175,9 +175,9 @@
   <div id="play-lone-hero-overlay" class="special-overlay hidden">
     <div class="special-content">
       <div class="special-icon">🦸</div>
-      <div class="special-title">Solo Correct!</div>
+      <div class="special-title" data-i18n="solo_correct_title">Solo Correct!</div>
       <div class="special-team" id="play-lone-hero-team"></div>
-      <div class="special-subtitle">The only team who got it right</div>
+      <div class="special-subtitle" data-i18n="solo_subtitle">The only team who got it right</div>
       <div class="special-points" id="play-lone-hero-points"></div>
     </div>
   </div>
@@ -186,17 +186,18 @@
   <div id="play-precise-overlay" class="special-overlay precise hidden">
     <div class="special-content">
       <div class="special-icon">🎯</div>
-      <div class="special-title">Spot On!</div>
+      <div class="special-title" data-i18n="spot_on_title">Spot On!</div>
       <div class="special-team" id="play-precise-team"></div>
-      <div class="special-subtitle">Within 2% of the correct answer</div>
+      <div class="special-subtitle" data-i18n="precise_subtitle">Within 2% of the correct answer</div>
       <div class="special-points" id="play-precise-points"></div>
     </div>
   </div>
 
   <!-- Reconnecting banner -->
-  <div id="reconnect-banner" class="reconnect-banner hidden">Reconnecting...</div>
+  <div id="reconnect-banner" class="reconnect-banner hidden" data-i18n="reconnecting">Reconnecting...</div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/sounds.js"></script>
   <script src="/js/play.js"></script>
 </body>

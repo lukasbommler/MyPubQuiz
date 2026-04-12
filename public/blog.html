@@ -170,8 +170,14 @@
   </style>
 </head>
 <body class="landing-body">
+  <div class="lang-bar-top">
+    <div class="lang-bar">
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">🇬🇧 EN</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')">🇩🇪 DE</button>
+    </div>
+  </div>
   <div class="content-page">
-    <a class="page-back" href="/">← Zurück zur Startseite</a>
+    <a class="page-back" href="/" data-i18n="back_to_home">← Zurück zur Startseite</a>
     <h1 class="page-title">Blog</h1>
     <p class="page-subtitle">Tipps, Ideen und Neuigkeiten rund um MyPubQuiz und Pub Quiz.</p>
 
@@ -268,14 +274,16 @@
 
   <footer class="site-footer">
     <nav class="footer-nav">
-      <a href="/faq.html">FAQ</a>
-      <a href="/blog.html">Blog</a>
-      <a href="/impressum.html">Impressum</a>
-      <a href="/datenschutz.html">Datenschutz</a>
+      <a href="/faq.html" data-i18n="footer_faq">FAQ</a>
+      <a href="/blog.html" data-i18n="footer_blog">Blog</a>
+      <a href="/impressum.html" data-i18n="footer_impressum">Impressum</a>
+      <a href="/datenschutz.html" data-i18n="footer_datenschutz">Datenschutz</a>
     </nav>
     <span class="footer-copy">© 2025 MyPubQuiz</span>
   </footer>
 
+  <script src="/js/i18n.js"></script>
+  <script>applyI18n();</script>
   <script>
     const articles = {
       a1: {

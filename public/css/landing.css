@@ -1,3 +1,21 @@
+/* ── Language bar (top-right of landing page) ────────────────────────────── */
+.lang-bar-top {
+  position: fixed;
+  top: 1rem;
+  right: 1.25rem;
+  z-index: 100;
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(15,15,26,0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.3rem;
+}
+/* On the landing page the .lang-bar inside .lang-bar-top already gets
+   the right sizing from main.css — just override button font-size for labels */
+.lang-bar-top .lang-btn { font-size: 0.82rem; padding: 0.3rem 0.65rem; }
+
 /* ── Landing body ─────────────────────────────────────────────────────────── */
 body.landing-body {
   min-height: 100vh;

@@ -1,3 +1,7 @@
+// ── i18n ──────────────────────────────────────────────────────────────────────
+// i18n.js is loaded before play.js — applyI18n() runs on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', applyI18n);
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 const code = location.pathname.split('/').pop();
 const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity });
@@ -94,33 +98,76 @@ document.getElementById('selfie-input').addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-document.getElementById('selfie-done-btn').addEventListener('click', async () => {
+document.getElementById('selfie-done-btn').addEventListener('click', () => {
+  // Navigate to lobby immediately — don't make the player wait for the upload
+  showWaiting();
+
   const fileInput = document.getElementById('selfie-input');
   if (fileInput.files.length > 0 && myTeam) {
-    try {
-      const base64 = await fileToBase64(fileInput.files[0]);
-      const res = await fetch(`/api/team/${myTeam.id}/selfie`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64 })
-      });
-      const data = await res.json();
-      if (data.selfieUrl) myTeam.selfie = data.selfieUrl;
-    } catch (e) { /* non-critical */ }
+    // Upload in the background after navigating
+    resizeAndUploadSelfie(fileInput.files[0]);
   }
-  showWaiting();
 });
 
-function fileToBase64(file) {
+async function resizeAndUploadSelfie(file) {
+  try {
+    // Resize to max 800×800 at 80% JPEG quality — keeps payload well under 1 MB
+    const base64 = await resizeImage(file, 800, 800, 0.8);
+    const res = await fetch(`/api/team/${myTeam.id}/selfie`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64 })
+    });
+    const data = await res.json();
+    if (!data.selfieUrl) return;
+
+    myTeam.selfie = data.selfieUrl;
+
+    // Update the waiting-screen avatar
+    const waitingImg = document.getElementById('waiting-selfie');
+    const waitingInits = document.getElementById('waiting-initials');
+    if (waitingImg) {
+      waitingImg.src = data.selfieUrl;
+      waitingImg.classList.remove('hidden');
+      if (waitingInits) waitingInits.classList.add('hidden');
+    }
+
+    // Update own chip in the lobby teams grid
+    const myChipAvatar = document.querySelector(`[data-chip="${myTeam.id}"] .chip-avatar`);
+    if (myChipAvatar) {
+      myChipAvatar.innerHTML = `<img src="${escapeHtml(data.selfieUrl)}" alt="">`;
+    }
+  } catch (e) { /* non-critical — selfie is optional */ }
+}
+
+function resizeImage(file, maxW, maxH, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
     reader.onerror = reject;
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxW || height > maxH) {
+          const ratio = Math.min(maxW / width, maxH / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   });
 }
 
 function showWaiting(statusText) {
+  if (!myTeam) return;
   showScreen('screen-waiting');
   const initials = myTeam.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('waiting-team-name').textContent = myTeam.name;
@@ -160,7 +207,7 @@ socket.on('team-arrived', ({ team, totalTeams }) => {
 // ── Round started ─────────────────────────────────────────────────────────────
 socket.on('round-started', ({ roundNum, total }) => {
   roundEnded = false;
-  if (myTeam) showWaiting(`Round ${roundNum} starting — ${total} questions. Get ready!`);
+  if (myTeam) showWaiting(t('round_starting', { num: roundNum, total }));
 });
 
 // ── Round over ────────────────────────────────────────────────────────────────
@@ -176,23 +223,23 @@ socket.on('round-over', ({ scores, roundNum }) => {
 
 function showRoundOver(scores, roundNum) {
   showScreen('screen-round-over-play');
-  document.getElementById('round-complete-badge').textContent = `Round ${roundNum} complete!`;
-  document.getElementById('round-over-scores-play').innerHTML = (scores || []).map((t, i) => `
-    <div class="reveal-score-row ${t.id === myTeamId ? 'my-team' : ''}">
+  document.getElementById('round-complete-badge').textContent = t('round_complete_badge', { num: roundNum });
+  document.getElementById('round-over-scores-play').innerHTML = (scores || []).map((team, i) => `
+    <div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
       <span class="reveal-score-rank">${rankEmoji(i)}</span>
-      <span class="reveal-score-name">${escapeHtml(t.name)}</span>
-      <span class="reveal-score-pts">${t.score} pts</span>
+      <span class="reveal-score-name">${escapeHtml(team.name)}</span>
+      <span class="reveal-score-pts">${team.score} pts</span>
     </div>`).join('');
 }
 
 socket.on('scoreboard-shown', ({ scores, roundNum }) => {
   showScreen('screen-round-over-play');
-  document.getElementById('round-complete-badge').textContent = `Round ${roundNum} — Standings`;
-  document.getElementById('round-over-scores-play').innerHTML = scores.map((t, i) => `
-    <div class="reveal-score-row ${t.id === myTeamId ? 'my-team' : ''}">
+  document.getElementById('round-complete-badge').textContent = t('round_standings', { num: roundNum });
+  document.getElementById('round-over-scores-play').innerHTML = scores.map((team, i) => `
+    <div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
       <span class="reveal-score-rank">${rankEmoji(i)}</span>
-      <span class="reveal-score-name">${escapeHtml(t.name)}</span>
-      <span class="reveal-score-pts">${t.score} pts</span>
+      <span class="reveal-score-name">${escapeHtml(team.name)}</span>
+      <span class="reveal-score-pts">${team.score} pts</span>
     </div>`).join('');
 });
 
@@ -308,11 +355,11 @@ socket.on('game-over', ({ scores }) => {
   scoreDisplay.textContent = `${myScore} pts`;
   scoreDisplay.classList.remove('hidden');
 
-  document.getElementById('final-scores-play').innerHTML = scores.map((t, i) => `
-    <div class="final-score-row ${i === 0 ? 'winner' : ''} ${t.id === myTeamId ? 'my-team' : ''}">
+  document.getElementById('final-scores-play').innerHTML = scores.map((team, i) => `
+    <div class="final-score-row ${i === 0 ? 'winner' : ''} ${team.id === myTeamId ? 'my-team' : ''}">
       <span class="final-score-rank">${rankEmoji(i)}</span>
-      <span class="final-score-name">${escapeHtml(t.name)}</span>
-      <span class="final-score-pts">${t.score} pts</span>
+      <span class="final-score-name">${escapeHtml(team.name)}</span>
+      <span class="final-score-pts">${team.score} pts</span>
     </div>
   `).join('');
 
@@ -359,7 +406,7 @@ function setupMCScreen(q, showAnswers) {
   const letters = ['A', 'B', 'C', 'D'];
 
   if (!showAnswers) {
-    container.innerHTML = `<div class="waiting-answers-hint">Answer options coming soon...</div>`;
+    container.innerHTML = `<div class="waiting-answers-hint">${t('waiting_answers')}</div>`;
     return;
   }
 
@@ -401,7 +448,7 @@ function setupEstimationScreen(q, showAnswers) {
   if (!showAnswers) {
     wrap.style.display = 'none';
     submitBtn.style.display = 'none';
-    document.getElementById('est-feedback').textContent = 'Answer input coming soon...';
+    document.getElementById('est-feedback').textContent = t('waiting_input');
     document.getElementById('est-feedback').classList.remove('hidden');
     document.getElementById('est-feedback').className = 'est-feedback';
   } else {
@@ -418,7 +465,7 @@ document.getElementById('est-submit-btn').addEventListener('click', () => {
   answered = true;
   document.getElementById('est-submit-btn').disabled = true;
   submitAnswer(val);
-  showLockedIn('est-feedback', `Submitted: ${val} ${currentQuestion?.unit || ''}`);
+  showLockedIn('est-feedback', t('submitted_play', { val, unit: currentQuestion?.unit || '' }));
   playSound('submit');
 });
 
@@ -438,13 +485,13 @@ function setupWordOrderScreen(q, showAnswers) {
 
   if (!showAnswers) {
     chipsContainer.innerHTML = '';
-    dropZone.innerHTML = '<p class="drop-hint">Words coming soon...</p>';
+    dropZone.innerHTML = `<p class="drop-hint">${t('waiting_words')}</p>`;
     document.getElementById('wo-submit-btn').style.display = 'none';
     return;
   }
 
   document.getElementById('wo-submit-btn').style.display = '';
-  dropZone.innerHTML = '<p class="drop-hint">Tap words to add them in order</p>';
+  dropZone.innerHTML = `<p class="drop-hint">${t('tap_words_play')}</p>`;
 
   const shuffled = [...q.words.keys()].sort(() => Math.random() - 0.5);
   chipsContainer.innerHTML = '';
@@ -476,7 +523,7 @@ document.getElementById('wo-submit-btn').addEventListener('click', () => {
   if (answered) return;
   if (wordOrder.length !== currentQuestion?.words?.length) {
     const fb = document.getElementById('wo-feedback');
-    fb.textContent = 'Place all words before submitting!';
+    fb.textContent = t('place_all_words');
     fb.className = 'wo-feedback wrong-fb';
     fb.classList.remove('hidden');
     return;
@@ -495,7 +542,7 @@ function showLockedIn(fbId, text) {
   fbIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      el.textContent = text || '✓ Answer locked in! Waiting for results...';
+      el.textContent = text || t('locked_in_play');
       el.className = el.className.replace(/correct-fb|wrong-fb|correct_fb/g, '').trim();
       el.style.background = 'rgba(124,58,237,0.15)';
       el.style.color = 'var(--accent2)';
@@ -543,17 +590,17 @@ function showReveal(correct, scores, estimationWinnerId, distribution) {
       wasCorrect = estimationWinnerId != null && estimationWinnerId === myTeamId;
     }
 
-    resultEl.textContent = answered ? (wasCorrect ? '✓ Correct!' : '✗ Wrong') : '— Not answered';
+    resultEl.textContent = answered ? (wasCorrect ? t('correct_str') : t('wrong_str')) : t('not_answered');
     resultEl.className = `reveal-result ${wasCorrect ? 'win' : 'lose'}`;
     if (answered) wasCorrect ? Sounds.correct() : Sounds.wrong();
 
     const correctAnswerEl = document.getElementById('reveal-correct-answer');
     if (currentQuestion?.type === 'multiple_choice') {
-      correctAnswerEl.textContent = `Correct: ${currentQuestion.answers[correct]}`;
+      correctAnswerEl.textContent = t('correct_label', { answer: currentQuestion.answers[correct] });
     } else if (currentQuestion?.type === 'estimation') {
-      correctAnswerEl.textContent = `Answer: ${correct} ${currentQuestion.unit || ''}`;
+      correctAnswerEl.textContent = t('answer_label', { value: correct, unit: currentQuestion.unit || '' });
     } else if (currentQuestion?.type === 'word_order') {
-      correctAnswerEl.textContent = `Order: ${correct.map(i => currentQuestion.words[i]).join(' → ')}`;
+      correctAnswerEl.textContent = t('order_label', { order: correct.map(i => currentQuestion.words[i]).join(' → ') });
     }
 
     document.getElementById('reveal-points').textContent = '';
@@ -627,8 +674,8 @@ function renderDistribution(dist) {
           <div class="dist-wo-wrong"   style="width:${100 - pct}%"></div>
         </div>
         <div class="dist-wo-labels">
-          <span class="dist-wo-c">✓ ${dist.correct} got it right</span>
-          <span class="dist-wo-w">✗ ${dist.wrong} wrong</span>
+          <span class="dist-wo-c">${t('got_right', { n: dist.correct })}</span>
+          <span class="dist-wo-w">${t('got_wrong', { n: dist.wrong })}</span>
         </div>
       </div>`;
   }

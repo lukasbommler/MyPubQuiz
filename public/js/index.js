@@ -1,8 +1,11 @@
+// Apply translations immediately on load
+applyI18n();
+
 // ── Create Game ───────────────────────────────────────────────────────────────
 async function createGame() {
-  const btn = document.getElementById('create-btn');
+  const btn  = document.getElementById('create-btn');
   const btn2 = document.getElementById('create-btn-2');
-  [btn, btn2].forEach(b => { if (b) { b.disabled = true; b.textContent = 'Creating...'; } });
+  [btn, btn2].forEach(b => { if (b) { b.disabled = true; b.textContent = t('creating'); } });
 
   try {
     const res = await fetch('/api/event/create', { method: 'POST' });
@@ -29,7 +32,7 @@ async function createGame() {
   } catch (e) {
     alert('Error creating game: ' + e.message);
   } finally {
-    [btn, btn2].forEach(b => { if (b) { b.disabled = false; b.textContent = 'Start a Game →'; } });
+    [btn, btn2].forEach(b => { if (b) { b.disabled = false; b.textContent = t('hero_cta'); } });
   }
 }
 
@@ -48,8 +51,8 @@ document.getElementById('created-overlay').addEventListener('click', (e) => {
 document.getElementById('copy-btn').addEventListener('click', () => {
   navigator.clipboard.writeText(document.getElementById('share-link').value);
   const btn = document.getElementById('copy-btn');
-  btn.textContent = 'Copied!';
-  setTimeout(() => btn.textContent = 'Copy Link', 2000);
+  btn.textContent = t('copied_btn');
+  setTimeout(() => { btn.textContent = t('copy_btn'); }, 2000);
 });
 
 // ── Join Game ─────────────────────────────────────────────────────────────────

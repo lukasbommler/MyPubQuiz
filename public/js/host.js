@@ -19,11 +19,18 @@ const CATEGORY_ICONS = {
   'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
   'Sports': '⚽', 'History': '📜', 'Food & Drink': '🍽️'
 };
-const TYPE_LABELS = {
-  'multiple_choice': 'Multiple Choice',
-  'word_order': 'Word Ordering',
-  'estimation': 'Estimation'
-};
+
+// TYPE_LABELS are built dynamically so they respect the active UI language
+function getTypeLabels() {
+  return {
+    'multiple_choice': t('type_multiple_choice'),
+    'word_order':      t('type_word_order'),
+    'estimation':      t('type_estimation'),
+  };
+}
+
+// Apply translations and set active lang button on load
+document.addEventListener('DOMContentLoaded', applyI18n);
 
 // ── Screens ───────────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -61,15 +68,16 @@ function buildConfigPanel(checkboxesId, radiosId, countId, defaultCats, defaultT
   `).join('');
 
   // Type radios
-  document.getElementById(radiosId).innerHTML = types.map(t => `
+  const typeLabels = getTypeLabels();
+  document.getElementById(radiosId).innerHTML = types.map(tp => `
     <label class="radio-label">
-      <input type="radio" name="${radiosId}" class="type-radio" value="${t}" ${t === defaultType ? 'checked' : ''}>
-      <span>${TYPE_LABELS[t] || t}</span>
+      <input type="radio" name="${radiosId}" class="type-radio" value="${tp}" ${tp === defaultType ? 'checked' : ''}>
+      <span>${typeLabels[tp] || tp}</span>
     </label>
   `).join('') + `
     <label class="radio-label disabled-option">
       <input type="radio" disabled>
-      <span>Picture Puzzle <em>(coming soon)</em></span>
+      <span>Picture Puzzle <em>(${t('coming_soon')})</em></span>
     </label>
   `;
 
@@ -85,7 +93,10 @@ function updateCount(checkboxesId, radiosId, countId) {
   const typeEl = document.querySelector(`#${radiosId} .type-radio:checked`);
   const type = typeEl?.value;
   const count = allQuestions.filter(q => cats.includes(q.category) && q.type === type).length;
-  document.getElementById(countId).textContent = `${count} question${count !== 1 ? 's' : ''} match this selection`;
+  const countText = MPQ_LANG === 'de'
+    ? `${count} Frage${count !== 1 ? 'n' : ''} passen zur Auswahl`
+    : `${count} question${count !== 1 ? 's' : ''} match this selection`;
+  document.getElementById(countId).textContent = countText;
   return { cats, type, count };
 }
 
@@ -151,7 +162,7 @@ function restoreHostGame(rs) {
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
   document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
-  document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
+  document.getElementById('q-type-badge').textContent = getTypeLabels()[q.type] || q.type;
   document.getElementById('timer-fill').style.width = '100%';
   document.getElementById('timer-fill').className = 'timer-fill';
   document.getElementById('answers-log').innerHTML = '';
@@ -235,7 +246,7 @@ socket.on('host-team-created', ({ teamId }) => {
 document.getElementById('lobby-copy-btn').addEventListener('click', () => {
   navigator.clipboard.writeText(document.getElementById('lobby-share-link').value);
   const btn = document.getElementById('lobby-copy-btn');
-  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000);
+  btn.textContent = t('copied_btn'); setTimeout(() => { btn.textContent = t('copy_host_btn'); }, 2000);
 });
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
@@ -337,7 +348,7 @@ socket.on('question-host', (q) => {
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
   document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
-  document.getElementById('q-type-badge').textContent = TYPE_LABELS[q.type] || q.type;
+  document.getElementById('q-type-badge').textContent = getTypeLabels()[q.type] || q.type;
   document.getElementById('answers-log').innerHTML = '';
   document.getElementById('host-distribution').classList.add('hidden');
   document.getElementById('host-distribution').innerHTML = '';
@@ -351,7 +362,7 @@ socket.on('question-host', (q) => {
 
   if (hostPlaysMode) {
     // Hide question content until it's sent to players
-    document.getElementById('question-text').textContent = '⏳ Question ready — send it when you\'re ready';
+    document.getElementById('question-text').textContent = MPQ_LANG === 'de' ? '⏳ Frage bereit — sende sie, wenn du bereit bist' : '⏳ Question ready — send it when you\'re ready';
   } else {
     renderQuestionPreview(q);
   }
@@ -403,7 +414,7 @@ function showHostAnswerOptions(q) {
         btn.classList.add('host-answer-selected');
         socket.emit('host-submit-answer', { code, answer: String(btn.dataset.index),
           timeTaken: Date.now() - hostAnswerStartTime });
-        showHostAnswerFeedback('✓ Locked in! Waiting for reveal...');
+        showHostAnswerFeedback(t('locked_in_host'));
       });
     });
 
@@ -422,15 +433,15 @@ function showHostAnswerOptions(q) {
       document.getElementById('host-est-submit').disabled = true;
       socket.emit('host-submit-answer', { code, answer: val,
         timeTaken: Date.now() - hostAnswerStartTime });
-      showHostAnswerFeedback(`✓ Submitted: ${val} ${q.unit || ''}`);
+      showHostAnswerFeedback(t('submitted_val', { val, unit: q.unit || '' }));
     });
 
   } else if (q.type === 'word_order') {
     let wordOrder = [];
     opts.innerHTML = `
-      <div class="host-wo-zone" id="host-wo-zone"><span class="wo-hint">Tap words to order them</span></div>
+      <div class="host-wo-zone" id="host-wo-zone"><span class="wo-hint">${t('tap_words')}</span></div>
       <div class="host-wo-chips" id="host-wo-chips"></div>
-      <button class="btn btn-primary" id="host-wo-submit" style="margin-top:0.5rem">Submit Order</button>`;
+      <button class="btn btn-primary" id="host-wo-submit" style="margin-top:0.5rem">${t('submit_order')}</button>`;
     const chipsEl = document.getElementById('host-wo-chips');
     const zoneEl  = document.getElementById('host-wo-zone');
 
@@ -462,7 +473,7 @@ function showHostAnswerOptions(q) {
       document.getElementById('host-wo-submit').disabled = true;
       socket.emit('host-submit-answer', { code, answer: JSON.stringify(wordOrder),
         timeTaken: Date.now() - hostAnswerStartTime });
-      showHostAnswerFeedback('✓ Order submitted!');
+      showHostAnswerFeedback(t('order_submitted'));
     });
   }
 }
@@ -569,7 +580,7 @@ function renderHostDistribution(dist) {
       <div class="host-dist-est-row ${s.value === dist.correctValue ? 'host-dist-correct' : ''}">
         <span>${escapeHtml(s.name)}</span>
         <span>${s.value} ${dist.unit}</span>
-      </div>`).join('') || '<span style="color:var(--text2);font-size:.85rem">No submissions</span>';
+      </div>`).join('') || `<span style="color:var(--text2);font-size:.85rem">${t('no_submissions')}</span>`;
   } else if (dist.type === 'word_order') {
     const pct = dist.total ? Math.round((dist.correct / dist.total) * 100) : 0;
     el.innerHTML = `<div class="host-dist-wo">
@@ -592,7 +603,7 @@ socket.on('round-over', ({ scores, roundNum }) => {
   stopTimer();
   lockLangSelect(false);
   showScreen('screen-round-over');
-  document.getElementById('round-over-badge').textContent = `Round ${roundNum} Complete!`;
+  document.getElementById('round-over-badge').textContent = t('round_complete', { num: roundNum });
   updateScoreboard('round-over-scoreboard', scores);
 
   // Build config panel for next round (same defaults)

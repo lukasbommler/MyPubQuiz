@@ -264,3 +264,30 @@ html, body {
   transition: border-color 0.15s;
 }
 .text-input:focus { border-color: var(--accent); }
+
+/* ── Language switcher ───────────────────────────────────────────────────── */
+.lang-bar {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.lang-btn {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.lang-btn:hover { background: var(--card); color: var(--text); }
+.lang-btn-active {
+  background: rgba(124,58,237,0.2);
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+/* Compact variant used in host header (flag only) */
+.lang-bar-compact .lang-btn { padding: 0.25rem 0.4rem; font-size: 1rem; }

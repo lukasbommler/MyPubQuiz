@@ -645,9 +645,18 @@ function doRevealAnswer(code) {
 function checkAllAnswered(code, qIndex) {
   const state = gameState[code];
   if (!state || state.currentStep !== 'answers-shown') return;
-  const totalTeams = db.getTeamsByEvent(code).length;
-  const answeredCount = db.getAnswersByQuestion(code, qIndex).length;
-  if (answeredCount >= totalTeams) {
+  // Exclude the host's own team from the required count — the host playing along
+  // shouldn't block early reveal when all player teams have already submitted.
+  const allTeams = db.getTeamsByEvent(code);
+  const playerTeams = state.hostTeamId
+    ? allTeams.filter(t => t.id !== state.hostTeamId)
+    : allTeams;
+  const totalTeams = playerTeams.length;
+  const allAnswers = db.getAnswersByQuestion(code, qIndex);
+  const playerAnswerCount = state.hostTeamId
+    ? allAnswers.filter(a => a.team_id !== state.hostTeamId).length
+    : allAnswers.length;
+  if (playerAnswerCount >= totalTeams) {
     // Cancel the scheduled timer and reveal immediately
     if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
     doRevealAnswer(code);
