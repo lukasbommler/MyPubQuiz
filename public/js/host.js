@@ -543,19 +543,11 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   renderHostDistribution(distribution);
 
   if (hostPlaysMode && currentQuestion) {
-    // Now show the full answer preview with correct answer highlighted
+    // Show the full answer preview with correct answer highlighted
     renderQuestionPreview(currentQuestion);
-    if (!hostAnswered) {
-      // Host ran out of time — hide the answer buttons so they don't look selected
-      document.getElementById('host-answer-area').classList.add('hidden');
-    } else {
-      // Mark host's own answer button as correct or wrong
-      document.querySelectorAll('.host-answer-btn').forEach(btn => {
-        const idx = parseInt(btn.dataset.index);
-        if (idx === correct) btn.classList.add('host-answer-correct');
-        else if (btn.classList.contains('host-answer-selected')) btn.classList.add('host-answer-wrong');
-      });
-    }
+    // Always hide the answer buttons on reveal — the correct answer is visible
+    // in answers-preview and correct-reveal, so the "Your Answer" section adds no value
+    document.getElementById('host-answer-area').classList.add('hidden');
   }
 });
 
