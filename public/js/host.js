@@ -50,7 +50,13 @@ function setStep(step) {
   if (step === 'idle')      { document.getElementById('btn-send-question').classList.remove('hidden'); document.getElementById('btn-replace').classList.remove('hidden'); }
   if (step === 'sent')      { document.getElementById('btn-show-answers').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); }
   if (step === 'answering') { document.getElementById('btn-end-round').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
-  if (step === 'revealed')  { document.getElementById('btn-next').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); stopTimer(); document.getElementById('correct-reveal').classList.remove('hidden'); }
+  if (step === 'revealed')  {
+    const isLastQuestion = currentQuestion && (currentQuestion.roundIndex + 1 >= currentQuestion.roundTotal);
+    if (!isLastQuestion) document.getElementById('btn-next').classList.remove('hidden');
+    document.getElementById('btn-end-round').classList.remove('hidden');
+    stopTimer();
+    document.getElementById('correct-reveal').classList.remove('hidden');
+  }
 }
 
 // ── Config panel ──────────────────────────────────────────────────────────────
@@ -401,10 +407,11 @@ function showHostAnswerOptions(q) {
   hostAnswerStartTime = Date.now();
 
   if (q.type === 'multiple_choice') {
-    opts.innerHTML = q.answers.map((a, i) => `
-      <button class="host-answer-btn" data-index="${i}">
-        <span class="answer-letter">${'ABCD'[i]}</span>
-        <span>${escapeHtml(a)}</span>
+    const shuffled = [...q.answers.keys()].sort(() => Math.random() - 0.5);
+    opts.innerHTML = shuffled.map((origIdx, pos) => `
+      <button class="host-answer-btn" data-index="${origIdx}">
+        <span class="answer-letter">${'ABCD'[pos]}</span>
+        <span>${escapeHtml(q.answers[origIdx])}</span>
       </button>`).join('');
     opts.querySelectorAll('.host-answer-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -547,12 +554,17 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   if (hostPlaysMode && currentQuestion) {
     // Now show the full answer preview with correct answer highlighted
     renderQuestionPreview(currentQuestion);
-    // Mark host's own answer button as correct or wrong
-    document.querySelectorAll('.host-answer-btn').forEach(btn => {
-      const idx = parseInt(btn.dataset.index);
-      if (idx === correct) btn.classList.add('host-answer-correct');
-      else if (btn.classList.contains('host-answer-selected')) btn.classList.add('host-answer-wrong');
-    });
+    if (!hostAnswered) {
+      // Host ran out of time — hide the answer buttons so they don't look selected
+      document.getElementById('host-answer-area').classList.add('hidden');
+    } else {
+      // Mark host's own answer button as correct or wrong
+      document.querySelectorAll('.host-answer-btn').forEach(btn => {
+        const idx = parseInt(btn.dataset.index);
+        if (idx === correct) btn.classList.add('host-answer-correct');
+        else if (btn.classList.contains('host-answer-selected')) btn.classList.add('host-answer-wrong');
+      });
+    }
   }
 });
 
@@ -596,7 +608,10 @@ socket.on('scores-updated', ({ scores }) => {
   updateScoreboard('scoreboard', scores);
   updateScoreboard('round-over-scoreboard', scores);
 });
-socket.on('first-correct', ({ team, points }) => showBuzz(team, points));
+socket.on('first-correct', ({ team, points, questionType }) => {
+  const label = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
+  showBuzz(team, points, label);
+});
 
 // ── Round over ────────────────────────────────────────────────────────────────
 socket.on('round-over', ({ scores, roundNum }) => {
@@ -703,10 +718,11 @@ function startTimer(seconds) {
 function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
 
 // ── Buzz ──────────────────────────────────────────────────────────────────────
-function showBuzz(team, points) {
+function showBuzz(team, points, label) {
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('buzz-team-name').textContent = team.name;
   document.getElementById('buzz-points').textContent = `+${points} pts`;
+  if (label) document.querySelector('#buzz-overlay .buzz-label').textContent = label;
   const img = document.getElementById('buzz-selfie');
   const init = document.getElementById('buzz-initials');
   if (team.selfie) { img.src = team.selfie; img.style.display = 'block'; init.textContent = ''; }

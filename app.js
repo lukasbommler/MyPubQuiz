@@ -557,14 +557,11 @@ function doRevealAnswer(code) {
         state.firstCorrectPoints = total;
         state.estimationWinnerId = estimationWinnerId;
 
-        // Precision bonus: winner's answer is within 2% of correct value
-        if (specialPts > 0 && q.correct_value !== 0) {
-          const pct = Math.abs(parseFloat(winner.answer) - q.correct_value) / Math.abs(q.correct_value);
-          if (pct <= 0.02) {
-            db.addScore(winner.team_id, specialPts);
-            state.preciseTeam = winnerTeam;
-            state.precisePoints = specialPts;
-          }
+        // Precision bonus: winner's answer must be exactly correct
+        if (specialPts > 0 && parseFloat(winner.answer) === q.correct_value) {
+          db.addScore(winner.team_id, specialPts);
+          state.preciseTeam = winnerTeam;
+          state.precisePoints = specialPts;
         }
       }
     }
@@ -616,8 +613,9 @@ function doRevealAnswer(code) {
   const buzzTeam = state.firstCorrectTeam;
   const buzzPoints = state.firstCorrectPoints;
   if (buzzTeam) {
+    const buzzType = q.type;
     setTimeout(() => {
-      io.to(`room:${code}`).emit('first-correct', { team: buzzTeam, points: buzzPoints });
+      io.to(`room:${code}`).emit('first-correct', { team: buzzTeam, points: buzzPoints, questionType: buzzType });
     }, 1500);
   }
 
@@ -642,19 +640,9 @@ function doRevealAnswer(code) {
 function checkAllAnswered(code, qIndex) {
   const state = gameState[code];
   if (!state || state.currentStep !== 'answers-shown') return;
-  // Exclude the host's own team from the required count — the host playing along
-  // shouldn't block early reveal when all player teams have already submitted.
   const allTeams = db.getTeamsByEvent(code);
-  const playerTeams = state.hostTeamId
-    ? allTeams.filter(t => t.id !== state.hostTeamId)
-    : allTeams;
-  const totalTeams = playerTeams.length;
   const allAnswers = db.getAnswersByQuestion(code, qIndex);
-  const playerAnswerCount = state.hostTeamId
-    ? allAnswers.filter(a => a.team_id !== state.hostTeamId).length
-    : allAnswers.length;
-  if (playerAnswerCount >= totalTeams) {
-    // Cancel the scheduled timer and reveal immediately
+  if (allAnswers.length >= allTeams.length) {
     if (state.autoRevealTimeout) { clearTimeout(state.autoRevealTimeout); state.autoRevealTimeout = null; }
     doRevealAnswer(code);
   }

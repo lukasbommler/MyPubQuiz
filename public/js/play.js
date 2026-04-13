@@ -249,6 +249,7 @@ socket.on('question-text', (q) => {
   answered = false;
   wordOrder = [];
   myAnswerCorrect = false;
+  roundEnded = false; // clear stale flag so reconnect doesn't block the countdown callback
   showQuestionText(q);
 });
 
@@ -318,8 +319,9 @@ socket.on('answer-revealed', ({ correct, scores, estimationWinnerId, distributio
 });
 
 // ── First correct flash (after reveal) ───────────────────────────────────────
-socket.on('first-correct', ({ team, points }) => {
-  showBuzz(team, points);
+socket.on('first-correct', ({ team, points, questionType }) => {
+  const label = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
+  showBuzz(team, points, label);
   Sounds.buzz();
 });
 
@@ -682,11 +684,12 @@ function renderDistribution(dist) {
 }
 
 // ── Buzz overlay ──────────────────────────────────────────────────────────────
-function showBuzz(team, points) {
+function showBuzz(team, points, label) {
   const overlay = document.getElementById('play-buzz-overlay');
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('play-buzz-team-name').textContent = team.name;
   document.getElementById('play-buzz-points').textContent = `+${points} pts`;
+  if (label) document.querySelector('#play-buzz-overlay .buzz-label').textContent = label;
   const selfieImg = document.getElementById('play-buzz-selfie');
   const initialsEl = document.getElementById('play-buzz-initials');
   if (team.selfie) { selfieImg.src = team.selfie; selfieImg.style.display = 'block'; initialsEl.textContent = ''; }

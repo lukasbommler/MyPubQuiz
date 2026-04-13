@@ -62,9 +62,10 @@
       submit_order:    'Submit Order',
       drag_hint:       'Drag words here in order →',
 
-      first_correct_label: 'First correct! ⚡',
+      first_correct_label:   'First correct! ⚡',
+      best_estimate_label:   'Best estimate! 🎯',
       solo_subtitle:       'The only team who got it right',
-      precise_subtitle:    'Within 2% of the correct answer',
+      precise_subtitle:    'Exactly correct!',
       solo_correct_title:  'Solo Correct!',
       spot_on_title:       'Spot On!',
 
@@ -255,9 +256,10 @@
       submit_order:    'Reihenfolge abgeben',
       drag_hint:       'Wörter hier in Reihenfolge einordnen →',
 
-      first_correct_label: 'Erster! ⚡',
+      first_correct_label:  'Erster! ⚡',
+      best_estimate_label:  'Beste Schätzung! 🎯',
       solo_subtitle:       'Das einzige Team mit richtiger Antwort',
-      precise_subtitle:    'Innerhalb von 2 % der richtigen Antwort',
+      precise_subtitle:    'Exakt richtig!',
       solo_correct_title:  'Einzig Richtig!',
       spot_on_title:       'Genau Richtig!',
 
