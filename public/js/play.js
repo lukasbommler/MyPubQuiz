@@ -15,6 +15,7 @@ let currentQuestion = null;
 let answered = false;
 let wordOrder = [];
 let myAnswerCorrect = false; // remembered for reveal screen
+let mySubmittedAnswer = null; // raw answer value, shown on reveal
 
 // ── Screen helper ─────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -249,6 +250,7 @@ socket.on('question-text', (q) => {
   answered = false;
   wordOrder = [];
   myAnswerCorrect = false;
+  mySubmittedAnswer = null;
   roundEnded = false; // clear stale flag so reconnect doesn't block the countdown callback
   showQuestionText(q);
 });
@@ -555,6 +557,7 @@ function showLockedIn(fbId, text) {
 
 // ── Submit answer ─────────────────────────────────────────────────────────────
 function submitAnswer(answer) {
+  mySubmittedAnswer = answer;
   const timeTaken = Date.now() - (questionStartTime || Date.now());
   socket.emit('submit-answer', { code, answer, timeTaken });
   Sounds.submit();
@@ -603,6 +606,25 @@ function showReveal(correct, scores, estimationWinnerId, distribution) {
       correctAnswerEl.textContent = t('answer_label', { value: correct, unit: currentQuestion.unit || '' });
     } else if (currentQuestion?.type === 'word_order') {
       correctAnswerEl.textContent = t('order_label', { order: correct.map(i => currentQuestion.words[i]).join(' → ') });
+    }
+
+    const yourAnswerEl = document.getElementById('reveal-your-answer');
+    if (answered && mySubmittedAnswer !== null && currentQuestion) {
+      let yourText = '';
+      if (currentQuestion.type === 'multiple_choice') {
+        yourText = t('your_answer_label') + ': ' + (currentQuestion.answers[parseInt(mySubmittedAnswer)] ?? mySubmittedAnswer);
+      } else if (currentQuestion.type === 'estimation') {
+        yourText = t('your_answer_label') + ': ' + mySubmittedAnswer + (currentQuestion.unit ? ' ' + currentQuestion.unit : '');
+      } else if (currentQuestion.type === 'word_order') {
+        try {
+          const order = JSON.parse(mySubmittedAnswer);
+          yourText = t('your_answer_label') + ': ' + order.map(i => currentQuestion.words[i]).join(' → ');
+        } catch (e) {}
+      }
+      yourAnswerEl.textContent = yourText;
+      yourAnswerEl.classList.remove('hidden');
+    } else {
+      yourAnswerEl.classList.add('hidden');
     }
 
     document.getElementById('reveal-points').textContent = '';

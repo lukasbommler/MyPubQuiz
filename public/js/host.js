@@ -233,12 +233,68 @@ socket.on('language-changed', ({ questions }) => {
 document.getElementById('host-plays-toggle').addEventListener('change', (e) => {
   hostPlaysMode = e.target.checked;
   document.getElementById('host-player-name').classList.toggle('hidden', !hostPlaysMode);
+  document.getElementById('host-selfie-area').classList.toggle('hidden', !hostPlaysMode);
   if (hostPlaysMode) document.getElementById('host-player-name').focus();
 });
+
+document.getElementById('host-selfie-btn').addEventListener('click', () => {
+  document.getElementById('host-selfie-input').click();
+});
+
+let hostSelfieFile = null;
+
+document.getElementById('host-selfie-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  hostSelfieFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const preview = document.getElementById('host-selfie-preview');
+    preview.src = ev.target.result;
+    preview.classList.remove('hidden');
+    document.getElementById('host-selfie-placeholder').classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+});
+
+function resizeImage(file, maxW, maxH, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxW || height > maxH) {
+          const ratio = Math.min(maxW / width, maxH / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 // ── Server confirms host team ─────────────────────────────────────────────────
 socket.on('host-team-created', ({ teamId }) => {
   hostTeamId = teamId;
+  if (hostSelfieFile) {
+    resizeImage(hostSelfieFile, 800, 800, 0.8).then(base64 => {
+      return fetch(`/api/team/${teamId}/selfie`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64 })
+      });
+    }).catch(() => {}); // non-critical
+    hostSelfieFile = null;
+  }
 });
 
 document.getElementById('lobby-copy-btn').addEventListener('click', () => {
@@ -506,7 +562,24 @@ socket.on('host-step', ({ step }) => {
   if (step === 'answers-shown') {
     setStep('answering');
     if (hostPlaysMode && currentQuestion && !hostAnswered) {
-      showHostAnswerOptions(currentQuestion);
+      // Show 3-2-1-GO countdown before unlocking answers, same timing as players
+      const area = document.getElementById('host-answer-area');
+      const opts = document.getElementById('host-answer-options');
+      area.classList.remove('hidden');
+      document.getElementById('host-answer-feedback').classList.add('hidden');
+      let count = 3;
+      opts.innerHTML = `<div class="host-countdown">${count}</div>`;
+      const cdInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          opts.innerHTML = `<div class="host-countdown">${count}</div>`;
+        } else if (count === 0) {
+          opts.innerHTML = `<div class="host-countdown host-countdown-go">GO</div>`;
+        } else {
+          clearInterval(cdInterval);
+          showHostAnswerOptions(currentQuestion);
+        }
+      }, 900);
     }
   }
 });

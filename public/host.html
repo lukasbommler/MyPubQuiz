@@ -96,6 +96,14 @@
               <span data-i18n="playing_too">I'm playing too</span>
             </label>
             <input type="text" id="host-player-name" class="text-input hidden" data-i18n-placeholder="host_name_ph" placeholder="Your team name" maxlength="30" style="margin-top:0.5rem">
+            <div id="host-selfie-area" class="host-selfie-area hidden">
+              <div class="host-selfie-preview-wrap" id="host-selfie-preview-wrap">
+                <img id="host-selfie-preview" class="hidden" src="" alt="">
+                <span id="host-selfie-placeholder">📷</span>
+              </div>
+              <button type="button" class="btn btn-secondary" id="host-selfie-btn" data-i18n="add_photo_btn">Add Photo</button>
+              <input type="file" id="host-selfie-input" accept="image/*" capture="user" class="hidden">
+            </div>
           </div>
 
           <button class="btn btn-primary btn-lg" id="start-btn" disabled data-i18n="start_game">
