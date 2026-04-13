@@ -612,32 +612,29 @@ function doRevealAnswer(code) {
   });
 
   // First-correct buzz at 1500ms (buzz shows for 3500ms, ends ~5000ms after reveal)
-  if (state.firstCorrectTeam) {
+  // Capture values now — next-question resets them on the live state object
+  const buzzTeam = state.firstCorrectTeam;
+  const buzzPoints = state.firstCorrectPoints;
+  if (buzzTeam) {
     setTimeout(() => {
-      io.to(`room:${code}`).emit('first-correct', {
-        team: state.firstCorrectTeam,
-        points: state.firstCorrectPoints
-      });
+      io.to(`room:${code}`).emit('first-correct', { team: buzzTeam, points: buzzPoints });
     }, 1500);
   }
 
   // Special animation at 5500ms — after buzz has finished
-  const hasBuzz = !!state.firstCorrectTeam;
-  const specialDelay = hasBuzz ? 5500 : 1000;
+  const specialDelay = buzzTeam ? 5500 : 1000;
+  const loneTeam = state.loneHeroTeam;
+  const lonePoints = state.loneHeroPoints;
+  const preciseTeam = state.preciseTeam;
+  const precisePoints = state.precisePoints;
 
-  if (state.loneHeroTeam) {
+  if (loneTeam) {
     setTimeout(() => {
-      io.to(`room:${code}`).emit('lone-hero', {
-        team: state.loneHeroTeam,
-        points: state.loneHeroPoints
-      });
+      io.to(`room:${code}`).emit('lone-hero', { team: loneTeam, points: lonePoints });
     }, specialDelay);
-  } else if (state.preciseTeam) {
+  } else if (preciseTeam) {
     setTimeout(() => {
-      io.to(`room:${code}`).emit('precise-estimate', {
-        team: state.preciseTeam,
-        points: state.precisePoints
-      });
+      io.to(`room:${code}`).emit('precise-estimate', { team: preciseTeam, points: precisePoints });
     }, specialDelay);
   }
 }

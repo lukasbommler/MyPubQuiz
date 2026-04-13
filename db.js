@@ -23,9 +23,28 @@ for (const code of Object.keys(store.events)) {
   }
 }
 
+let _saveTimer = null;
+
 function save() {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify(store)); } catch (e) {}
+  if (_saveTimer) return; // already scheduled
+  _saveTimer = setTimeout(() => {
+    _saveTimer = null;
+    const json = JSON.stringify(store);
+    fs.writeFile(DATA_FILE, json, err => { if (err) console.error('quiz-data save failed:', err); });
+  }, 200);
 }
+
+// Flush any pending save synchronously before the process exits
+function flushSync() {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+    try { fs.writeFileSync(DATA_FILE, JSON.stringify(store)); } catch (e) {}
+  }
+}
+process.on('exit', flushSync);
+process.on('SIGINT', () => { flushSync(); process.exit(0); });
+process.on('SIGTERM', () => { flushSync(); process.exit(0); });
 
 // ── Events ────────────────────────────────────────────────────────────────────
 function createEvent(code, hostToken) {
@@ -80,7 +99,7 @@ function getScoresByEvent(code) {
 }
 
 // ── Answers ───────────────────────────────────────────────────────────────────
-let answerIdCounter = store.answers.length;
+let answerIdCounter = store.answers.reduce((max, a) => Math.max(max, a.id || 0), 0);
 
 function recordAnswer(eventCode, teamId, questionIndex, answer, isCorrect, pointsAwarded, timeMs) {
   const rec = { id: ++answerIdCounter, event_code: eventCode, team_id: teamId, question_index: questionIndex, answer, is_correct: isCorrect ? 1 : 0, points_awarded: pointsAwarded, time_ms: timeMs, answered_at: Date.now() };
