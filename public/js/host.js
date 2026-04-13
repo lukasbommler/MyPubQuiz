@@ -599,13 +599,38 @@ socket.on('first-correct', ({ team, points, questionType }) => {
 // ── Round over ────────────────────────────────────────────────────────────────
 socket.on('round-over', ({ scores, roundNum }) => {
   stopTimer();
-  showScreen('screen-round-over');
-  document.getElementById('round-over-badge').textContent = t('round_complete', { num: roundNum });
-  updateScoreboard('round-over-scoreboard', scores);
 
-  // Build config panel for next round (same defaults)
+  // Show standings screen first
+  document.getElementById('host-standings-badge').textContent = t('round_complete', { num: roundNum });
+  document.getElementById('host-standings-scores').innerHTML = scores.map((team, i) => {
+    const ranks = ['🥇', '🥈', '🥉'];
+    const rank = ranks[i] || `${i + 1}.`;
+    const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    const avatarHtml = team.selfie
+      ? `<img src="${escapeHtml(team.selfie)}" alt="">`
+      : `<span class="init">${initials}</span>`;
+    return `<div class="score-row">
+      <span class="score-rank">${rank}</span>
+      <div class="score-avatar">${avatarHtml}</div>
+      <span class="score-name">${escapeHtml(team.name)}</span>
+      <span class="score-pts">${team.score} pts</span>
+    </div>`;
+  }).join('');
+  showScreen('screen-host-standings');
+
+  // Pre-build config panel in background so it's ready when host clicks Keep Playing
+  updateScoreboard('round-over-scoreboard', scores);
+  document.getElementById('round-over-badge').textContent = t('round_complete', { num: roundNum });
   const allCats = [...new Set(allQuestions.map(q => q.category))];
   buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+});
+
+document.getElementById('btn-keep-playing').addEventListener('click', () => {
+  showScreen('screen-round-over');
+});
+
+document.getElementById('btn-end-game-standings').addEventListener('click', () => {
+  if (confirm(t('confirm_end_game'))) socket.emit('end-game', { code });
 });
 
 // ── Game over ─────────────────────────────────────────────────────────────────

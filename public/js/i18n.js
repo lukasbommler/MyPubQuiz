@@ -116,6 +116,10 @@
       scoreboard_label: 'Scoreboard',
       answers_label:    'Answers',
 
+      keep_playing_btn:    'Keep Playing →',
+      end_game_btn:        'End Game',
+      confirm_end_game:    'End the game and show final results?',
+
       next_round_header:   'Next Round',
       show_scoreboard_btn: 'Show Scoreboard to Players',
       next_round_btn:      'Start Next Round',
@@ -309,6 +313,10 @@
       need_team_hint:   'Mindestens 1 Team zum Starten nötig',
       scoreboard_label: 'Punktestand',
       answers_label:    'Antworten',
+
+      keep_playing_btn:    'Weiterspielen →',
+      end_game_btn:        'Spiel beenden',
+      confirm_end_game:    'Spiel beenden und Endergebnis anzeigen?',
 
       next_round_header:   'Nächste Runde',
       show_scoreboard_btn: 'Punktestand anzeigen',
