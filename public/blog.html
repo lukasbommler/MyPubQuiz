@@ -179,89 +179,9 @@
   <div class="content-page">
     <a class="page-back" href="/" data-i18n="back_to_home">← Zurück zur Startseite</a>
     <h1 class="page-title">Blog</h1>
-    <p class="page-subtitle">Tipps, Ideen und Neuigkeiten rund um MyPubQuiz und Pub Quiz.</p>
+    <p class="page-subtitle" data-i18n="blog_subtitle">Tipps, Ideen und Neuigkeiten rund um MyPubQuiz und Pub Quiz.</p>
 
-    <div class="blog-grid">
-
-      <div class="blog-card" onclick="openArticle('a1')">
-        <div class="blog-card-hero">🎤</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Tipps</span>
-          <div class="blog-card-title">10 Tipps für einen unvergesslichen Spieleabend</div>
-          <div class="blog-card-excerpt">Von der richtigen Raumaufteilung bis zum perfekten Abschluss: So wird dein MyPubQuiz-Abend ein voller Erfolg.</div>
-          <div class="blog-card-meta">
-            <span>12. Januar 2025</span>
-            <span>5 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="blog-card" onclick="openArticle('a2')">
-        <div class="blog-card-hero">🧠</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Kategorien</span>
-          <div class="blog-card-title">Die beliebtesten Quiz-Kategorien im Überblick</div>
-          <div class="blog-card-excerpt">Geographie, Popkultur oder Wissenschaft? Wir zeigen, welche Themen in Pub Quizzes am besten ankommen.</div>
-          <div class="blog-card-meta">
-            <span>3. Februar 2025</span>
-            <span>4 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="blog-card" onclick="openArticle('a3')">
-        <div class="blog-card-hero">⚡</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Feature</span>
-          <div class="blog-card-title">Wie der Geschwindigkeitsbonus funktioniert</div>
-          <div class="blog-card-excerpt">Richtig ist nicht genug – wer am schnellsten antwortet, gewinnt Extra-Punkte. Alles zur Mechanik dahinter.</div>
-          <div class="blog-card-meta">
-            <span>18. Februar 2025</span>
-            <span>3 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="blog-card" onclick="openArticle('a4')">
-        <div class="blog-card-hero">🏆</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Strategie</span>
-          <div class="blog-card-title">Team-Strategie: So gewinnt ihr das nächste Quiz</div>
-          <div class="blog-card-excerpt">Welche Teamgröße ist optimal? Wer übernimmt welches Thema? Profi-Tipps für echte Pub-Quiz-Veteranen.</div>
-          <div class="blog-card-meta">
-            <span>5. März 2025</span>
-            <span>4 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="blog-card" onclick="openArticle('a5')">
-        <div class="blog-card-hero">📸</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Feature</span>
-          <div class="blog-card-title">Team-Selfies: die kleine Geste, die alles ändert</div>
-          <div class="blog-card-excerpt">Warum das Teamfoto beim ersten richtigen Buzzer so viel Spaß macht – und wie ihr es am besten einsetzt.</div>
-          <div class="blog-card-meta">
-            <span>22. März 2025</span>
-            <span>3 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="blog-card" onclick="openArticle('a6')">
-        <div class="blog-card-hero">🌍</div>
-        <div class="blog-card-body">
-          <span class="blog-tag">Neuigkeiten</span>
-          <div class="blog-card-title">Neue Fragenkategorien: Geographie &amp; Weltatlas</div>
-          <div class="blog-card-excerpt">Über 80 neue Schätzfragen und Multiple-Choice-Aufgaben zur Weltgeographie sind im Katalog verfügbar.</div>
-          <div class="blog-card-meta">
-            <span>10. April 2025</span>
-            <span>2 Min. Lesezeit</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
+    <div class="blog-grid"></div>
   </div>
 
   <!-- ── Article modal ── -->
@@ -283,137 +203,317 @@
   </footer>
 
   <script src="/js/i18n.js"></script>
-  <script>applyI18n();</script>
   <script>
-    const articles = {
+    // ── Bilingual article data ───────────────────────────────────────────────
+    const ARTICLES = {
       a1: {
-        tag: 'Tipps',
-        title: '10 Tipps für einen unvergesslichen Spieleabend',
-        date: '12. Januar 2025',
-        readTime: '5 Min. Lesezeit',
-        body: `
-          <h3>1. Räumlichkeiten richtig vorbereiten</h3>
-          <p>Sorge dafür, dass alle Tische gut platziert sind und jedes Team einen eigenen Bereich hat. Zu enge Sitzanordnungen verleiten zum Abgucken und nehmen den Spaß.</p>
-          <h3>2. QR-Code groß ausdrucken</h3>
-          <p>Drucke den QR-Code in DIN A4 aus und hänge ihn gut sichtbar auf. So können alle Teams sofort beitreten, ohne den Code abtippen zu müssen.</p>
-          <h3>3. Kategorien im Voraus wählen</h3>
-          <p>Überlege dir schon vor dem Abend, welche Kategorien du pro Runde spielst. Eine gute Mischung aus Allgemeinwissen, Popkultur und einer Spezialkategorie hält alle bei der Stange.</p>
-          <h3>4. Schätzfragen zum Aufwärmen nutzen</h3>
-          <p>Starte mit einer lockeren Schätzfrage, um alle ins Spiel zu bringen. Schätzfragen sind niedrigschwellig – alle können mitspielen, auch ohne Vorwissen.</p>
-          <h3>5. Geschwindigkeitsbonus kommunizieren</h3>
-          <p>Erkläre zu Beginn kurz, wie der Speed-Bonus funktioniert. Teams, die das verstehen, werden motivierter und schneller antworten.</p>
-          <h3>6. Zwischen den Runden kurze Pausen einplanen</h3>
-          <p>Gönne deinen Gästen zwischen den Runden 3–5 Minuten für Getränke, Diskussionen und Lachen. Das gibt Energie für die nächste Runde.</p>
-          <h3>7. Teamgröße begrenzen</h3>
-          <p>Teams mit 3–5 Personen sind ideal. Zu große Gruppen führen zu Diskussionen, die die Eingabe verlangsamen und den Spielfluss bremsen.</p>
-          <h3>8. Musik als Atmosphäre-Booster</h3>
-          <p>Leise Hintergrundmusik während der Denkphasen erhöht die Stimmung spürbar. MyPubQuiz hat eingebaute Soundeffekte – ergänze sie durch eine passende Spotify-Playlist.</p>
-          <h3>9. Den Countdown ernst nehmen</h3>
-          <p>Kündige das Ende der Antwortzeit an. Die 3-2-1-Animation im Spiel hilft, aber ein kurzer Hinweis vom Host verstärkt die Spannung nochmals.</p>
-          <h3>10. Abschluss-Zeremonie zelebrieren</h3>
-          <p>Lass die Sieger-Konfetti-Animation vollständig laufen und applaudiere dem Gewinner-Team laut. Ein kleines, echtes Gewinner-Geschenk macht den Abend unvergesslich.</p>
-        `
+        icon: '🎤',
+        en: {
+          tag: 'Tips',
+          title: '10 Tips for an Unforgettable Quiz Night',
+          date: 'January 12, 2025',
+          readTime: '5 min read',
+          excerpt: 'From room layout to the perfect closing — here\'s how to make your MyPubQuiz night a roaring success.',
+          body: `
+            <h3>1. Set up the room properly</h3>
+            <p>Make sure all tables are well positioned and each team has its own area. Seating people too close together invites copying and takes the fun out of it.</p>
+            <h3>2. Print the QR code large</h3>
+            <p>Print the QR code on A4 paper and put it somewhere clearly visible. That way all teams can join instantly without having to type the code.</p>
+            <h3>3. Choose categories in advance</h3>
+            <p>Decide which categories you'll play each round before the evening starts. A good mix of general knowledge, pop culture and one specialist category keeps everyone engaged.</p>
+            <h3>4. Use estimation questions as warm-ups</h3>
+            <p>Start with a light estimation question to ease everyone in. Estimation rounds are low-barrier — everyone can take part, even without specialist knowledge.</p>
+            <h3>5. Explain the speed bonus</h3>
+            <p>Briefly explain how the speed bonus works at the beginning. Teams who understand it will be more motivated and answer faster.</p>
+            <h3>6. Build in short breaks between rounds</h3>
+            <p>Give your guests 3–5 minutes between rounds for drinks, discussion and laughter. It recharges energy for the next round.</p>
+            <h3>7. Keep team sizes manageable</h3>
+            <p>Teams of 3–5 people are ideal. Too large a group leads to debates that slow down input and disrupt the flow of play.</p>
+            <h3>8. Use music as an atmosphere booster</h3>
+            <p>Quiet background music during the thinking phases noticeably raises the mood. MyPubQuiz has built-in sound effects — complement them with a fitting Spotify playlist.</p>
+            <h3>9. Make the countdown count</h3>
+            <p>Announce the end of the answer window. The 3-2-1 animation in the game helps, but a quick cue from the host amplifies the tension.</p>
+            <h3>10. Celebrate the closing ceremony</h3>
+            <p>Let the winner confetti animation run in full and applaud the winning team loudly. A small, real prize makes the evening unforgettable.</p>
+          `
+        },
+        de: {
+          tag: 'Tipps',
+          title: '10 Tipps für einen unvergesslichen Spieleabend',
+          date: '12. Januar 2025',
+          readTime: '5 Min. Lesezeit',
+          excerpt: 'Von der richtigen Raumaufteilung bis zum perfekten Abschluss: So wird dein MyPubQuiz-Abend ein voller Erfolg.',
+          body: `
+            <h3>1. Räumlichkeiten richtig vorbereiten</h3>
+            <p>Sorge dafür, dass alle Tische gut platziert sind und jedes Team einen eigenen Bereich hat. Zu enge Sitzanordnungen verleiten zum Abgucken und nehmen den Spaß.</p>
+            <h3>2. QR-Code groß ausdrucken</h3>
+            <p>Drucke den QR-Code in DIN A4 aus und hänge ihn gut sichtbar auf. So können alle Teams sofort beitreten, ohne den Code abtippen zu müssen.</p>
+            <h3>3. Kategorien im Voraus wählen</h3>
+            <p>Überlege dir schon vor dem Abend, welche Kategorien du pro Runde spielst. Eine gute Mischung aus Allgemeinwissen, Popkultur und einer Spezialkategorie hält alle bei der Stange.</p>
+            <h3>4. Schätzfragen zum Aufwärmen nutzen</h3>
+            <p>Starte mit einer lockeren Schätzfrage, um alle ins Spiel zu bringen. Schätzfragen sind niedrigschwellig – alle können mitspielen, auch ohne Vorwissen.</p>
+            <h3>5. Geschwindigkeitsbonus kommunizieren</h3>
+            <p>Erkläre zu Beginn kurz, wie der Speed-Bonus funktioniert. Teams, die das verstehen, werden motivierter und schneller antworten.</p>
+            <h3>6. Zwischen den Runden kurze Pausen einplanen</h3>
+            <p>Gönne deinen Gästen zwischen den Runden 3–5 Minuten für Getränke, Diskussionen und Lachen. Das gibt Energie für die nächste Runde.</p>
+            <h3>7. Teamgröße begrenzen</h3>
+            <p>Teams mit 3–5 Personen sind ideal. Zu große Gruppen führen zu Diskussionen, die die Eingabe verlangsamen und den Spielfluss bremsen.</p>
+            <h3>8. Musik als Atmosphäre-Booster</h3>
+            <p>Leise Hintergrundmusik während der Denkphasen erhöht die Stimmung spürbar. MyPubQuiz hat eingebaute Soundeffekte – ergänze sie durch eine passende Spotify-Playlist.</p>
+            <h3>9. Den Countdown ernst nehmen</h3>
+            <p>Kündige das Ende der Antwortzeit an. Die 3-2-1-Animation im Spiel hilft, aber ein kurzer Hinweis vom Host verstärkt die Spannung nochmals.</p>
+            <h3>10. Abschluss-Zeremonie zelebrieren</h3>
+            <p>Lass die Sieger-Konfetti-Animation vollständig laufen und applaudiere dem Gewinner-Team laut. Ein kleines, echtes Gewinner-Geschenk macht den Abend unvergesslich.</p>
+          `
+        }
       },
       a2: {
-        tag: 'Kategorien',
-        title: 'Die beliebtesten Quiz-Kategorien im Überblick',
-        date: '3. Februar 2025',
-        readTime: '4 Min. Lesezeit',
-        body: `
-          <h3>Geographie – der Klassiker</h3>
-          <p>Hauptstädte, Flüsse, Ländergrenzen: Geographie-Fragen sind bei fast allen Gruppen beliebt, weil sie ein gesundes Gleichgewicht zwischen Schulwissen und echten Überraschungen bieten.</p>
-          <h3>Popkultur – Spaß für alle</h3>
-          <p>Filme, Serien, Musik der letzten Jahrzehnte: Diese Kategorie ist besonders inklusiv, weil kein Fachwissen nötig ist. Schätzfragen wie „In welchem Jahr erschien dieser Song?" machen den Unterschied.</p>
-          <h3>Wissenschaft – für die Nerds im Raum</h3>
-          <p>Von Biologie bis Physik: Wissenschaftsfragen polarisieren – genau das macht sie spannend. Ein Team, das hier punktet, genießt echten Respekt.</p>
-          <h3>Geschichte – Zeitreise inklusive</h3>
-          <p>Daten, Persönlichkeiten, Ereignisse: Mit Schätzfragen zu Jahreszahlen ist Geschichte überraschend zugänglich und für alle Altersgruppen geeignet.</p>
-          <h3>Sport – der Stimmungsbooster</h3>
-          <p>Rekorde, Weltmeisterschaften, Sportler: Sportfragen erzeugen die lautesten Reaktionen. Empfehlung: Sport als letzte Runde für den emotionalen Höhepunkt einsetzen.</p>
-          <h3>Unsere Empfehlung</h3>
-          <p>Kombiniere pro Spielabend mindestens drei verschiedene Kategorien. Eine Mischung aus Geographie, Popkultur und einer Wildcard-Kategorie funktioniert für die meisten Gruppen am besten.</p>
-        `
+        icon: '🧠',
+        en: {
+          tag: 'Categories',
+          title: 'The Most Popular Quiz Categories',
+          date: 'February 3, 2025',
+          readTime: '4 min read',
+          excerpt: 'Geography, pop culture or science? We show which topics go down best at pub quizzes.',
+          body: `
+            <h3>Geography — the classic</h3>
+            <p>Capitals, rivers, borders: geography questions are popular with almost every group because they strike a healthy balance between school knowledge and genuine surprises.</p>
+            <h3>Pop Culture — fun for everyone</h3>
+            <p>Films, TV shows, music from the past few decades: this category is especially inclusive because no specialist knowledge is needed. Estimation questions like "What year did this song come out?" make all the difference.</p>
+            <h3>Science — for the nerds in the room</h3>
+            <p>From biology to physics: science questions divide the room — which is exactly what makes them exciting. A team that scores here earns real respect.</p>
+            <h3>History — time travel included</h3>
+            <p>Dates, figures, events: with estimation questions on years, history becomes surprisingly accessible and works for all age groups.</p>
+            <h3>Sport — the mood booster</h3>
+            <p>Records, world championships, athletes: sport questions generate the loudest reactions. Tip: save sport for the final round to end on an emotional high.</p>
+            <h3>Our recommendation</h3>
+            <p>Combine at least three different categories per quiz night. A mix of geography, pop culture and one wildcard category works best for most groups.</p>
+          `
+        },
+        de: {
+          tag: 'Kategorien',
+          title: 'Die beliebtesten Quiz-Kategorien im Überblick',
+          date: '3. Februar 2025',
+          readTime: '4 Min. Lesezeit',
+          excerpt: 'Geographie, Popkultur oder Wissenschaft? Wir zeigen, welche Themen in Pub Quizzes am besten ankommen.',
+          body: `
+            <h3>Geographie – der Klassiker</h3>
+            <p>Hauptstädte, Flüsse, Ländergrenzen: Geographie-Fragen sind bei fast allen Gruppen beliebt, weil sie ein gesundes Gleichgewicht zwischen Schulwissen und echten Überraschungen bieten.</p>
+            <h3>Popkultur – Spaß für alle</h3>
+            <p>Filme, Serien, Musik der letzten Jahrzehnte: Diese Kategorie ist besonders inklusiv, weil kein Fachwissen nötig ist. Schätzfragen wie „In welchem Jahr erschien dieser Song?" machen den Unterschied.</p>
+            <h3>Wissenschaft – für die Nerds im Raum</h3>
+            <p>Von Biologie bis Physik: Wissenschaftsfragen polarisieren – genau das macht sie spannend. Ein Team, das hier punktet, genießt echten Respekt.</p>
+            <h3>Geschichte – Zeitreise inklusive</h3>
+            <p>Daten, Persönlichkeiten, Ereignisse: Mit Schätzfragen zu Jahreszahlen ist Geschichte überraschend zugänglich und für alle Altersgruppen geeignet.</p>
+            <h3>Sport – der Stimmungsbooster</h3>
+            <p>Rekorde, Weltmeisterschaften, Sportler: Sportfragen erzeugen die lautesten Reaktionen. Empfehlung: Sport als letzte Runde für den emotionalen Höhepunkt einsetzen.</p>
+            <h3>Unsere Empfehlung</h3>
+            <p>Kombiniere pro Spielabend mindestens drei verschiedene Kategorien. Eine Mischung aus Geographie, Popkultur und einer Wildcard-Kategorie funktioniert für die meisten Gruppen am besten.</p>
+          `
+        }
       },
       a3: {
-        tag: 'Feature',
-        title: 'Wie der Geschwindigkeitsbonus funktioniert',
-        date: '18. Februar 2025',
-        readTime: '3 Min. Lesezeit',
-        body: `
-          <h3>Grundprinzip</h3>
-          <p>Richtig antworten reicht – aber wer als Erstes richtig antwortet, bekommt Extrapunkte. Der <strong>Geschwindigkeitsbonus</strong> wird vom Host vor jeder Runde festgelegt und ist unabhängig von den regulären Punkten für eine richtige Antwort.</p>
-          <h3>Wann startet die Zeit?</h3>
-          <p>Die Uhr beginnt zu laufen, sobald der Host auf <strong>„Antworten zeigen"</strong> klickt und die Countdown-Animation (3-2-1-LOS!) startet. Nicht beim Erscheinen der Frage – erst beim Erscheinen der Antwortmöglichkeiten.</p>
-          <h3>Zeitmessung</h3>
-          <p>Die Antwortzeit wird vom Server in Millisekunden gemessen. Das schließt Verzögerungen durch eine langsame Verbindung ein. Teams mit stabilem WLAN haben daher einen kleinen Vorteil.</p>
-          <h3>Erster Buzzer</h3>
-          <p>Sobald ein Team als erstes richtig antwortet, erscheint das Team-Selfie als großes Buzz-Overlay auf dem Host-Bildschirm. Das ist der emotionale Höhepunkt jeder Frage.</p>
-          <h3>Schätzfragen</h3>
-          <p>Bei Schätzfragen gibt es keinen klassischen Buzzer. Stattdessen gewinnt das Team, das dem Zielwert am nächsten liegt. Bei Gleichstand entscheidet die Antwortzeit.</p>
-        `
+        icon: '⚡',
+        en: {
+          tag: 'Feature',
+          title: 'How the Speed Bonus Works',
+          date: 'February 18, 2025',
+          readTime: '3 min read',
+          excerpt: 'Getting it right isn\'t enough — the fastest correct answer earns extra points. Here\'s the full breakdown.',
+          body: `
+            <h3>The basic principle</h3>
+            <p>Getting the right answer is enough — but the first team to answer correctly earns bonus points. The <strong>speed bonus</strong> is set by the host before each round and is separate from the regular points for a correct answer.</p>
+            <h3>When does the clock start?</h3>
+            <p>The clock starts as soon as the host clicks <strong>"Show Answers"</strong> and the countdown animation (3-2-1-GO!) begins. Not when the question appears — only when the answer options appear.</p>
+            <h3>Time measurement</h3>
+            <p>Answer times are measured by the server in milliseconds. This includes any delay from a slow connection. Teams with a stable Wi-Fi connection therefore have a slight advantage.</p>
+            <h3>First buzz</h3>
+            <p>As soon as a team is the first to answer correctly, their team selfie appears as a large buzz overlay on the host screen. This is the emotional highlight of every question.</p>
+            <h3>Estimation questions</h3>
+            <p>Estimation questions have no classic buzzer. Instead, the team closest to the target value wins. In case of a tie, answer time is the tiebreaker.</p>
+          `
+        },
+        de: {
+          tag: 'Feature',
+          title: 'Wie der Geschwindigkeitsbonus funktioniert',
+          date: '18. Februar 2025',
+          readTime: '3 Min. Lesezeit',
+          excerpt: 'Richtig ist nicht genug – wer am schnellsten antwortet, gewinnt Extra-Punkte. Alles zur Mechanik dahinter.',
+          body: `
+            <h3>Grundprinzip</h3>
+            <p>Richtig antworten reicht – aber wer als Erstes richtig antwortet, bekommt Extrapunkte. Der <strong>Geschwindigkeitsbonus</strong> wird vom Host vor jeder Runde festgelegt und ist unabhängig von den regulären Punkten für eine richtige Antwort.</p>
+            <h3>Wann startet die Zeit?</h3>
+            <p>Die Uhr beginnt zu laufen, sobald der Host auf <strong>„Antworten zeigen"</strong> klickt und die Countdown-Animation (3-2-1-LOS!) startet. Nicht beim Erscheinen der Frage – erst beim Erscheinen der Antwortmöglichkeiten.</p>
+            <h3>Zeitmessung</h3>
+            <p>Die Antwortzeit wird vom Server in Millisekunden gemessen. Das schließt Verzögerungen durch eine langsame Verbindung ein. Teams mit stabilem WLAN haben daher einen kleinen Vorteil.</p>
+            <h3>Erster Buzzer</h3>
+            <p>Sobald ein Team als erstes richtig antwortet, erscheint das Team-Selfie als großes Buzz-Overlay auf dem Host-Bildschirm. Das ist der emotionale Höhepunkt jeder Frage.</p>
+            <h3>Schätzfragen</h3>
+            <p>Bei Schätzfragen gibt es keinen klassischen Buzzer. Stattdessen gewinnt das Team, das dem Zielwert am nächsten liegt. Bei Gleichstand entscheidet die Antwortzeit.</p>
+          `
+        }
       },
       a4: {
-        tag: 'Strategie',
-        title: 'Team-Strategie: So gewinnt ihr das nächste Quiz',
-        date: '5. März 2025',
-        readTime: '4 Min. Lesezeit',
-        body: `
-          <h3>Optimale Teamgröße</h3>
-          <p>Drei bis vier Personen sind ideal. Mit fünf oder mehr wird die Entscheidungsfindung zu langsam für den Geschwindigkeitsbonus. Mit nur zwei Personen fehlt die Themenbreite.</p>
-          <h3>Rollenverteilung</h3>
-          <p>Teilt euch implizit auf: Wer ist stark in Geschichte? Wer in Popkultur? Lasst die jeweilige Person die Antwort absegnen, bevor jemand anderes tippt.</p>
-          <h3>Schnell sein vs. richtig sein</h3>
-          <p>Kalkuliert das Risiko: Bei 1 Punkt für richtig und 1 Punkt Speedbonus lohnt ein schneller, unsicherer Tipp. Bei 3 Punkten für richtig und nur 0,5 Speedbonus ist Genauigkeit wichtiger.</p>
-          <h3>Schätzfragen nicht überstürzen</h3>
-          <p>Diskutiert kurz. Bei Schätzfragen gewinnt der nächste Wert – ein schneller, weit falscher Tipp kostet mehr als eine bedächtige, nahe Schätzung.</p>
-          <h3>Psychologie nutzen</h3>
-          <p>Bei Multiple Choice: Wenn ihr zwischen zwei Antworten schwankt, tippt die, die sich intuitiv als falsch anfühlt – und überdenkt sie noch einmal. Oft ist die erste Intuition richtig.</p>
-        `
+        icon: '🏆',
+        en: {
+          tag: 'Strategy',
+          title: 'Team Strategy: How to Win Your Next Quiz',
+          date: 'March 5, 2025',
+          readTime: '4 min read',
+          excerpt: 'What\'s the ideal team size? Who covers which topic? Pro tips for serious pub quiz competitors.',
+          body: `
+            <h3>Ideal team size</h3>
+            <p>Three to four people is ideal. With five or more, decision-making becomes too slow for the speed bonus. With only two, you lack breadth across topics.</p>
+            <h3>Divide roles</h3>
+            <p>Split up informally: who's strong in history? Who in pop culture? Let the relevant person sign off on the answer before anyone else submits.</p>
+            <h3>Speed vs. accuracy</h3>
+            <p>Weigh the risk: if a correct answer scores 1 point and the speed bonus is also 1 point, a quick, uncertain guess can pay off. If correct answers score 3 points and the bonus is only 0.5, accuracy matters more.</p>
+            <h3>Don't rush estimation questions</h3>
+            <p>Take a moment to discuss. In estimation rounds the closest value wins — a fast, wildly wrong guess costs more than a careful, close estimate.</p>
+            <h3>Use psychology</h3>
+            <p>In multiple choice: if you're torn between two answers, pick the one that instinctively feels wrong — then reconsider. Often your first instinct is right.</p>
+          `
+        },
+        de: {
+          tag: 'Strategie',
+          title: 'Team-Strategie: So gewinnt ihr das nächste Quiz',
+          date: '5. März 2025',
+          readTime: '4 Min. Lesezeit',
+          excerpt: 'Welche Teamgröße ist optimal? Wer übernimmt welches Thema? Profi-Tipps für echte Pub-Quiz-Veteranen.',
+          body: `
+            <h3>Optimale Teamgröße</h3>
+            <p>Drei bis vier Personen sind ideal. Mit fünf oder mehr wird die Entscheidungsfindung zu langsam für den Geschwindigkeitsbonus. Mit nur zwei Personen fehlt die Themenbreite.</p>
+            <h3>Rollenverteilung</h3>
+            <p>Teilt euch implizit auf: Wer ist stark in Geschichte? Wer in Popkultur? Lasst die jeweilige Person die Antwort absegnen, bevor jemand anderes tippt.</p>
+            <h3>Schnell sein vs. richtig sein</h3>
+            <p>Kalkuliert das Risiko: Bei 1 Punkt für richtig und 1 Punkt Speedbonus lohnt ein schneller, unsicherer Tipp. Bei 3 Punkten für richtig und nur 0,5 Speedbonus ist Genauigkeit wichtiger.</p>
+            <h3>Schätzfragen nicht überstürzen</h3>
+            <p>Diskutiert kurz. Bei Schätzfragen gewinnt der nächste Wert – ein schneller, weit falscher Tipp kostet mehr als eine bedächtige, nahe Schätzung.</p>
+            <h3>Psychologie nutzen</h3>
+            <p>Bei Multiple Choice: Wenn ihr zwischen zwei Antworten schwankt, tippt die, die sich intuitiv als falsch anfühlt – und überdenkt sie noch einmal. Oft ist die erste Intuition richtig.</p>
+          `
+        }
       },
       a5: {
-        tag: 'Feature',
-        title: 'Team-Selfies: die kleine Geste, die alles ändert',
-        date: '22. März 2025',
-        readTime: '3 Min. Lesezeit',
-        body: `
-          <h3>Warum Selfies?</h3>
-          <p>Ein Teamname ist anonym. Ein Gesicht ist eine Persönlichkeit. Wenn das Selfie eines Teams beim Buzzer auf dem großen Screen erscheint, gibt es Jubel, Gelächter und echte Momente – nicht nur Punkte auf einem Leaderboard.</p>
-          <h3>Wie es funktioniert</h3>
-          <p>Beim Beitreten können Teams über ihr Smartphone-Display ein Selfie aufnehmen. Das Bild wird sicher auf dem Server gespeichert und erscheint ausschließlich, wenn das Team als erstes richtig antwortet (Buzzer-Moment).</p>
-          <h3>Tipps für das beste Selfie</h3>
-          <ul>
-            <li>Macht das Foto zusammen – alle Teammitglieder rein!</li>
-            <li>Übertriebene Posen funktionieren am besten.</li>
-            <li>Gute Beleuchtung sorgt dafür, dass das Bild auf dem Host-Screen erkennbar ist.</li>
-          </ul>
-          <h3>Datenschutz</h3>
-          <p>Selfies sind nur innerhalb des laufenden Spiels sichtbar und werden automatisch 24 Stunden nach dem Spiel gelöscht. Mehr dazu in unserer <a href="/datenschutz.html" style="color:var(--accent2)">Datenschutzerklärung</a>.</p>
-        `
+        icon: '📸',
+        en: {
+          tag: 'Feature',
+          title: 'Team Selfies: The Small Gesture That Changes Everything',
+          date: 'March 22, 2025',
+          readTime: '3 min read',
+          excerpt: 'Why showing your team photo on the first correct buzz creates real moments — and how to make the most of it.',
+          body: `
+            <h3>Why selfies?</h3>
+            <p>A team name is anonymous. A face is a personality. When a team's selfie appears on the big screen at the buzzer, you get cheers, laughter and real moments — not just points on a leaderboard.</p>
+            <h3>How it works</h3>
+            <p>When joining, teams can take a selfie through their smartphone. The image is stored securely on the server and appears exclusively when that team is the first to answer correctly (the buzzer moment).</p>
+            <h3>Tips for the best selfie</h3>
+            <ul>
+              <li>Take the photo together — get all team members in!</li>
+              <li>Exaggerated poses work best.</li>
+              <li>Good lighting ensures the image is recognisable on the host screen.</li>
+            </ul>
+            <h3>Privacy</h3>
+            <p>Selfies are only visible within the active game and are automatically deleted 24 hours after the game ends. More details in our <a href="/datenschutz.html" style="color:var(--accent2)">Privacy Policy</a>.</p>
+          `
+        },
+        de: {
+          tag: 'Feature',
+          title: 'Team-Selfies: die kleine Geste, die alles ändert',
+          date: '22. März 2025',
+          readTime: '3 Min. Lesezeit',
+          excerpt: 'Warum das Teamfoto beim ersten richtigen Buzzer so viel Spaß macht – und wie ihr es am besten einsetzt.',
+          body: `
+            <h3>Warum Selfies?</h3>
+            <p>Ein Teamname ist anonym. Ein Gesicht ist eine Persönlichkeit. Wenn das Selfie eines Teams beim Buzzer auf dem großen Screen erscheint, gibt es Jubel, Gelächter und echte Momente – nicht nur Punkte auf einem Leaderboard.</p>
+            <h3>Wie es funktioniert</h3>
+            <p>Beim Beitreten können Teams über ihr Smartphone ein Selfie aufnehmen. Das Bild wird sicher auf dem Server gespeichert und erscheint ausschließlich, wenn das Team als erstes richtig antwortet (Buzzer-Moment).</p>
+            <h3>Tipps für das beste Selfie</h3>
+            <ul>
+              <li>Macht das Foto zusammen – alle Teammitglieder rein!</li>
+              <li>Übertriebene Posen funktionieren am besten.</li>
+              <li>Gute Beleuchtung sorgt dafür, dass das Bild auf dem Host-Screen erkennbar ist.</li>
+            </ul>
+            <h3>Datenschutz</h3>
+            <p>Selfies sind nur innerhalb des laufenden Spiels sichtbar und werden automatisch 24 Stunden nach dem Spiel gelöscht. Mehr dazu in unserer <a href="/datenschutz.html" style="color:var(--accent2)">Datenschutzerklärung</a>.</p>
+          `
+        }
       },
       a6: {
-        tag: 'Neuigkeiten',
-        title: 'Neue Fragenkategorien: Geographie & Weltatlas',
-        date: '10. April 2025',
-        readTime: '2 Min. Lesezeit',
-        body: `
-          <h3>Was ist neu?</h3>
-          <p>Über <strong>80 neue Fragen</strong> sind ab sofort im MyPubQuiz-Katalog verfügbar – sowohl auf Deutsch als auch auf Englisch. Der Schwerpunkt liegt auf Weltgeographie und Allgemeinwissen.</p>
-          <h3>Neue Fragetypen im Geographie-Paket</h3>
-          <ul>
-            <li><strong>Schätzfragen:</strong> Entfernungen zwischen Städten, Einwohnerzahlen, Höhenlagen.</li>
-            <li><strong>Multiple Choice:</strong> Hauptstädte, Nachbarländer, Flüsse und Meere.</li>
-            <li><strong>Wörter sortieren:</strong> Länder nach Größe oder Bevölkerung sortieren.</li>
-          </ul>
-          <h3>Wie komme ich zu den neuen Fragen?</h3>
-          <p>Einfach im Host-Panel beim Konfigurieren einer Runde die Kategorie <strong>„Geographie"</strong> auswählen. Die neuen Fragen sind automatisch im Pool enthalten.</p>
-          <h3>Ausblick</h3>
-          <p>Als nächstes planen wir neue Kategorien zu den Themen Filmgeschichte, Musik der 80er und Naturwissenschaften. Habt ihr Wünsche? Schreibt uns an <a href="mailto:hallo@quiznight.app" style="color:var(--accent2)">hallo@quiznight.app</a>.</p>
-        `
+        icon: '🌍',
+        en: {
+          tag: 'News',
+          title: 'New Question Categories: Geography & World Atlas',
+          date: 'April 10, 2025',
+          readTime: '2 min read',
+          excerpt: 'Over 80 new estimation and multiple-choice questions on world geography are now available in the catalogue.',
+          body: `
+            <h3>What's new?</h3>
+            <p>Over <strong>80 new questions</strong> are now available in the MyPubQuiz catalogue — in both German and English. The focus is on world geography and general knowledge.</p>
+            <h3>New question types in the Geography pack</h3>
+            <ul>
+              <li><strong>Estimation:</strong> Distances between cities, population figures, altitudes.</li>
+              <li><strong>Multiple Choice:</strong> Capitals, neighbouring countries, rivers and seas.</li>
+              <li><strong>Word Ordering:</strong> Sort countries by size or population.</li>
+            </ul>
+            <h3>How do I access the new questions?</h3>
+            <p>Simply select the category <strong>"Geography"</strong> when configuring a round in the host panel. The new questions are automatically included in the pool.</p>
+            <h3>Coming next</h3>
+            <p>We're planning new categories covering film history, 80s music and natural sciences. Got a request? Write to us at <a href="mailto:hallo@quiznight.app" style="color:var(--accent2)">hallo@quiznight.app</a>.</p>
+          `
+        },
+        de: {
+          tag: 'Neuigkeiten',
+          title: 'Neue Fragenkategorien: Geographie & Weltatlas',
+          date: '10. April 2025',
+          readTime: '2 Min. Lesezeit',
+          excerpt: 'Über 80 neue Schätzfragen und Multiple-Choice-Aufgaben zur Weltgeographie sind im Katalog verfügbar.',
+          body: `
+            <h3>Was ist neu?</h3>
+            <p>Über <strong>80 neue Fragen</strong> sind ab sofort im MyPubQuiz-Katalog verfügbar – sowohl auf Deutsch als auch auf Englisch. Der Schwerpunkt liegt auf Weltgeographie und Allgemeinwissen.</p>
+            <h3>Neue Fragetypen im Geographie-Paket</h3>
+            <ul>
+              <li><strong>Schätzfragen:</strong> Entfernungen zwischen Städten, Einwohnerzahlen, Höhenlagen.</li>
+              <li><strong>Multiple Choice:</strong> Hauptstädte, Nachbarländer, Flüsse und Meere.</li>
+              <li><strong>Wörter sortieren:</strong> Länder nach Größe oder Bevölkerung sortieren.</li>
+            </ul>
+            <h3>Wie komme ich zu den neuen Fragen?</h3>
+            <p>Einfach im Host-Panel beim Konfigurieren einer Runde die Kategorie <strong>„Geographie"</strong> auswählen. Die neuen Fragen sind automatisch im Pool enthalten.</p>
+            <h3>Ausblick</h3>
+            <p>Als nächstes planen wir neue Kategorien zu den Themen Filmgeschichte, Musik der 80er und Naturwissenschaften. Habt ihr Wünsche? Schreibt uns an <a href="mailto:hallo@quiznight.app" style="color:var(--accent2)">hallo@quiznight.app</a>.</p>
+          `
+        }
       }
     };
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function getArticle(id) {
+      const data = ARTICLES[id];
+      return data ? (data[window.MPQ_LANG] || data.en) : null;
+    }
+
+    function renderBlogCards() {
+      const grid = document.querySelector('.blog-grid');
+      grid.innerHTML = Object.entries(ARTICLES).map(([id, data]) => {
+        const a = data[window.MPQ_LANG] || data.en;
+        return `
+          <div class="blog-card" onclick="openArticle('${id}')">
+            <div class="blog-card-hero">${data.icon}</div>
+            <div class="blog-card-body">
+              <span class="blog-tag">${a.tag}</span>
+              <div class="blog-card-title">${a.title}</div>
+              <div class="blog-card-excerpt">${a.excerpt}</div>
+              <div class="blog-card-meta">
+                <span>${a.date}</span>
+                <span>${a.readTime}</span>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
     function openArticle(id) {
-      const a = articles[id];
+      const a = getArticle(id);
       if (!a) return;
       document.getElementById('article-content').innerHTML = `
         <div class="article-header">
@@ -437,6 +537,10 @@
     }
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeArticle(); });
+
+    // Init
+    applyI18n();
+    renderBlogCards();
   </script>
 </body>
 </html>

@@ -150,6 +150,46 @@
 
       back_to_home: '← Back to Homepage',
 
+      // ── FAQ ────────────────────────────────────────────────────────────────
+      faq_title:       'Frequently Asked Questions',
+      faq_subtitle:    'Everything you need to know about MyPubQuiz.',
+      faq_cat_general: 'General',
+      faq_cat_create:  'Creating & Joining a Game',
+      faq_cat_modes:   'Questions & Game Modes',
+      faq_cat_privacy: 'Privacy & Security',
+
+      faq_q1:  'What is MyPubQuiz?',
+      faq_a1:  'MyPubQuiz is a free, browser-based pub quiz platform. A host creates a game and shares a code or QR code with players. Teams answer in real time on their smartphones — no app download or account needed.',
+      faq_q2:  'Is MyPubQuiz free?',
+      faq_a2:  'Yes, completely. There are no premium plans, no hidden fees and no ads.',
+      faq_q3:  'Do I need to create an account?',
+      faq_a3:  'No. Neither the host nor the players need an account. The host creates a game with one click, teams join via the code — and you\'re off.',
+      faq_q4:  'Which devices are supported?',
+      faq_a4:  'MyPubQuiz runs in any modern browser — on smartphones, tablets and laptops. Chrome, Firefox, Safari and Edge are fully supported. An internet connection is required.',
+      faq_q5:  'How do I create a game?',
+      faq_a5:  'Click <strong>"Start a Game"</strong> on the home page. You\'ll instantly get a 6-digit code and a QR code. Open the host panel, configure the round (category, question type, points) and wait for teams to join.',
+      faq_q6:  'How do teams join a game?',
+      faq_a6:  'Teams can either scan the QR code or enter the 6-digit code on the home page and click <strong>"Join"</strong>. They choose a team name, optionally take a selfie — and they\'re in.',
+      faq_q7:  'How many teams can play?',
+      faq_a7:  'There is no fixed limit. In practice we recommend up to 20 teams for a smooth experience, as answers and scores are synced in real time.',
+      faq_q8:  'Can the host also play?',
+      faq_a8:  'Yes. The host panel has an option to register the host as a participating team, so the person running the quiz can play along at the same time.',
+      faq_q9:  'What question types are there?',
+      faq_a9:  'MyPubQuiz supports three types:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> — four options, one is correct.</li><li><strong>Estimation</strong> — numerical input; the team closest to the target wins.</li><li><strong>Word Ordering</strong> — arrange given words into the correct sequence.</li></ul>',
+      faq_q10: 'In which languages are questions available?',
+      faq_a10: 'The question catalogue is available in German and English. The host can choose the language in the lobby screen before the game starts.',
+      faq_q11: 'How does the scoring system work?',
+      faq_a11: 'The host sets before each round how many points a correct answer is worth and whether there is a speed bonus for the fastest correct answer. For estimation questions, the team closest to the target value wins.',
+      faq_q12: 'What happens if I lose my connection?',
+      faq_a12: 'MyPubQuiz reconnects you automatically once the connection is restored. Your team\'s progress is preserved because the team ID is stored in your browser.',
+      faq_q13: 'What data is stored?',
+      faq_a13: 'We only store game-related data: team names, submitted answers, scores and optionally a team selfie. Games are automatically deleted 24 hours after creation. See our <a href="/datenschutz.html">Privacy Policy</a> for details.',
+      faq_q14: 'Are team selfies publicly visible?',
+      faq_a14: 'Selfies are only shown within the active game — to the host and all teams participating in that game. After 24 hours, images are automatically deleted from the server.',
+
+      // ── Blog ───────────────────────────────────────────────────────────────
+      blog_subtitle: 'Tips, ideas and news about MyPubQuiz and pub quizzes.',
+
       // footer
       footer_faq:         'FAQ',
       footer_blog:        'Blog',
@@ -302,6 +342,46 @@
       type_word_order:      'Wörter sortieren',
 
       back_to_home: '← Zurück zur Startseite',
+
+      // ── FAQ ────────────────────────────────────────────────────────────────
+      faq_title:       'Häufige Fragen',
+      faq_subtitle:    'Alles, was du über MyPubQuiz wissen musst.',
+      faq_cat_general: 'Allgemeines',
+      faq_cat_create:  'Spiel erstellen & beitreten',
+      faq_cat_modes:   'Fragen & Spielmodi',
+      faq_cat_privacy: 'Datenschutz & Sicherheit',
+
+      faq_q1:  'Was ist MyPubQuiz?',
+      faq_a1:  'MyPubQuiz ist eine kostenlose, browserbasierte Pub-Quiz-Plattform. Ein Host erstellt ein Spiel und teilt einen Code oder QR-Code mit den Mitspielerinnen und Mitspielern. Die Teams antworten in Echtzeit über ihr Smartphone – ganz ohne App-Download oder Account.',
+      faq_q2:  'Kostet MyPubQuiz etwas?',
+      faq_a2:  'Nein. MyPubQuiz ist vollständig kostenlos. Es gibt keine Premium-Pläne, keine versteckten Gebühren und keine Werbung.',
+      faq_q3:  'Muss ich ein Konto erstellen?',
+      faq_a3:  'Nein. Weder der Host noch die Spielerinnen und Spieler brauchen einen Account. Der Host erstellt ein Spiel per Klick, Teams treten über den Code bei – fertig.',
+      faq_q4:  'Welche Geräte werden unterstützt?',
+      faq_a4:  'MyPubQuiz läuft in jedem modernen Browser – auf Smartphones, Tablets und Laptops. Chrome, Firefox, Safari und Edge sind vollständig unterstützt. Eine Internetverbindung ist erforderlich.',
+      faq_q5:  'Wie erstelle ich ein Spiel?',
+      faq_a5:  'Klicke auf der Startseite auf <strong>„Spiel starten"</strong>. Du erhältst sofort einen 6-stelligen Code und einen QR-Code. Öffne das Host-Panel, konfiguriere die Runde (Kategorie, Fragetyp, Punkte) und warte auf die Teams.',
+      faq_q6:  'Wie treten Teams einem Spiel bei?',
+      faq_a6:  'Teams können entweder den QR-Code scannen oder auf der Startseite den 6-stelligen Code eingeben und auf <strong>„Beitreten"</strong> klicken. Sie wählen einen Teamnamen, machen optional ein Selfie – und sind dabei.',
+      faq_q7:  'Wie viele Teams können mitspielen?',
+      faq_a7:  'Es gibt keine feste Obergrenze. In der Praxis empfehlen wir bis zu 20 Teams für ein flüssiges Spielerlebnis, da Antworten und Punktestände in Echtzeit synchronisiert werden.',
+      faq_q8:  'Kann der Host auch mitspielen?',
+      faq_a8:  'Ja. Im Host-Panel gibt es eine Option, den Host als teilnehmendes Team einzutragen. So kann die moderierende Person gleichzeitig spielen.',
+      faq_q9:  'Welche Fragetypen gibt es?',
+      faq_a9:  'MyPubQuiz unterstützt drei Typen:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> – vier Antwortmöglichkeiten, eine ist richtig.</li><li><strong>Schätzfrage</strong> – numerische Eingabe; das Team mit dem nächsten Wert gewinnt.</li><li><strong>Wörter sortieren</strong> – vorgegebene Wörter in die richtige Reihenfolge bringen.</li></ul>',
+      faq_q10: 'In welchen Sprachen sind Fragen verfügbar?',
+      faq_a10: 'Der Fragenkatalog ist auf Deutsch und Englisch verfügbar. Die Sprache kann der Host vor dem Spielstart im Lobby-Bildschirm wählen.',
+      faq_q11: 'Wie funktioniert das Punktesystem?',
+      faq_a11: 'Der Host legt vor jeder Runde fest, wie viele Punkte eine richtige Antwort gibt und ob es einen Geschwindigkeitsbonus für die schnellste korrekte Antwort gibt. Bei Schätzfragen gewinnt das Team, das dem Zielwert am nächsten liegt.',
+      faq_q12: 'Was passiert, wenn ich die Verbindung verliere?',
+      faq_a12: 'MyPubQuiz verbindet dich automatisch wieder, sobald die Verbindung wiederhergestellt ist. Dein Teamfortschritt bleibt erhalten, da die Team-ID im Browser gespeichert wird.',
+      faq_q13: 'Welche Daten werden gespeichert?',
+      faq_a13: 'Wir speichern nur spielbezogene Daten: Teamnamen, abgegebene Antworten, Punktestände und optional ein Team-Selfie. Spiele werden 24 Stunden nach Erstellung automatisch gelöscht. Weitere Details findest du in unserer <a href="/datenschutz.html">Datenschutzerklärung</a>.',
+      faq_q14: 'Sind Team-Selfies öffentlich sichtbar?',
+      faq_a14: 'Selfies werden nur innerhalb des aktiven Spiels angezeigt – für den Host und alle Teammitglieder, die am selben Spiel teilnehmen. Nach 24 Stunden werden Bilder automatisch vom Server gelöscht.',
+
+      // ── Blog ───────────────────────────────────────────────────────────────
+      blog_subtitle: 'Tipps, Ideen und Neuigkeiten rund um MyPubQuiz und Pub Quiz.',
 
       // footer
       footer_faq:         'FAQ',
