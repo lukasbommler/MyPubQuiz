@@ -59,7 +59,8 @@ body.host-body {
   gap: 1rem;
 }
 #lobby-qr {
-  display: inline-block;
+  display: block;
+  align-self: flex-start;
   line-height: 0;
   overflow: hidden;
 }
