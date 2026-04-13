@@ -272,6 +272,9 @@ html, body {
   align-items: center;
 }
 .lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: var(--card2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -283,11 +286,12 @@ html, body {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   line-height: 1;
 }
+.lang-btn img { display: block; border-radius: 1px; }
 .lang-btn:hover { background: var(--card); color: var(--text); }
 .lang-btn-active {
   background: rgba(124,58,237,0.2);
   border-color: var(--accent2);
   color: var(--accent2);
 }
-/* Compact variant used in host header (flag only) */
-.lang-bar-compact .lang-btn { padding: 0.25rem 0.4rem; font-size: 1rem; }
+/* Compact variant used in host header */
+.lang-bar-compact .lang-btn { padding: 0.25rem 0.5rem; font-size: 0.75rem; letter-spacing: 0.04em; }
