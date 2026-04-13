@@ -38,20 +38,6 @@ body.host-body {
 .game-code-badge strong { color: var(--accent2); letter-spacing: 0.1em; }
 .team-count { color: var(--text2); font-size: 0.9rem; }
 
-.lang-select {
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 0.9rem;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.lang-select:hover, .lang-select:focus { border-color: var(--accent); }
-.lang-select.locked { opacity: 0.45; cursor: not-allowed; }
-
 .screen.active { display: flex; flex: 1; overflow: hidden; }
 
 /* ── Lobby ────────────────────────────────────────────────────────────────── */

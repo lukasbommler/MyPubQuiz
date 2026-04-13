@@ -123,7 +123,6 @@ socket.on('error', ({ message }) => alert('Error: ' + message));
 socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId: savedHostTeamId, reconnectState }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
-  document.getElementById('lang-select').value = lang || 'en';
 
   // Restore host-plays state on reconnect
   if (savedHostTeamId) {
@@ -144,8 +143,12 @@ socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId:
 
   teamList.forEach(t => addTeam(t));
 
+  // Sync question language to the UI language (unless mid-game where it's locked in)
+  if (event.status !== 'running' && event.status !== 'finished') {
+    socket.emit('set-language', { code, lang: window.MPQ_LANG });
+  }
+
   if (event.status === 'running') {
-    lockLangSelect(true);
     showScreen('screen-game');
     if (reconnectState) restoreHostGame(reconnectState);
   } else if (event.status === 'round-over') {
@@ -219,19 +222,8 @@ function restoreHostGame(rs) {
 }
 
 // ── Language selector ─────────────────────────────────────────────────────────
-function lockLangSelect(locked) {
-  const sel = document.getElementById('lang-select');
-  sel.disabled = locked;
-  sel.classList.toggle('locked', locked);
-}
-
-document.getElementById('lang-select').addEventListener('change', (e) => {
-  socket.emit('set-language', { code, lang: e.target.value });
-});
-
-socket.on('language-changed', ({ lang, questions }) => {
+socket.on('language-changed', ({ questions }) => {
   allQuestions = questions;
-  document.getElementById('lang-select').value = lang;
   const allCats = [...new Set(questions.map(q => q.category))];
   buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
   buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
@@ -342,7 +334,6 @@ document.getElementById('btn-final-end').addEventListener('click', () => {
 // ── Round started ─────────────────────────────────────────────────────────────
 socket.on('round-started', ({ roundNum, total }) => {
   currentRound = roundNum;
-  lockLangSelect(true);
   showScreen('screen-game');
 });
 
@@ -616,7 +607,6 @@ socket.on('first-correct', ({ team, points, questionType }) => {
 // ── Round over ────────────────────────────────────────────────────────────────
 socket.on('round-over', ({ scores, roundNum }) => {
   stopTimer();
-  lockLangSelect(false);
   showScreen('screen-round-over');
   document.getElementById('round-over-badge').textContent = t('round_complete', { num: roundNum });
   updateScoreboard('round-over-scoreboard', scores);
