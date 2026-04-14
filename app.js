@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const db = require('./db');
 const { loadQuestions } = require('./questions-db');
@@ -92,6 +93,80 @@ app.get('/api/questions', (req, res) => {
   const qs = questionsByLang[lang] || questionsByLang.en;
   const categories = [...new Set(qs.map(q => q.category))];
   res.json({ total: qs.length, categories });
+});
+
+// ─── Admin logs page ──────────────────────────────────────────────────────────
+
+const ADMIN_PASS = process.env.ADMIN_PASS || 'changeme';
+
+app.get('/admin/logs', (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Unauthorized');
+  }
+  const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+  if (user !== 'admin' || pass !== ADMIN_PASS) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Unauthorized');
+  }
+
+  let lines = '';
+  try {
+    lines = execSync('journalctl -u quizapp --no-pager -n 300 --output=short-iso', { timeout: 5000 }).toString();
+  } catch {
+    lines = '(could not read journal — run as root or grant journalctl access)';
+  }
+
+  const escaped = lines.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const colored = escaped
+    .replace(/(\[CONN\][^\n]*)/g, '<span class="conn">$1</span>')
+    .replace(/(\[GAME\] created[^\n]*)/g,      '<span class="created">$1</span>')
+    .replace(/(\[GAME\] team-joined[^\n]*)/g,  '<span class="team">$1</span>')
+    .replace(/(\[GAME\] round-started[^\n]*)/g,'<span class="round">$1</span>')
+    .replace(/(\[GAME\] answer[^\n]*correct=true[^\n]*)/g, '<span class="correct">$1</span>')
+    .replace(/(\[GAME\] answer[^\n]*correct=false[^\n]*)/g,'<span class="wrong">$1</span>')
+    .replace(/(\[GAME\] revealed[^\n]*)/g,     '<span class="revealed">$1</span>')
+    .replace(/(\[GAME\] round-over[^\n]*)/g,   '<span class="roundover">$1</span>')
+    .replace(/(\[GAME\] ended[^\n]*)/g,        '<span class="ended">$1</span>');
+
+  const totalGames  = db.db.prepare('SELECT COUNT(*) as c FROM events').get().c;
+  const totalTeams  = db.db.prepare('SELECT COUNT(*) as c FROM teams').get().c;
+  const activeGames = Object.values(gameState).filter(s => s.currentStep !== null).length;
+
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>QuizApp Logs</title>
+  <meta http-equiv="refresh" content="15">
+  <style>
+    body  { background:#0a0a0a; color:#ccc; font:13px/1.5 monospace; margin:0; padding:1rem; }
+    h1    { color:#fff; font-size:1.1rem; margin:0 0 .5rem; }
+    .stats { display:flex; gap:2rem; margin-bottom:1rem; }
+    .stat  { background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:.5rem 1rem; }
+    .stat strong { display:block; font-size:1.4rem; color:#fff; }
+    .stat span   { font-size:.75rem; color:#888; }
+    pre   { background:#111; border:1px solid #222; border-radius:8px; padding:1rem;
+            overflow-x:auto; white-space:pre-wrap; word-break:break-all; }
+    .conn     { color:#666; }
+    .created  { color:#60a5fa; }
+    .team     { color:#a78bfa; }
+    .round    { color:#fbbf24; }
+    .correct  { color:#34d399; }
+    .wrong    { color:#f87171; }
+    .revealed { color:#94a3b8; }
+    .roundover{ color:#fb923c; }
+    .ended    { color:#f43f5e; }
+    .hint { font-size:.75rem; color:#555; margin-bottom:.5rem; }
+  </style></head><body>
+  <h1>QuizApp — Live Logs</h1>
+  <div class="stats">
+    <div class="stat"><strong>${totalGames}</strong><span>Total games</span></div>
+    <div class="stat"><strong>${totalTeams}</strong><span>Total teams</span></div>
+    <div class="stat"><strong>${activeGames}</strong><span>Active rounds</span></div>
+    <div class="stat"><strong>${io.engine.clientsCount}</strong><span>Connected now</span></div>
+  </div>
+  <div class="hint">Auto-refreshes every 15s &nbsp;·&nbsp; Showing last 300 journal lines</div>
+  <pre>${colored}</pre>
+  </body></html>`);
 });
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
