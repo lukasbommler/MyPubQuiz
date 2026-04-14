@@ -377,11 +377,11 @@ document.getElementById('btn-show-scoreboard').addEventListener('click', () => {
 });
 
 document.getElementById('btn-end-round').addEventListener('click', () => {
-  if (confirm('End this round early and go to standings?')) socket.emit('end-round', { code });
+  showConfirm('End this round early and go to standings?', () => socket.emit('end-round', { code }));
 });
 
 document.getElementById('btn-final-end').addEventListener('click', () => {
-  if (confirm('End game and show final results?')) socket.emit('end-game', { code });
+  showConfirm('End game and show final results?', () => socket.emit('end-game', { code }));
 });
 
 // ── Round started ─────────────────────────────────────────────────────────────
@@ -757,7 +757,7 @@ document.getElementById('btn-keep-playing').addEventListener('click', () => {
 });
 
 document.getElementById('btn-end-game-standings').addEventListener('click', () => {
-  if (confirm(t('confirm_end_game'))) socket.emit('end-game', { code });
+  showConfirm(t('confirm_end_game'), () => socket.emit('end-game', { code }));
 });
 
 // ── Game over ─────────────────────────────────────────────────────────────────
@@ -882,6 +882,28 @@ function showSpecialOverlay(overlayId, teamId, ptsId, team, points) {
   const overlay = document.getElementById(overlayId);
   overlay.classList.remove('hidden');
   setTimeout(() => overlay.classList.add('hidden'), 4000);
+}
+
+// ── Confirm modal ─────────────────────────────────────────────────────────────
+function showConfirm(message, onConfirm) {
+  const modal  = document.getElementById('confirm-modal');
+  const msgEl  = document.getElementById('confirm-message');
+  const okBtn  = document.getElementById('confirm-ok');
+  const cancelBtn = document.getElementById('confirm-cancel');
+  msgEl.textContent = message;
+  modal.classList.remove('hidden');
+  const close = () => modal.classList.add('hidden');
+  const handleOk = () => { close(); onConfirm(); cleanup(); };
+  const handleCancel = () => { close(); cleanup(); };
+  const handleKey = (e) => { if (e.key === 'Escape') { close(); cleanup(); } };
+  function cleanup() {
+    okBtn.removeEventListener('click', handleOk);
+    cancelBtn.removeEventListener('click', handleCancel);
+    document.removeEventListener('keydown', handleKey);
+  }
+  okBtn.addEventListener('click', handleOk);
+  cancelBtn.addEventListener('click', handleCancel);
+  document.addEventListener('keydown', handleKey);
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
