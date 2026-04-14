@@ -59,6 +59,7 @@ app.post('/api/event/create', (req, res) => {
   while (db.codeExists(code)) code = generateCode();
   const hostToken = uuidv4();
   db.createEvent(code, hostToken);
+  console.log(`[GAME] created code=${code}`);
   res.json({ code, hostToken });
 });
 
@@ -162,6 +163,7 @@ io.on('connection', (socket) => {
     if (!team) {
       if (!teamName) { socket.emit('error', { message: 'Team name required' }); return; }
       team = db.createTeam(uuidv4(), code, teamName.trim().substring(0, 30));
+      console.log(`[GAME] team-joined code=${code} team="${team.name}"`);
     }
 
     socket.join(`room:${code}`);
@@ -253,6 +255,8 @@ io.on('connection', (socket) => {
     };
 
     db.updateEvent(code, { status: 'running', current_question_index: indices[0] });
+    const teamCount = db.getTeamsByEvent(code).length;
+    console.log(`[GAME] round-started code=${code} round=${roundNum} teams=${teamCount} type=${questionType}`);
     io.to(`room:${code}`).emit('round-started', { roundNum, total: indices.length });
     sendQuestion(code, indices[0]);
   });
@@ -701,6 +705,7 @@ function sendQuestion(code, index) {
 function endGame(code) {
   db.updateEvent(code, { status: 'finished' });
   const scores = db.getScoresByEvent(code);
+  console.log(`[GAME] ended code=${code} teams=${scores.length} top="${scores[0]?.name ?? '-'}" score=${scores[0]?.score ?? 0}`);
   io.to(`room:${code}`).emit('game-over', { scores });
 }
 
