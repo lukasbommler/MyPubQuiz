@@ -217,6 +217,39 @@ html, body {
   background-clip: text;
 }
 
+/* Worst estimate variant uses red-orange tones */
+.special-overlay.worst .special-title {
+  background: linear-gradient(135deg, #ef4444, #f97316, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.special-overlay.worst .special-icon {
+  animation: worstIconShake 0.6s ease 0.1s both;
+}
+@keyframes worstIconShake {
+  0%   { transform: scale(0) rotate(-30deg); }
+  50%  { transform: scale(1.3) rotate(10deg); }
+  70%  { transform: scale(0.95) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.special-selfie-wrap {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card2);
+}
+.special-selfie-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.special-initials { font-size: 2.4rem; font-weight: 800; }
+.special-overlay.precise .special-selfie-wrap { border-color: #34d399; }
+.special-overlay.worst   .special-selfie-wrap { border-color: #f97316; }
+
 .special-team {
   font-size: 2rem;
   font-weight: 800;

@@ -152,7 +152,6 @@
           <button class="btn btn-warning hidden" id="btn-show-answers" data-i18n="show_answers_btn">Show Answer Options →</button>
           <button class="btn btn-primary hidden" id="btn-next" data-i18n="next_question_btn">Next Question →</button>
           <button class="btn btn-warning hidden" id="btn-end-round" data-i18n="end_round_btn">End Round →</button>
-          <button class="btn btn-danger" id="btn-end" data-i18n="end_game_btn">End Game</button>
         </div>
       </div>
       <div class="game-right">
@@ -263,6 +262,10 @@
   <div id="lone-hero-overlay" class="special-overlay hidden">
     <div class="special-content">
       <div class="special-icon">🦸</div>
+      <div class="special-selfie-wrap">
+        <img id="lone-hero-overlay-selfie" src="" alt="">
+        <div class="special-initials" id="lone-hero-overlay-initials"></div>
+      </div>
       <div class="special-title" data-i18n="solo_correct_title_h">Solo Correct!</div>
       <div class="special-team" id="lone-hero-team"></div>
       <div class="special-subtitle" data-i18n="only_team_right">The only team who got it right</div>
@@ -274,10 +277,27 @@
   <div id="precise-overlay" class="special-overlay precise hidden">
     <div class="special-content">
       <div class="special-icon">🎯</div>
+      <div class="special-selfie-wrap">
+        <img id="precise-overlay-selfie" src="" alt="">
+        <div class="special-initials" id="precise-overlay-initials"></div>
+      </div>
       <div class="special-title" data-i18n="spot_on_title_h">Spot On!</div>
       <div class="special-team" id="precise-team"></div>
-      <div class="special-subtitle" data-i18n="within_2pct">Within 2% of the correct answer</div>
       <div class="special-points" id="precise-points"></div>
+    </div>
+  </div>
+
+  <!-- Worst estimate overlay (Estimation: furthest from correct value) -->
+  <div id="worst-overlay" class="special-overlay worst hidden">
+    <div class="special-content">
+      <div class="special-icon">🌋</div>
+      <div class="special-selfie-wrap">
+        <img id="worst-overlay-selfie" src="" alt="">
+        <div class="special-initials" id="worst-overlay-initials"></div>
+      </div>
+      <div class="special-title" data-i18n="off_the_charts_h">Off the Charts!</div>
+      <div class="special-team" id="worst-team"></div>
+      <div class="special-subtitle" data-i18n="furthest_away_h">The furthest from the correct answer</div>
     </div>
   </div>
 

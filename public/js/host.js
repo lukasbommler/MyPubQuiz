@@ -49,7 +49,7 @@ function setStep(step) {
 
   if (step === 'idle')      { document.getElementById('btn-send-question').classList.remove('hidden'); document.getElementById('btn-replace').classList.remove('hidden'); }
   if (step === 'sent')      { document.getElementById('btn-show-answers').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); }
-  if (step === 'answering') { document.getElementById('btn-end-round').classList.remove('hidden'); startTimer(currentQuestion?.time_limit || 20); }
+  if (step === 'answering') { document.getElementById('btn-end-round').classList.remove('hidden'); }
   if (step === 'revealed')  {
     const isLastQuestion = currentQuestion && (currentQuestion.roundIndex + 1 >= currentQuestion.roundTotal);
     if (!isLastQuestion) document.getElementById('btn-next').classList.remove('hidden');
@@ -120,7 +120,7 @@ function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId, point
 socket.emit('host-join', { code, hostToken });
 socket.on('error', ({ message }) => alert('Error: ' + message));
 
-socket.on('host-joined', ({ event, teams: teamList, questions, lang, hostTeamId: savedHostTeamId, reconnectState }) => {
+socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: savedHostTeamId, reconnectState }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
 
@@ -380,15 +380,12 @@ document.getElementById('btn-end-round').addEventListener('click', () => {
   if (confirm('End this round early and go to standings?')) socket.emit('end-round', { code });
 });
 
-document.getElementById('btn-end').addEventListener('click', () => {
-  if (confirm('End game?')) socket.emit('end-game', { code });
-});
 document.getElementById('btn-final-end').addEventListener('click', () => {
   if (confirm('End game and show final results?')) socket.emit('end-game', { code });
 });
 
 // ── Round started ─────────────────────────────────────────────────────────────
-socket.on('round-started', ({ roundNum, total }) => {
+socket.on('round-started', ({ roundNum }) => {
   currentRound = roundNum;
   showScreen('screen-game');
 });
@@ -561,6 +558,19 @@ socket.on('host-step', ({ step }) => {
   }
   if (step === 'answers-shown') {
     setStep('answering');
+    // Delay matches the 3-2-1-GO countdown on player screens (4 × 900ms = 3600ms)
+    setTimeout(() => startTimer(currentQuestion?.time_limit || 20), 3600);
+    // For estimation, question-sent is skipped — initialise preview here instead
+    if (currentQuestion?.type === 'estimation') {
+      document.getElementById('question-text').textContent = currentQuestion.question;
+      document.getElementById('correct-value').textContent = '';
+      // Playing host must not see live submissions (would reveal others' answers)
+      if (!hostPlaysMode) {
+        const el = document.getElementById('estimation-preview');
+        el.classList.remove('hidden');
+        document.getElementById('estimation-submissions').innerHTML = '';
+      }
+    }
     if (hostPlaysMode && currentQuestion && !hostAnswered) {
       // Show 3-2-1-GO countdown before unlocking answers, same timing as players
       const area = document.getElementById('host-answer-area');
@@ -588,20 +598,25 @@ socket.on('host-step', ({ step }) => {
 socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
   const team = teams[teamId];
   if (!team) return;
-  const row = document.createElement('div');
-  row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
-  const display = currentQuestion?.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
-  row.innerHTML = `
-    <span class="answer-log-name">${escapeHtml(team.name)}</span>
-    <span style="color:var(--text2);font-size:.8rem">${display}</span>
-    <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
-  document.getElementById('answers-log').prepend(row);
 
-  if (currentQuestion?.type === 'estimation') {
-    const chip = document.createElement('div');
-    chip.className = 'est-submission-chip';
-    chip.textContent = `${team.name}: ${answer}`;
-    document.getElementById('estimation-submissions').appendChild(chip);
+  // Playing host must not see others' estimation answers before reveal
+  const isEstimation = currentQuestion?.type === 'estimation';
+  if (!(hostPlaysMode && isEstimation)) {
+    const row = document.createElement('div');
+    row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
+    const display = currentQuestion?.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
+    row.innerHTML = `
+      <span class="answer-log-name">${escapeHtml(team.name)}</span>
+      <span style="color:var(--text2);font-size:.8rem">${display}</span>
+      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
+    document.getElementById('answers-log').prepend(row);
+
+    if (isEstimation) {
+      const chip = document.createElement('div');
+      chip.className = 'est-submission-chip';
+      chip.textContent = `${team.name}: ${answer}`;
+      document.getElementById('estimation-submissions').appendChild(chip);
+    }
   }
 });
 
@@ -613,7 +628,12 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   else if (currentQuestion?.type === 'estimation') cv.textContent = `${correct} ${currentQuestion.unit || ''}`;
   else if (currentQuestion?.type === 'word_order') cv.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
   updateScoreboard('scoreboard', scores);
-  renderHostDistribution(distribution);
+  // Playing host sees the same number-line chart as players (no names/values leaked pre-reveal)
+  if (hostPlaysMode && distribution?.type === 'estimation') {
+    renderHostDistributionNumberLine(distribution);
+  } else {
+    renderHostDistribution(distribution);
+  }
 
   if (hostPlaysMode && currentQuestion) {
     // Show the full answer preview with correct answer highlighted
@@ -658,6 +678,40 @@ function renderHostDistribution(dist) {
       <span style="font-size:.85rem;color:var(--text2)">✓ ${dist.correct} correct &nbsp; ✗ ${dist.wrong} wrong</span>
     </div>`;
   }
+}
+
+function renderHostDistributionNumberLine(dist) {
+  const el = document.getElementById('host-distribution');
+  if (!dist || !el) return;
+  if (!dist.submissions.length) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const values  = dist.submissions.map(s => s.value);
+  const allVals = [...values, dist.correctValue];
+  const min = Math.min(...allVals);
+  const max = Math.max(...allVals);
+  const range = max - min || 1;
+  const pos = v => Math.round(((v - min) / range) * 100);
+  el.innerHTML = `
+    <div class="dist-numberline">
+      <div class="dist-nl-track">
+        <div class="dist-nl-correct" style="left:${pos(dist.correctValue)}%" title="Correct: ${dist.correctValue}"></div>
+        ${dist.submissions.map(s => `
+          <div class="dist-nl-dot ${s.value === dist.correctValue ? 'dist-nl-winner' : ''}"
+               style="left:${pos(s.value)}%"
+               title="${escapeHtml(s.name)}: ${s.value}">
+          </div>`).join('')}
+      </div>
+      <div class="dist-nl-labels">
+        ${dist.submissions.map(s => `
+          <div class="dist-nl-chip ${s.value === dist.correctValue ? 'dist-nl-winner' : ''}"
+               style="left:${pos(s.value)}%">
+            ${s.value}
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="dist-nl-legend">
+      <span class="dist-nl-correct-label">▼ ${dist.correctValue} ${dist.unit}</span>
+    </div>`;
 }
 
 socket.on('scores-updated', ({ scores }) => {
@@ -815,10 +869,16 @@ function showBuzz(team, points, label) {
 // ── Special animations ────────────────────────────────────────────────────────
 socket.on('lone-hero', ({ team, points }) => showSpecialOverlay('lone-hero-overlay', 'lone-hero-team', 'lone-hero-points', team, points));
 socket.on('precise-estimate', ({ team, points }) => showSpecialOverlay('precise-overlay', 'precise-team', 'precise-points', team, points));
+socket.on('worst-estimate', ({ team }) => showSpecialOverlay('worst-overlay', 'worst-team', null, team, 0));
 
 function showSpecialOverlay(overlayId, teamId, ptsId, team, points) {
   document.getElementById(teamId).textContent = team.name;
-  document.getElementById(ptsId).textContent = points > 0 ? `+${points} pts` : '';
+  if (ptsId) document.getElementById(ptsId).textContent = points > 0 ? `+${points} pts` : '';
+  const img   = document.getElementById(overlayId + '-selfie');
+  const inits = document.getElementById(overlayId + '-initials');
+  const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+  if (team.selfie) { img.src = team.selfie; img.style.display = 'block'; inits.textContent = ''; }
+  else             { img.style.display = 'none'; inits.textContent = initials; }
   const overlay = document.getElementById(overlayId);
   overlay.classList.remove('hidden');
   setTimeout(() => overlay.classList.add('hidden'), 4000);

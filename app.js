@@ -267,8 +267,20 @@ io.on('connection', (socket) => {
     const state = gameState[code] || {};
     const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-text', safe);
-    io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
-    if (gameState[code]) gameState[code].currentStep = 'question-text';
+
+    // Estimation: skip the separate show-answers step — send input field immediately
+    if (q.type === 'estimation' && gameState[code]) {
+      const effectiveTimeLimit = gameState[code].timeLimitSecs ?? q.time_limit;
+      io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
+      io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit });
+      io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
+      gameState[code].currentStep = 'answers-shown';
+      gameState[code].questionStartedAt = Date.now();
+      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000);
+    } else {
+      io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
+      if (gameState[code]) gameState[code].currentStep = 'question-text';
+    }
   });
 
   // ── Replace current question (idle step only, before it's sent to players) ─
@@ -322,6 +334,7 @@ io.on('connection', (socket) => {
     const q = getQ(code)[event.current_question_index];
     if (!q) return;
     const state = gameState[code] || {};
+    if (state.currentStep === 'answers-shown') return; // estimation already advanced past this
     const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     const effectiveTimeLimit = state.timeLimitSecs ?? q.time_limit;
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
@@ -626,6 +639,8 @@ function doRevealAnswer(code) {
   const preciseTeam = state.preciseTeam;
   const precisePoints = state.precisePoints;
 
+  const hasSpecialAnim = !!(loneTeam || preciseTeam);
+
   if (loneTeam) {
     setTimeout(() => {
       io.to(`room:${code}`).emit('lone-hero', { team: loneTeam, points: lonePoints });
@@ -634,6 +649,27 @@ function doRevealAnswer(code) {
     setTimeout(() => {
       io.to(`room:${code}`).emit('precise-estimate', { team: preciseTeam, points: precisePoints });
     }, specialDelay);
+  }
+
+  // Worst estimate: furthest-away team, shown after all other animations finish
+  if (q.type === 'estimation' && allAnswers.length >= 2) {
+    let maxDiff = -Infinity;
+    for (const a of allAnswers) {
+      const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
+      if (diff > maxDiff) maxDiff = diff;
+    }
+    const worstAnswer = allAnswers
+      .filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === maxDiff)
+      .sort((a, b) => b.time_ms - a.time_ms)[0]; // pick slowest if tied
+    if (worstAnswer && worstAnswer.team_id !== estimationWinnerId) {
+      const worstTeam = db.getTeam(worstAnswer.team_id);
+      if (worstTeam) {
+        const worstDelay = specialDelay + (hasSpecialAnim ? 4500 : 500);
+        setTimeout(() => {
+          io.to(`room:${code}`).emit('worst-estimate', { team: worstTeam });
+        }, worstDelay);
+      }
+    }
   }
 }
 

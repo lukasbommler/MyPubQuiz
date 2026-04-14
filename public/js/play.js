@@ -330,10 +330,16 @@ socket.on('first-correct', ({ team, points, questionType }) => {
 // ── Lone hero / Precise estimate animations ───────────────────────────────────
 socket.on('lone-hero', ({ team, points }) => showPlaySpecial('play-lone-hero-overlay', 'play-lone-hero-team', 'play-lone-hero-points', team, points));
 socket.on('precise-estimate', ({ team, points }) => showPlaySpecial('play-precise-overlay', 'play-precise-team', 'play-precise-points', team, points));
+socket.on('worst-estimate', ({ team }) => showPlaySpecial('play-worst-overlay', 'play-worst-team', null, team, 0));
 
 function showPlaySpecial(overlayId, teamElId, ptsElId, team, points) {
   document.getElementById(teamElId).textContent = team.name;
-  document.getElementById(ptsElId).textContent = points > 0 ? `+${points} pts` : '';
+  if (ptsElId) document.getElementById(ptsElId).textContent = points > 0 ? `+${points} pts` : '';
+  const img   = document.getElementById(overlayId + '-selfie');
+  const inits = document.getElementById(overlayId + '-initials');
+  const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+  if (team.selfie) { img.src = team.selfie; img.style.display = 'block'; inits.textContent = ''; }
+  else             { img.style.display = 'none'; inits.textContent = initials; }
   const overlay = document.getElementById(overlayId);
   overlay.classList.remove('hidden');
   setTimeout(() => overlay.classList.add('hidden'), 4000);

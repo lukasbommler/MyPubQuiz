@@ -68,6 +68,8 @@
       precise_subtitle:    'Exactly correct!',
       solo_correct_title:  'Solo Correct!',
       spot_on_title:       'Spot On!',
+      off_the_charts:      'Off the Charts!',
+      furthest_away:       'The furthest from the correct answer',
 
       round_waiting: 'Waiting for host to select next round...',
       reconnecting:  'Reconnecting...',
@@ -139,6 +141,8 @@
       only_team_right:      'The only team who got it right',
       spot_on_title_h:      'Spot On!',
       within_2pct:          'Within 2% of the correct answer',
+      off_the_charts_h:     'Off the Charts!',
+      furthest_away_h:      'The furthest from the correct answer',
 
       // host — dynamic
       round_complete:   'Round {num} Complete!',
@@ -267,6 +271,8 @@
       precise_subtitle:    'Exakt richtig!',
       solo_correct_title:  'Einzig Richtig!',
       spot_on_title:       'Genau Richtig!',
+      off_the_charts:      'Völlig daneben!',
+      furthest_away:       'Am weitesten von der richtigen Antwort entfernt',
 
       round_waiting: 'Warte auf Host...',
       reconnecting:  'Verbindung wird wiederhergestellt...',
@@ -338,6 +344,8 @@
       only_team_right:      'Das einzige Team mit richtiger Antwort',
       spot_on_title_h:      'Genau Richtig!',
       within_2pct:          'Innerhalb von 2 % der richtigen Antwort',
+      off_the_charts_h:     'Völlig daneben!',
+      furthest_away_h:      'Am weitesten von der richtigen Antwort entfernt',
 
       // host — dynamic
       round_complete:  'Runde {num} abgeschlossen!',
