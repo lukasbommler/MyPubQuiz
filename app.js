@@ -103,6 +103,12 @@ app.get('/game/:code', (req, res) => res.sendFile(path.join(__dirname, 'public',
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 
 io.on('connection', (socket) => {
+  console.log(`[CONN] connected  id=${socket.id} total=${io.engine.clientsCount}`);
+  socket.on('disconnect', () => {
+    const role = socket.data?.role ?? 'unknown';
+    const code = socket.data?.code ?? '-';
+    console.log(`[CONN] disconnected id=${socket.id} role=${role} code=${code} total=${io.engine.clientsCount}`);
+  });
 
   // ── Host joins ──────────────────────────────────────────────────────────────
   socket.on('host-join', ({ code, hostToken }) => {
@@ -114,6 +120,7 @@ io.on('connection', (socket) => {
     socket.join(`host:${code}`);
     socket.join(`room:${code}`);
     socket.data = { role: 'host', code };
+    console.log(`[GAME] host-joined code=${code}`);
 
     const teams = db.getTeamsByEvent(code);
     const lang = gameState[code]?.lang || 'en';
@@ -390,6 +397,8 @@ io.on('connection', (socket) => {
       state.firstCorrectPoints = points;
     }
 
+    const teamName = db.getTeam(teamId)?.name ?? teamId;
+    console.log(`[GAME] answer code=${code} team="${teamName}" q=${qIndex} type=${q.type} correct=${isCorrect} pts=${points} ms=${timeTaken}`);
     io.to(`host:${code}`).emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
     // Tell team their answer is locked in — correctness hidden until reveal
     socket.emit('answer-acknowledged', { received: true });
@@ -427,6 +436,8 @@ io.on('connection', (socket) => {
     if (state.roundIndex >= state.roundQuestionIndices.length) {
       db.updateEvent(code, { status: 'round-over' });
       const scores = db.getScoresByEvent(code);
+      const top3 = scores.slice(0, 3).map((t, i) => `${i + 1}.${t.name}(${t.score})`).join(' ');
+      console.log(`[GAME] round-over code=${code} round=${state.roundNum} teams=${scores.length} top3="${top3}"`);
       io.to(`room:${code}`).emit('round-over', { scores, roundNum: state.roundNum });
       return;
     }
@@ -617,6 +628,9 @@ function doRevealAnswer(code) {
 
   state.currentStep = 'revealed';
   state.distribution = distribution;
+
+  const correctCount = allAnswers.filter(a => a.is_correct).length;
+  console.log(`[GAME] revealed code=${code} q=${qIndex} type=${q.type} answered=${allAnswers.length} correct=${correctCount}`);
 
   io.to(`room:${code}`).emit('answer-revealed', {
     correct: correctAnswer(q),
