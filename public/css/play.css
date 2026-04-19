@@ -543,6 +543,12 @@ body.play-body {
 }
 .reveal-score-row.my-team { border-color: var(--accent); background: rgba(124,58,237,0.1); }
 .reveal-score-rank { width: 24px; font-size: 0.85rem; font-weight: 700; color: var(--text2); }
+.reveal-score-avatar {
+  width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+}
+.reveal-score-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.reveal-score-initials { font-size: 0.75rem; font-weight: 700; color: var(--text2); }
 .reveal-score-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
 .reveal-score-pts { font-weight: 700; color: var(--accent2); }
 
@@ -623,6 +629,12 @@ body.play-body {
 .final-score-row.winner { border-color: var(--yellow); background: rgba(245,158,11,0.1); }
 .final-score-row.my-team { border-color: var(--accent); background: rgba(124,58,237,0.12); }
 .final-score-rank { font-size: 1.5rem; width: 36px; }
+.final-score-avatar {
+  width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+}
+.final-score-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.final-score-initials { font-size: 0.8rem; font-weight: 700; color: var(--text2); }
 .final-score-name { flex: 1; font-weight: 700; font-size: 1.1rem; }
 .final-score-pts { font-weight: 700; font-size: 1.1rem; color: var(--accent2); }
 

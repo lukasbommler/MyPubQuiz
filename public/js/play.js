@@ -236,12 +236,18 @@ function showRoundOver(scores, roundNum) {
 socket.on('scoreboard-shown', ({ scores, roundNum }) => {
   showScreen('screen-round-over-play');
   document.getElementById('round-complete-badge').textContent = t('round_standings', { num: roundNum });
-  document.getElementById('round-over-scores-play').innerHTML = scores.map((team, i) => `
-    <div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
+  document.getElementById('round-over-scores-play').innerHTML = scores.map((team, i) => {
+    const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    const avatarHtml = team.selfie
+      ? `<img src="${escapeHtml(team.selfie)}" alt="">`
+      : `<span class="reveal-score-initials">${initials}</span>`;
+    return `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
       <span class="reveal-score-rank">${rankEmoji(i)}</span>
+      <div class="reveal-score-avatar">${avatarHtml}</div>
       <span class="reveal-score-name">${escapeHtml(team.name)}</span>
       <span class="reveal-score-pts">${team.score} pts</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 });
 
 // ── STEP 1: Host sends question text only ─────────────────────────────────────
@@ -365,13 +371,18 @@ socket.on('game-over', ({ scores }) => {
   scoreDisplay.textContent = `${myScore} pts`;
   scoreDisplay.classList.remove('hidden');
 
-  document.getElementById('final-scores-play').innerHTML = scores.map((team, i) => `
-    <div class="final-score-row ${i === 0 ? 'winner' : ''} ${team.id === myTeamId ? 'my-team' : ''}">
+  document.getElementById('final-scores-play').innerHTML = scores.map((team, i) => {
+    const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    const avatarHtml = team.selfie
+      ? `<img src="${escapeHtml(team.selfie)}" alt="">`
+      : `<span class="final-score-initials">${initials}</span>`;
+    return `<div class="final-score-row ${i === 0 ? 'winner' : ''} ${team.id === myTeamId ? 'my-team' : ''}">
       <span class="final-score-rank">${rankEmoji(i)}</span>
+      <div class="final-score-avatar">${avatarHtml}</div>
       <span class="final-score-name">${escapeHtml(team.name)}</span>
       <span class="final-score-pts">${team.score} pts</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   if (myRank > 0 && myRank <= 3) setTimeout(() => Sounds.launchConfetti(), 400);
 });
