@@ -121,8 +121,8 @@ app.get('/admin/logs', (req, res) => {
     .replace(/(\[GAME\] round-over[^\n]*)/g,   '<span class="roundover">$1</span>')
     .replace(/(\[GAME\] ended[^\n]*)/g,        '<span class="ended">$1</span>');
 
-  const totalGames  = db.db.prepare('SELECT COUNT(*) as c FROM events').get().c;
-  const totalTeams  = db.db.prepare('SELECT COUNT(*) as c FROM teams').get().c;
+  const totalGames  = db.countEvents();
+  const totalTeams  = db.countTeams();
   const activeGames = Object.values(gameState).filter(s => s.currentStep !== null).length;
 
   res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">

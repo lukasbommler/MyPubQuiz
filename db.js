@@ -121,8 +121,12 @@ function updateAnswer(id, fields) {
   if (a) { Object.assign(a, fields); save(); }
 }
 
+function countEvents() { return Object.keys(store.events).length; }
+function countTeams()  { return Object.keys(store.teams).length; }
+
 module.exports = {
   createEvent, getEvent, updateEvent, codeExists,
   createTeam, getTeam, getTeamByEventAndId, getTeamsByEvent, updateTeam, addScore, getScoresByEvent,
-  recordAnswer, hasAnswered, getAnswersByQuestion, updateAnswer
+  recordAnswer, hasAnswered, getAnswersByQuestion, updateAnswer,
+  countEvents, countTeams
 };
