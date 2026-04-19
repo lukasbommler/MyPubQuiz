@@ -20,6 +20,7 @@ async function getDb() {
   _db.run(`
     CREATE TABLE IF NOT EXISTS questions (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_id     INTEGER,
       type          TEXT    NOT NULL,
       category      TEXT    NOT NULL,
       language      TEXT    NOT NULL DEFAULT 'en',
@@ -52,6 +53,7 @@ async function loadQuestions(lang = 'en') {
 
   return rows.map(r => ({
     id:            r.id,
+    source_id:     r.source_id !== null ? r.source_id : undefined,
     category:      r.category,
     type:          r.type,
     time_limit:    r.time_limit,

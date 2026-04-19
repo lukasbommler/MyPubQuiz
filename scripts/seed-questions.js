@@ -24,6 +24,7 @@ async function seed() {
 
   for (const row of rows) {
     const {
+      id: source_id,
       type, language, category, question,
       answer_a, answer_b, answer_c, answer_d,
       correct, correct_value, unit, words
@@ -58,9 +59,10 @@ async function seed() {
 
     db.run(
       `INSERT INTO questions
-         (type, category, language, question, answers, correct, correct_value, unit, words)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (source_id, type, category, language, question, answers, correct, correct_value, unit, words)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        source_id ? parseInt(source_id) : null,
         type,
         category,
         language || 'en',
