@@ -33,6 +33,13 @@ async function getDb() {
       time_limit    INTEGER NOT NULL DEFAULT 20
     )
   `);
+  // Migrations: add columns that may be missing from older DB files
+  for (const col of [
+    'ALTER TABLE questions ADD COLUMN source_id INTEGER',
+    'ALTER TABLE questions ADD COLUMN time_limit INTEGER NOT NULL DEFAULT 20',
+  ]) {
+    try { _db.run(col); } catch { /* column already exists */ }
+  }
   _db.run(`
     CREATE TABLE IF NOT EXISTS question_flags (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
