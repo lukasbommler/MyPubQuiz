@@ -297,6 +297,7 @@ app.get('/admin/flags/:id/dismiss', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/host/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
 app.get('/game/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'play.html')));
+app.get('/monitor/:code', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'monitor.html')));
 
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 
@@ -406,6 +407,42 @@ io.on('connection', (socket) => {
         }
       }
     }
+  });
+
+  // ── Monitor joins ───────────────────────────────────────────────────────────
+  socket.on('monitor-join', ({ code }) => {
+    const event = db.getEvent(code);
+    if (!event) { socket.emit('error', { message: 'Game not found' }); return; }
+
+    socket.join(`room:${code}`);
+    socket.data = { role: 'monitor', code };
+
+    const teams = db.getTeamsByEvent(code);
+    const state = gameState[code];
+
+    let reconnectState = null;
+    if (state && event.status === 'running') {
+      const qIndex = event.current_question_index;
+      const q = getQ(code)[qIndex];
+      const timeLimit = state.timeLimitSecs ?? (q?.time_limit ?? 20);
+      const elapsed = state.questionStartedAt ? Math.floor((Date.now() - state.questionStartedAt) / 1000) : 0;
+      const timerRemaining = q ? Math.max(0, timeLimit - elapsed) : 0;
+      const scores = db.getScoresByEvent(code);
+      const answers = q ? db.getAnswersByQuestion(code, qIndex) : [];
+      reconnectState = {
+        currentStep: state.currentStep,
+        roundNum: state.roundNum ?? 1,
+        currentQuestion: q ? { ...safeQuestion(q, qIndex, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1, time_limit: timeLimit } : null,
+        timerRemaining,
+        answeredCount: answers.length,
+        totalTeams: teams.length,
+        scores,
+        distribution: state.distribution ?? null,
+        correct: state.currentStep === 'revealed' && q ? correctAnswer(q) : null,
+      };
+    }
+
+    socket.emit('monitor-joined', { event, teams, roundNum: state?.roundNum ?? 0, reconnectState });
   });
 
   // ── Start round (works from lobby and between rounds) ───────────────────────
@@ -598,8 +635,10 @@ io.on('connection', (socket) => {
     const teamName = db.getTeam(teamId)?.name ?? teamId;
     console.log(`[GAME] answer code=${code} team="${teamName}" q=${qIndex} type=${q.type} correct=${isCorrect} pts=${points} ms=${timeTaken}`);
     io.to(`host:${code}`).emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
-    // Tell team their answer is locked in — correctness hidden until reveal
     socket.emit('answer-acknowledged', { received: true });
+    // Let monitors show live answer count
+    const tallyCount = db.getAnswersByQuestion(code, qIndex).length;
+    io.to(`room:${code}`).emit('answer-tally', { count: tallyCount, total: db.getTeamsByEvent(code).length });
 
     // Auto-reveal early if every team has now answered
     checkAllAnswered(code, qIndex);

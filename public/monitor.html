@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor — My Pub Quiz</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/monitor.css">
+</head>
+<body class="monitor-body">
+
+  <div id="reconnect-banner" class="reconnect-banner hidden">⚡ Reconnecting...</div>
+
+  <!-- ── Lobby ── -->
+  <div id="screen-lobby" class="mon-screen active">
+    <div class="mon-lobby-wrap">
+      <div class="mon-lobby-logo">🎉 My Pub Quiz</div>
+      <div class="mon-lobby-code">Game <strong id="mon-code-display">------</strong></div>
+      <div class="mon-lobby-status" id="mon-lobby-status">Waiting for game to start…</div>
+      <div class="mon-lobby-teams" id="mon-lobby-teams"></div>
+    </div>
+  </div>
+
+  <!-- ── Game (questions + reveals) ── -->
+  <div id="screen-game" class="mon-screen">
+    <!-- Stats bar -->
+    <div class="mon-statsbar">
+      <span class="mon-stat" id="mon-round-label">Round 1</span>
+      <span class="mon-sep">·</span>
+      <span class="mon-stat" id="mon-q-label">Q 1 / ?</span>
+      <span class="mon-sep">·</span>
+      <span class="mon-stat mon-category" id="mon-category-label"></span>
+      <span class="mon-sep">·</span>
+      <span class="mon-stat" id="mon-teams-label">0 teams</span>
+      <span class="mon-sep">·</span>
+      <span class="mon-stat mon-tally" id="mon-tally">0 answered</span>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="mon-layout">
+
+      <!-- Left: question + answers + distribution -->
+      <div class="mon-main-col">
+        <div class="mon-timer-wrap">
+          <div class="mon-timer-fill" id="mon-timer-fill"></div>
+        </div>
+        <div class="mon-question-text" id="mon-question-text"></div>
+        <div class="mon-answers-area" id="mon-answers-area"></div>
+
+        <!-- Shown after reveal -->
+        <div class="mon-reveal-area hidden" id="mon-reveal-area">
+          <div class="mon-correct-banner" id="mon-correct-banner"></div>
+          <div class="mon-distribution" id="mon-distribution"></div>
+        </div>
+      </div>
+
+      <!-- Right: scoreboard -->
+      <div class="mon-score-col">
+        <div class="mon-score-header">Scoreboard</div>
+        <div class="mon-scoreboard" id="mon-scoreboard"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Round standings ── -->
+  <div id="screen-standings" class="mon-screen">
+    <div class="mon-standings-badge" id="mon-standings-badge">Round Complete!</div>
+    <div class="mon-standings-grid" id="mon-standings-grid"></div>
+  </div>
+
+  <!-- ── Game over ── -->
+  <div id="screen-gameover" class="mon-screen">
+    <div class="mon-gameover-title">🏆 Game Over</div>
+    <div class="mon-podium" id="mon-podium"></div>
+    <div class="mon-final-list" id="mon-final-list"></div>
+  </div>
+
+  <!-- ── Overlays ── -->
+  <div id="mon-buzz-overlay" class="mon-overlay hidden">
+    <div class="mon-overlay-inner">
+      <div class="mon-overlay-icon" id="mon-buzz-icon">⚡</div>
+      <div class="mon-overlay-title" id="mon-buzz-title">First Correct!</div>
+      <div class="mon-overlay-avatar" id="mon-buzz-avatar"></div>
+      <div class="mon-overlay-name" id="mon-buzz-name"></div>
+      <div class="mon-overlay-pts" id="mon-buzz-pts"></div>
+    </div>
+  </div>
+
+  <div id="mon-countdown-overlay" class="mon-countdown-overlay hidden">
+    <div class="mon-countdown-number" id="mon-countdown-number">3</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/monitor.js"></script>
+</body>
+</html>

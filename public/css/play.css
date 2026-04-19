@@ -91,6 +91,16 @@ body.play-body {
   margin: auto;
 }
 .join-container h2 { font-size: 1.8rem; font-weight: 800; }
+.monitor-mode-link {
+  display: block;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text2);
+  text-decoration: none;
+  opacity: 0.6;
+  margin-top: -0.5rem;
+}
+.monitor-mode-link:hover { opacity: 1; color: var(--accent2); }
 
 /* ── Selfie ───────────────────────────────────────────────────────────────── */
 .selfie-container {

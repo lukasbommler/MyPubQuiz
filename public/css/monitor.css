@@ -1,0 +1,499 @@
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+.monitor-body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font, system-ui, sans-serif);
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mon-screen { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+.mon-screen.active { display: flex; }
+
+/* ── Reconnect banner ────────────────────────────────────────────────────── */
+.reconnect-banner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--yellow, #f59e0b); color: #000;
+  text-align: center; padding: 0.4rem;
+  font-weight: 700; font-size: 0.9rem; z-index: 9999;
+}
+
+/* ── Lobby ───────────────────────────────────────────────────────────────── */
+.mon-lobby-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem 2rem;
+}
+.mon-lobby-logo    { font-size: 3rem; font-weight: 900; color: var(--accent2); }
+.mon-lobby-code    { font-size: 1.4rem; color: var(--text2); }
+.mon-lobby-code strong { color: var(--accent2); letter-spacing: 0.12em; font-size: 1.8rem; }
+.mon-lobby-status  { font-size: 1.1rem; color: var(--text2); }
+.mon-lobby-teams {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 1200px;
+}
+.mon-lobby-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 0.4rem 1rem 0.4rem 0.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+  animation: chipIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mon-lobby-avatar {
+  width: 38px; height: 38px; border-radius: 50%; overflow: hidden;
+  background: var(--card2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+}
+.mon-lobby-avatar img { width: 100%; height: 100%; object-fit: cover; }
+@keyframes chipIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Stats bar ───────────────────────────────────────────────────────────── */
+.mon-statsbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1.5rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.mon-stat { font-weight: 700; color: var(--text2); white-space: nowrap; }
+.mon-category { color: var(--accent2); }
+.mon-tally    { color: var(--accent); }
+.mon-sep { color: var(--border); }
+
+/* ── Two-column layout ───────────────────────────────────────────────────── */
+.mon-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+.mon-main-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  gap: 1.25rem;
+  border-right: 1px solid var(--border);
+}
+.mon-score-col {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+}
+
+/* ── Timer ───────────────────────────────────────────────────────────────── */
+.mon-timer-wrap {
+  width: 100%;
+  height: 10px;
+  background: var(--card2);
+  border-radius: 5px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mon-timer-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 5px;
+  transition: width 0.1s linear, background 0.3s;
+  width: 100%;
+}
+.mon-timer-fill.warning { background: var(--yellow, #f59e0b); }
+.mon-timer-fill.danger  { background: var(--red, #ef4444); }
+
+/* ── Question text ───────────────────────────────────────────────────────── */
+.mon-question-text {
+  font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* ── Answer options ──────────────────────────────────────────────────────── */
+.mon-answers-area { display: flex; flex-direction: column; gap: 0; }
+
+.mon-answers-mc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.mon-mc-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  font-size: clamp(0.9rem, 1.4vw, 1.15rem);
+  font-weight: 600;
+  transition: border-color 0.3s, background 0.3s;
+  cursor: default;
+}
+.mon-mc-letter {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--card2);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1rem; flex-shrink: 0;
+}
+.mon-mc-btn.correct {
+  border-color: var(--green);
+  background: rgba(16,185,129,0.12);
+}
+.mon-mc-btn.correct .mon-mc-letter { background: var(--green); color: #000; }
+.mon-mc-btn.wrong {
+  border-color: var(--border);
+  opacity: 0.45;
+}
+
+.mon-est-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 1.4rem;
+  color: var(--text2);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+}
+.mon-est-icon { font-size: 2rem; }
+
+.mon-answers-wo .mon-wo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.mon-wo-chip {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* ── Reveal area ─────────────────────────────────────────────────────────── */
+.mon-reveal-area { display: flex; flex-direction: column; gap: 1rem; }
+.mon-correct-banner {
+  background: rgba(16,185,129,0.15);
+  border: 2px solid var(--green);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  color: var(--green);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+/* ── Distribution — MC ───────────────────────────────────────────────────── */
+.mon-distribution { display: flex; flex-direction: column; gap: 0.6rem; }
+.mon-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+}
+.mon-dist-letter {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--card2);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+}
+.mon-dist-label {
+  width: 160px; flex-shrink: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text2); font-size: 0.9rem;
+}
+.mon-dist-bar-wrap {
+  flex: 1;
+  background: var(--card2);
+  border-radius: 6px;
+  height: 28px;
+  overflow: hidden;
+}
+.mon-dist-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  transition: width 0.7s ease;
+  min-width: 4px;
+}
+.mon-dist-count {
+  width: 60px; text-align: right;
+  font-weight: 700; font-size: 1rem;
+}
+.mon-dist-count small { font-size: 0.75rem; color: var(--text2); margin-left: 0.2rem; }
+.mon-dist-correct .mon-dist-letter { background: var(--green); color: #000; }
+.mon-dist-correct .mon-dist-label  { color: var(--green); font-weight: 700; }
+.mon-dist-correct .mon-dist-bar    { background: var(--green); }
+.mon-dist-correct .mon-dist-count  { color: var(--green); }
+
+/* ── Distribution — number line ──────────────────────────────────────────── */
+.mon-numberline { width: 100%; padding: 0 1rem; }
+.mon-nl-track {
+  position: relative;
+  height: 36px;
+  background: var(--card2);
+  border-radius: 6px;
+  margin-bottom: 3.5rem;
+}
+.mon-nl-correct-line {
+  position: absolute;
+  top: -6px; bottom: -6px;
+  width: 4px;
+  background: var(--green);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.mon-nl-dot {
+  position: absolute;
+  top: 50%; width: 16px; height: 16px;
+  background: var(--accent2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: background 0.3s;
+}
+.mon-nl-dot.winner { background: var(--green); }
+.mon-nl-labels { position: relative; height: 3rem; }
+.mon-nl-chip {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  font-size: 0.7rem; font-weight: 700; color: var(--text2);
+  white-space: nowrap;
+}
+.mon-nl-chip.winner { color: var(--green); }
+.mon-nl-chip-name { font-size: 0.65rem; color: var(--text2); font-weight: 400; }
+.mon-nl-legend {
+  text-align: center;
+  font-size: 1rem; color: var(--green); font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+/* ── Distribution — word order ───────────────────────────────────────────── */
+.mon-wo-dist { display: flex; flex-direction: column; gap: 0.6rem; }
+.mon-wo-bar-wrap {
+  display: flex; height: 28px; border-radius: 6px; overflow: hidden; gap: 2px;
+}
+.mon-wo-seg { transition: width 0.7s ease; min-width: 4px; border-radius: 4px; }
+.mon-wo-seg.correct { background: var(--green); }
+.mon-wo-seg.wrong   { background: var(--red, #ef4444); }
+.mon-wo-labels { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; }
+.mon-wo-correct-lbl { color: var(--green); }
+.mon-wo-wrong-lbl   { color: var(--red, #ef4444); }
+.mon-wo-correct-order {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.mon-wo-arrow { color: var(--text2); font-size: 1rem; }
+
+/* ── Scoreboard (right column) ───────────────────────────────────────────── */
+.mon-score-header {
+  font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text2);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+.mon-scoreboard { display: flex; flex-direction: column; gap: 0.35rem; }
+.mon-score-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.mon-score-rank { width: 28px; font-size: 1rem; text-align: center; flex-shrink: 0; }
+.mon-score-avatar {
+  width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+}
+.mon-score-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mon-score-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-score-pts  { font-weight: 800; color: var(--accent2); flex-shrink: 0; }
+
+/* ── Standings screen ────────────────────────────────────────────────────── */
+#screen-standings {
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 2rem;
+  overflow-y: auto;
+}
+.mon-standings-badge {
+  font-size: clamp(1.4rem, 3vw, 2.4rem);
+  font-weight: 900;
+  color: var(--accent2);
+  text-align: center;
+}
+.mon-standings-grid {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  width: 100%; max-width: 700px;
+}
+.mon-standings-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 1.15rem;
+}
+.mon-standings-rank   { font-size: 1.5rem; width: 40px; flex-shrink: 0; }
+.mon-standings-avatar {
+  width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+}
+.mon-standings-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mon-standings-name  { flex: 1; font-weight: 700; }
+.mon-standings-pts   { font-weight: 800; color: var(--accent2); font-size: 1.2rem; }
+
+/* ── Game over screen ────────────────────────────────────────────────────── */
+#screen-gameover {
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+.mon-gameover-title {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 900; color: var(--accent2); text-align: center;
+}
+.mon-podium {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 1rem;
+}
+.mon-podium-entry {
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+}
+.mon-podium-avatar {
+  width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 800; border: 3px solid var(--border);
+}
+.mon-podium-entry.p1 .mon-podium-avatar { width: 90px; height: 90px; border-color: var(--yellow, #f59e0b); }
+.mon-podium-entry.p2 .mon-podium-avatar { border-color: #94a3b8; }
+.mon-podium-entry.p3 .mon-podium-avatar { border-color: #b45309; }
+.mon-podium-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mon-podium-name  { font-weight: 700; font-size: 0.9rem; text-align: center; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-podium-score { color: var(--accent2); font-weight: 800; font-size: 0.85rem; }
+.mon-podium-block {
+  display: flex; align-items: center; justify-content: center;
+  width: 120px; border-radius: 8px 8px 0 0;
+  font-size: 1.8rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.mon-podium-entry.p1 .mon-podium-block { width: 140px; background: rgba(245,158,11,0.15); border-color: var(--yellow, #f59e0b); }
+.mon-final-list { display: flex; flex-direction: column; gap: 0.4rem; width: 100%; max-width: 600px; }
+.mon-final-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.5rem 1rem; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.mon-final-rank   { width: 30px; color: var(--text2); font-weight: 700; }
+.mon-final-avatar {
+  width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+}
+.mon-final-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mon-final-name { flex: 1; font-weight: 600; }
+.mon-final-pts  { font-weight: 800; color: var(--accent2); }
+
+/* ── Buzz overlay ────────────────────────────────────────────────────────── */
+.mon-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500;
+  animation: fadeIn 0.2s ease;
+}
+.mon-overlay.hidden { display: none; }
+.mon-overlay-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  animation: specialIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mon-overlay-icon  { font-size: 5rem; }
+.mon-overlay-title { font-size: 2.5rem; font-weight: 900; color: #fff; text-align: center; }
+.mon-buzz-av {
+  width: 100px; height: 100px; border-radius: 50%; overflow: hidden;
+  background: var(--card2); display: flex; align-items: center; justify-content: center;
+  border: 4px solid var(--accent2);
+}
+.mon-buzz-av img { width: 100%; height: 100%; object-fit: cover; }
+.mon-overlay-name { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+.mon-overlay-pts  { font-size: 1.3rem; font-weight: 700; color: var(--green); }
+@keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes specialIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── Countdown overlay ───────────────────────────────────────────────────── */
+.mon-countdown-overlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.7);
+  z-index: 400;
+}
+.mon-countdown-overlay.hidden { display: none; }
+.mon-countdown-number {
+  font-size: 10rem; font-weight: 900; color: #fff;
+  animation: countPop 0.9s ease-out forwards;
+  text-shadow: 0 0 60px var(--accent2);
+}
+.mon-countdown-number.go {
+  font-size: 7rem; color: var(--green);
+  text-shadow: 0 0 60px var(--green);
+}
+@keyframes countPop {
+  0%   { transform: scale(1.8); opacity: 0; }
+  20%  { transform: scale(1.0); opacity: 1; }
+  75%  { transform: scale(1.0); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0; }
+}
+
+/* ── Initials fallback sizes ─────────────────────────────────────────────── */
+.mon-init     { font-size: 0.8rem;  font-weight: 700; color: var(--text2); }
+.mon-init.lg  { font-size: 1rem;    font-weight: 700; color: var(--text2); }
+.mon-init.xl  { font-size: 1.4rem;  font-weight: 700; color: var(--text2); }
+
+/* ── Responsive: wider screen bonus ─────────────────────────────────────── */
+@media (min-width: 1400px) {
+  .mon-score-col { width: 380px; }
+  .mon-dist-label { width: 200px; }
+  .mon-question-text { font-size: 2.4rem; }
+}
+@media (max-width: 900px) {
+  .mon-layout { flex-direction: column; }
+  .mon-score-col { width: 100%; border-right: none; border-top: 1px solid var(--border); max-height: 220px; }
+  .mon-answers-mc { grid-template-columns: 1fr; }
+}
