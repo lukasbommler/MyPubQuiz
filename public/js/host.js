@@ -412,6 +412,7 @@ socket.on('question-host', (q) => {
   document.getElementById('host-answer-area').classList.add('hidden');
   document.getElementById('host-answer-feedback').classList.add('hidden');
   document.getElementById('host-your-answer').classList.add('hidden');
+  document.getElementById('host-flag-btn').classList.add('hidden');
 
   if (hostPlaysMode) {
     // Hide question content until it's sent to players
@@ -665,7 +666,40 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
     } else if (yourAnswerEl) {
       yourAnswerEl.classList.add('hidden');
     }
+
+    // Show flag button on reveal
+    const hostFlagBtn = document.getElementById('host-flag-btn');
+    if (hostFlagBtn) {
+      hostFlagBtn.classList.remove('hidden');
+      hostFlagBtn.textContent = '🚩 Report issue';
+      hostFlagBtn.disabled = false;
+    }
   }
+});
+
+// ── Host flag question (playing mode) ─────────────────────────────────────────
+const hostFlagBtn    = document.getElementById('host-flag-btn');
+const hostFlagModal  = document.getElementById('host-flag-modal');
+const hostFlagCancel = document.querySelector('.host-flag-cancel');
+
+hostFlagBtn.addEventListener('click', () => hostFlagModal.classList.remove('hidden'));
+hostFlagCancel.addEventListener('click', () => hostFlagModal.classList.add('hidden'));
+hostFlagModal.addEventListener('click', e => { if (e.target === hostFlagModal) hostFlagModal.classList.add('hidden'); });
+
+document.querySelectorAll('.host-flag-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const reason = btn.dataset.reason;
+    if (!currentQuestion) return;
+    socket.emit('flag-question', {
+      sourceId:     currentQuestion.source_id ?? null,
+      lang:         currentQuestion.language ?? null,
+      questionText: currentQuestion.question,
+      reason,
+    });
+    hostFlagModal.classList.add('hidden');
+    hostFlagBtn.textContent = '✓ Reported';
+    hostFlagBtn.disabled = true;
+  });
 });
 
 function renderHostDistribution(dist) {

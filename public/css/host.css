@@ -1007,3 +1007,58 @@ body.host-body {
   .podium-block.b1 { width: 120px; }
   .podium-entry .podium-name { font-size: 0.75rem; }
 }
+
+/* ── Flag / report question (playing mode) ───────────────────────────────── */
+.flag-btn {
+  display: block;
+  margin: 0.75rem auto 0;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  padding: 0.25rem 0.5rem;
+}
+.flag-btn:hover:not(:disabled) { opacity: 1; }
+.flag-btn:disabled { cursor: default; opacity: 0.35; }
+.flag-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.flag-modal.hidden { display: none; }
+.flag-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 88%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.flag-title { font-size: 1rem; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 0.25rem; }
+.host-flag-option {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.host-flag-option:hover { background: var(--card3, #2a2a2a); border-color: var(--accent2); }
+.host-flag-cancel { background: none; border: none; color: var(--text2); font-size: 0.85rem; cursor: pointer; text-align: center; padding: 0.25rem; }
+.host-flag-cancel:hover { color: var(--text); }

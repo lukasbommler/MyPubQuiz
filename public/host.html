@@ -147,6 +147,7 @@
         </div>
         <div class="host-your-answer hidden" id="host-your-answer"></div>
         <div class="host-distribution hidden" id="host-distribution"></div>
+        <button id="host-flag-btn" class="flag-btn hidden" aria-label="Report issue">🚩 Report issue</button>
         <div class="host-controls">
           <button class="btn btn-secondary" id="btn-send-question" data-i18n="send_question_btn">Send Question to Players →</button>
           <button class="btn btn-secondary hidden" id="btn-replace" data-i18n="replace_btn">Replace Question ↺</button>
@@ -314,6 +315,16 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <!-- Flag question popup (playing mode) -->
+  <div id="host-flag-modal" class="flag-modal hidden">
+    <div class="flag-box">
+      <div class="flag-title">Report this question</div>
+      <button class="host-flag-option" data-reason="incorrect">❌ Wrong answer</button>
+      <button class="host-flag-option" data-reason="nonsensical">❓ Doesn't make sense</button>
+      <button class="host-flag-cancel">Cancel</button>
+    </div>
+  </div>
+
   <script src="/js/qrcode.min.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/sounds.js"></script>

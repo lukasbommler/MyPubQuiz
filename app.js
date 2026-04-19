@@ -119,36 +119,51 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'changeme';
 app.get('/admin/logs', (req, res) => {
   if (!requireAdmin(req, res)) return;
 
-  let lines = '';
+  const PAGE_SIZE = 500;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const fetch = page * PAGE_SIZE;
+
+  let rawLines = [];
   try {
-    lines = execSync('journalctl -u quizapp --no-pager -n 300 --output=short-iso', { timeout: 5000 }).toString();
+    const out = execSync(`journalctl -u quizapp --no-pager -n ${fetch} --output=short-iso -r`, { timeout: 8000 }).toString();
+    rawLines = out.split('\n').filter(Boolean);
   } catch {
-    lines = '(could not read journal — run as root or grant journalctl access)';
+    rawLines = ['(could not read journal — run as root or grant journalctl access)'];
   }
 
-  const escaped = lines.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const colored = escaped
-    .replace(/(\[CONN\][^\n]*)/g, '<span class="conn">$1</span>')
-    .replace(/(\[GAME\] created[^\n]*)/g,      '<span class="created">$1</span>')
-    .replace(/(\[GAME\] team-joined[^\n]*)/g,  '<span class="team">$1</span>')
-    .replace(/(\[GAME\] round-started[^\n]*)/g,'<span class="round">$1</span>')
-    .replace(/(\[GAME\] answer[^\n]*correct=true[^\n]*)/g, '<span class="correct">$1</span>')
-    .replace(/(\[GAME\] answer[^\n]*correct=false[^\n]*)/g,'<span class="wrong">$1</span>')
-    .replace(/(\[GAME\] revealed[^\n]*)/g,     '<span class="revealed">$1</span>')
-    .replace(/(\[GAME\] round-over[^\n]*)/g,   '<span class="roundover">$1</span>')
-    .replace(/(\[GAME\] ended[^\n]*)/g,        '<span class="ended">$1</span>');
+  const pageLines = rawLines.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const hasMore = rawLines.length === fetch; // if we got exactly fetch lines, there are likely more
+
+  const colorLine = line => {
+    const e = line.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    if (e.includes('[CONN]'))                          return `<span class="conn">${e}</span>`;
+    if (e.includes('[GAME] created'))                  return `<span class="created">${e}</span>`;
+    if (e.includes('[GAME] team-joined'))              return `<span class="team">${e}</span>`;
+    if (e.includes('[GAME] round-started'))            return `<span class="round">${e}</span>`;
+    if (e.includes('[GAME] answer') && e.includes('correct=true'))  return `<span class="correct">${e}</span>`;
+    if (e.includes('[GAME] answer') && e.includes('correct=false')) return `<span class="wrong">${e}</span>`;
+    if (e.includes('[GAME] revealed'))                 return `<span class="revealed">${e}</span>`;
+    if (e.includes('[GAME] round-over'))               return `<span class="roundover">${e}</span>`;
+    if (e.includes('[GAME] ended'))                    return `<span class="ended">${e}</span>`;
+    if (e.includes('[RATE]'))                          return `<span class="wrong">${e}</span>`;
+    return e;
+  };
+  const colored = pageLines.map(colorLine).join('\n');
 
   const totalGames  = db.countEvents();
   const totalTeams  = db.countTeams();
   const activeGames = Object.values(gameState).filter(s => s.currentStep !== null).length;
 
+  const prevLink = page > 1 ? `<a href="/admin/logs?page=${page - 1}" style="color:#60a5fa">← Newer</a>` : `<span style="color:#444">← Newer</span>`;
+  const nextLink = hasMore  ? `<a href="/admin/logs?page=${page + 1}" style="color:#60a5fa">Older →</a>` : `<span style="color:#444">Older →</span>`;
+
   res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
   <title>QuizApp Logs</title>
-  <meta http-equiv="refresh" content="15">
+  ${page === 1 ? '<meta http-equiv="refresh" content="15">' : ''}
   <style>
     body  { background:#0a0a0a; color:#ccc; font:13px/1.5 monospace; margin:0; padding:1rem; }
     h1    { color:#fff; font-size:1.1rem; margin:0 0 .5rem; }
-    .stats { display:flex; gap:2rem; margin-bottom:1rem; }
+    .stats { display:flex; gap:2rem; margin-bottom:1rem; flex-wrap:wrap; }
     .stat  { background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:.5rem 1rem; }
     .stat strong { display:block; font-size:1.4rem; color:#fff; }
     .stat span   { font-size:.75rem; color:#888; }
@@ -164,6 +179,8 @@ app.get('/admin/logs', (req, res) => {
     .roundover{ color:#fb923c; }
     .ended    { color:#f43f5e; }
     .hint { font-size:.75rem; color:#555; margin-bottom:.5rem; }
+    .pager { display:flex; justify-content:space-between; align-items:center; margin-top:.75rem; font-size:.85rem; }
+    a { text-decoration:none; } a:hover { text-decoration:underline; }
   </style></head><body>
   <h1>QuizApp — Live Logs</h1>
   <a style="color:#60a5fa;font-size:.85rem;display:inline-block;margin-bottom:1rem;text-decoration:none" href="/admin/flags">🚩 Flagged questions →</a>
@@ -173,8 +190,9 @@ app.get('/admin/logs', (req, res) => {
     <div class="stat"><strong>${activeGames}</strong><span>Active rounds</span></div>
     <div class="stat"><strong>${io.engine.clientsCount}</strong><span>Connected now</span></div>
   </div>
-  <div class="hint">Auto-refreshes every 15s &nbsp;·&nbsp; Showing last 300 journal lines</div>
+  <div class="hint">${page === 1 ? 'Auto-refreshes every 15s &nbsp;·&nbsp; ' : ''}Page ${page} &nbsp;·&nbsp; ${pageLines.length} lines (newest first)</div>
   <pre>${colored}</pre>
+  <div class="pager">${prevLink}<span style="color:#555">Page ${page}</span>${nextLink}</div>
   </body></html>`);
 });
 
