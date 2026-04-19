@@ -53,9 +53,26 @@ function correctAnswer(q) {
 // In-memory game state (ephemeral, not persisted)
 const gameState = {}; // code -> { lang, buzzedTeams, timerInterval, ... }
 
+// ─── Rate limiter for game creation (max 5 per IP per minute) ────────────────
+const createRateMap = new Map(); // ip -> [timestamps]
+function createRateLimit(req, res, next) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+  const now = Date.now();
+  const window = 60_000; // 1 minute
+  const max = 5;
+  const hits = (createRateMap.get(ip) || []).filter(t => now - t < window);
+  hits.push(now);
+  createRateMap.set(ip, hits);
+  if (hits.length > max) {
+    console.warn(`[RATE] create-game blocked ip=${ip} hits=${hits.length}`);
+    return res.status(429).json({ error: 'Too many games created. Try again in a minute.' });
+  }
+  next();
+}
+
 // ─── REST Routes ──────────────────────────────────────────────────────────────
 
-app.post('/api/event/create', (req, res) => {
+app.post('/api/event/create', createRateLimit, (_req, res) => {
   let code = generateCode();
   while (db.codeExists(code)) code = generateCode();
   const hostToken = uuidv4();
