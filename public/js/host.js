@@ -14,6 +14,7 @@ let hostPlaysMode = false;
 let hostTeamId = null;
 let hostAnswered = false;
 let hostAnswerStartTime = null;
+let hostSubmittedAnswer = null;
 
 const CATEGORY_ICONS = {
   'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
@@ -394,6 +395,7 @@ socket.on('round-started', ({ roundNum }) => {
 socket.on('question-host', (q) => {
   currentQuestion = q;
   hostAnswered = false;
+  hostSubmittedAnswer = null;
 
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
@@ -409,6 +411,7 @@ socket.on('question-host', (q) => {
   document.getElementById('estimation-preview').classList.add('hidden');
   document.getElementById('host-answer-area').classList.add('hidden');
   document.getElementById('host-answer-feedback').classList.add('hidden');
+  document.getElementById('host-your-answer').classList.add('hidden');
 
   if (hostPlaysMode) {
     // Hide question content until it's sent to players
@@ -461,9 +464,10 @@ function showHostAnswerOptions(q) {
       btn.addEventListener('click', () => {
         if (hostAnswered) return;
         hostAnswered = true;
+        hostSubmittedAnswer = String(btn.dataset.index);
         opts.querySelectorAll('.host-answer-btn').forEach(b => b.disabled = true);
         btn.classList.add('host-answer-selected');
-        socket.emit('host-submit-answer', { code, answer: String(btn.dataset.index),
+        socket.emit('host-submit-answer', { code, answer: hostSubmittedAnswer,
           timeTaken: Date.now() - hostAnswerStartTime });
         showHostAnswerFeedback(t('locked_in_host'));
       });
@@ -481,6 +485,7 @@ function showHostAnswerOptions(q) {
       const val = document.getElementById('host-est-input').value.trim();
       if (!val || isNaN(val)) { document.getElementById('host-est-input').focus(); return; }
       hostAnswered = true;
+      hostSubmittedAnswer = val;
       document.getElementById('host-est-submit').disabled = true;
       socket.emit('host-submit-answer', { code, answer: val,
         timeTaken: Date.now() - hostAnswerStartTime });
@@ -521,8 +526,9 @@ function showHostAnswerOptions(q) {
       if (hostAnswered) return;
       if (wordOrder.length !== q.words.length) return;
       hostAnswered = true;
+      hostSubmittedAnswer = JSON.stringify(wordOrder);
       document.getElementById('host-wo-submit').disabled = true;
-      socket.emit('host-submit-answer', { code, answer: JSON.stringify(wordOrder),
+      socket.emit('host-submit-answer', { code, answer: hostSubmittedAnswer,
         timeTaken: Date.now() - hostAnswerStartTime });
       showHostAnswerFeedback(t('order_submitted'));
     });
@@ -638,9 +644,27 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   if (hostPlaysMode && currentQuestion) {
     // Show the full answer preview with correct answer highlighted
     renderQuestionPreview(currentQuestion);
-    // Always hide the answer buttons on reveal — the correct answer is visible
-    // in answers-preview and correct-reveal, so the "Your Answer" section adds no value
     document.getElementById('host-answer-area').classList.add('hidden');
+
+    // Show "Your Answer" label
+    const yourAnswerEl = document.getElementById('host-your-answer');
+    if (yourAnswerEl && hostSubmittedAnswer !== null) {
+      let yourText = '';
+      if (currentQuestion.type === 'multiple_choice') {
+        yourText = t('your_answer_label') + ': ' + (currentQuestion.answers[parseInt(hostSubmittedAnswer)] ?? hostSubmittedAnswer);
+      } else if (currentQuestion.type === 'estimation') {
+        yourText = t('your_answer_label') + ': ' + hostSubmittedAnswer + (currentQuestion.unit ? ' ' + currentQuestion.unit : '');
+      } else if (currentQuestion.type === 'word_order') {
+        try {
+          const order = JSON.parse(hostSubmittedAnswer);
+          yourText = t('your_answer_label') + ': ' + order.map(i => currentQuestion.words[i]).join(' → ');
+        } catch (e) {}
+      }
+      yourAnswerEl.textContent = yourText;
+      yourAnswerEl.classList.remove('hidden');
+    } else if (yourAnswerEl) {
+      yourAnswerEl.classList.add('hidden');
+    }
   }
 });
 

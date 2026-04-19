@@ -487,6 +487,18 @@ body.host-body {
 .correct-label { color: var(--green); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
 .correct-value { font-size: 1.2rem; font-weight: 700; }
 
+/* ── Host your-answer label (playing mode) ────────────────────────────────── */
+.host-your-answer {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text2);
+  margin: 0.25rem 0;
+}
+
 /* ── Host distribution ────────────────────────────────────────────────────── */
 .host-distribution {
   display: flex;
