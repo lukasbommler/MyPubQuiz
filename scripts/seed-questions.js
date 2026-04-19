@@ -24,7 +24,7 @@ async function seed() {
 
   for (const row of rows) {
     const {
-      id: source_id,
+      ID: source_id,
       type, language, category, question,
       answer_a, answer_b, answer_c, answer_d,
       correct, correct_value, unit, words
