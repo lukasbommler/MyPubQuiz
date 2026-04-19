@@ -33,6 +33,17 @@ async function getDb() {
       time_limit    INTEGER NOT NULL DEFAULT 20
     )
   `);
+  _db.run(`
+    CREATE TABLE IF NOT EXISTS question_flags (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_id     INTEGER,
+      language      TEXT,
+      question_text TEXT NOT NULL,
+      reason        TEXT NOT NULL,
+      game_code     TEXT,
+      flagged_at    TEXT DEFAULT (datetime('now'))
+    )
+  `);
   return _db;
 }
 
@@ -54,6 +65,7 @@ async function loadQuestions(lang = 'en') {
   return rows.map(r => ({
     id:            r.id,
     source_id:     r.source_id !== null ? r.source_id : undefined,
+    language:      r.language,
     category:      r.category,
     type:          r.type,
     time_limit:    r.time_limit,
@@ -66,4 +78,31 @@ async function loadQuestions(lang = 'en') {
   }));
 }
 
-module.exports = { getDb, loadQuestions, save };
+async function flagQuestion(sourceId, lang, questionText, reason, gameCode) {
+  const db = await getDb();
+  db.run(
+    `INSERT INTO question_flags (source_id, language, question_text, reason, game_code, flagged_at)
+     VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+    [sourceId ?? null, lang ?? null, String(questionText).substring(0, 500), reason, gameCode ?? null]
+  );
+  save();
+}
+
+async function getFlags() {
+  const db = await getDb();
+  const stmt = db.prepare(`
+    SELECT * FROM question_flags ORDER BY flagged_at DESC
+  `);
+  const rows = [];
+  while (stmt.step()) rows.push(stmt.getAsObject());
+  stmt.free();
+  return rows;
+}
+
+async function dismissFlag(id) {
+  const db = await getDb();
+  db.run(`DELETE FROM question_flags WHERE id = ?`, [parseInt(id)]);
+  save();
+}
+
+module.exports = { getDb, loadQuestions, save, flagQuestion, getFlags, dismissFlag };

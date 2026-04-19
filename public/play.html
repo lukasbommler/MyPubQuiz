@@ -133,6 +133,17 @@
       <div class="reveal-points" id="reveal-points"></div>
       <div class="reveal-distribution hidden" id="reveal-distribution"></div>
       <div class="reveal-scoreboard" id="reveal-scoreboard"></div>
+      <button id="flag-btn" class="flag-btn" aria-label="Report issue">🚩 Report issue</button>
+    </div>
+  </div>
+
+  <!-- Flag question popup -->
+  <div id="flag-modal" class="flag-modal hidden">
+    <div class="flag-box">
+      <div class="flag-title">Report this question</div>
+      <button class="flag-option" data-reason="incorrect">❌ Wrong answer</button>
+      <button class="flag-option" data-reason="nonsensical">❓ Doesn't make sense</button>
+      <button class="flag-cancel">Cancel</button>
     </div>
   </div>
 

@@ -575,6 +575,10 @@ socket.on('answer-acknowledged', () => {
 
 // ── Reveal screen ─────────────────────────────────────────────────────────────
 function showReveal(correct, scores, estimationWinnerId, distribution) {
+  flagBtn.textContent = '🚩 Report issue';
+  flagBtn.disabled = false;
+  flagModal.classList.add('hidden');
+
   // Show correct/wrong on the answer screen briefly before switching to reveal
   if (currentQuestion?.type === 'multiple_choice') {
     document.querySelectorAll('.mc-btn').forEach(btn => {
@@ -784,6 +788,36 @@ function playSound(type) {
     }
   } catch (e) {}
 }
+
+// ── Flag question ─────────────────────────────────────────────────────────────
+const flagBtn    = document.getElementById('flag-btn');
+const flagModal  = document.getElementById('flag-modal');
+const flagCancel = document.querySelector('.flag-cancel');
+
+flagBtn.addEventListener('click', () => flagModal.classList.remove('hidden'));
+flagCancel.addEventListener('click', () => flagModal.classList.add('hidden'));
+flagModal.addEventListener('click', e => { if (e.target === flagModal) flagModal.classList.add('hidden'); });
+
+document.querySelectorAll('.flag-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const reason = btn.dataset.reason;
+    if (!currentQuestion) return;
+    socket.emit('flag-question', {
+      sourceId:     currentQuestion.source_id ?? null,
+      lang:         currentQuestion.language ?? null,
+      questionText: currentQuestion.question,
+      reason,
+    });
+    flagModal.classList.add('hidden');
+    flagBtn.textContent = '✓ Reported';
+    flagBtn.disabled = true;
+  });
+});
+
+socket.on('flag-question-ack', () => {
+  flagBtn.textContent = '✓ Reported';
+  flagBtn.disabled = true;
+});
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function rankEmoji(i) { return ['🥇', '🥈', '🥉'][i] || `${i + 1}.`; }

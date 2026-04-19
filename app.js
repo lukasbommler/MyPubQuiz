@@ -7,7 +7,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 const db = require('./db');
-const { loadQuestions } = require('./questions-db');
+const { loadQuestions, flagQuestion, getFlags, dismissFlag } = require('./questions-db');
 const questionsByLang = { en: [], de: [] }; // loaded at startup
 
 // Returns the question list for a given game code (falls back to 'en')
@@ -100,16 +100,7 @@ app.get('/api/questions', (req, res) => {
 const ADMIN_PASS = process.env.ADMIN_PASS || 'changeme';
 
 app.get('/admin/logs', (req, res) => {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Basic ')) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
-    return res.status(401).send('Unauthorized');
-  }
-  const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-  if (user !== 'admin' || pass !== ADMIN_PASS) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
-    return res.status(401).send('Unauthorized');
-  }
+  if (!requireAdmin(req, res)) return;
 
   let lines = '';
   try {
@@ -158,6 +149,7 @@ app.get('/admin/logs', (req, res) => {
     .hint { font-size:.75rem; color:#555; margin-bottom:.5rem; }
   </style></head><body>
   <h1>QuizApp — Live Logs</h1>
+  <a style="color:#60a5fa;font-size:.85rem;display:inline-block;margin-bottom:1rem;text-decoration:none" href="/admin/flags">🚩 Flagged questions →</a>
   <div class="stats">
     <div class="stat"><strong>${totalGames}</strong><span>Total games</span></div>
     <div class="stat"><strong>${totalTeams}</strong><span>Total teams</span></div>
@@ -167,6 +159,102 @@ app.get('/admin/logs', (req, res) => {
   <div class="hint">Auto-refreshes every 15s &nbsp;·&nbsp; Showing last 300 journal lines</div>
   <pre>${colored}</pre>
   </body></html>`);
+});
+
+// ─── Admin flags page ─────────────────────────────────────────────────────────
+
+function requireAdmin(req, res) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    res.status(401).send('Unauthorized');
+    return false;
+  }
+  const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+  if (user !== 'admin' || pass !== ADMIN_PASS) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    res.status(401).send('Unauthorized');
+    return false;
+  }
+  return true;
+}
+
+app.get('/admin/flags', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const flags = await getFlags();
+
+  // Group by source_id (null source_id each counted separately)
+  const grouped = {};
+  for (const f of flags) {
+    const key = f.source_id ?? `_${f.id}`;
+    if (!grouped[key]) grouped[key] = { source_id: f.source_id, question_text: f.question_text, language: f.language, flags: [] };
+    grouped[key].flags.push(f);
+  }
+  const groups = Object.values(grouped).sort((a, b) => b.flags.length - a.flags.length);
+
+  const e = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const rows = groups.map(g => {
+    const flagRows = g.flags.map(f => `
+      <tr>
+        <td>${e(f.reason === 'incorrect' ? '❌ Wrong answer' : '❓ Nonsensical')}</td>
+        <td>${e(f.game_code ?? '—')}</td>
+        <td>${e(f.flagged_at)}</td>
+        <td><a href="/admin/flags/${f.id}/dismiss" class="dismiss" onclick="return confirm('Dismiss this flag?')">dismiss</a></td>
+      </tr>`).join('');
+    return `
+      <tr class="group-header">
+        <td colspan="4">
+          <span class="sid">${g.source_id != null ? 'ID ' + e(g.source_id) : 'no source_id'}</span>
+          <span class="lang">${e(g.language ?? '?')}</span>
+          <span class="count">${g.flags.length}×</span>
+          <span class="qtext">${e(g.question_text)}</span>
+        </td>
+      </tr>
+      ${flagRows}`;
+  }).join('');
+
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>QuizApp — Flagged Questions</title>
+  <style>
+    body  { background:#0a0a0a; color:#ccc; font:13px/1.5 monospace; margin:0; padding:1rem; }
+    h1    { color:#fff; font-size:1.1rem; margin:0 0 .5rem; }
+    .stats { display:flex; gap:2rem; margin-bottom:1rem; }
+    .stat  { background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:.5rem 1rem; }
+    .stat strong { display:block; font-size:1.4rem; color:#fff; }
+    .stat span   { font-size:.75rem; color:#888; }
+    table { width:100%; border-collapse:collapse; background:#111; border:1px solid #222; border-radius:8px; overflow:hidden; }
+    th { background:#1a1a1a; color:#888; font-size:.75rem; text-align:left; padding:.4rem .75rem; }
+    td { padding:.35rem .75rem; border-top:1px solid #1a1a1a; vertical-align:top; }
+    .group-header td { background:#161616; padding:.5rem .75rem; border-top:2px solid #2a2a2a; }
+    .sid   { color:#60a5fa; margin-right:.5rem; font-weight:700; }
+    .lang  { color:#888; margin-right:.5rem; font-size:.8rem; }
+    .count { color:#f97316; font-weight:700; margin-right:.75rem; }
+    .qtext { color:#e2e8f0; }
+    .dismiss { color:#f87171; text-decoration:none; }
+    .dismiss:hover { text-decoration:underline; }
+    .empty { color:#555; padding:1rem; }
+    a.back { color:#60a5fa; font-size:.85rem; display:inline-block; margin-bottom:1rem; text-decoration:none; }
+    a.back:hover { text-decoration:underline; }
+  </style></head><body>
+  <h1>QuizApp — Flagged Questions</h1>
+  <a class="back" href="/admin/logs">← Logs</a>
+  <div class="stats">
+    <div class="stat"><strong>${flags.length}</strong><span>Total flags</span></div>
+    <div class="stat"><strong>${groups.length}</strong><span>Unique questions</span></div>
+  </div>
+  ${flags.length === 0 ? '<p class="empty">No flagged questions yet.</p>' : `
+  <table>
+    <thead><tr><th>Reason</th><th>Game</th><th>When</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`}
+  </body></html>`);
+});
+
+app.get('/admin/flags/:id/dismiss', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  await dismissFlag(req.params.id);
+  res.redirect('/admin/flags');
 });
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
@@ -613,6 +701,16 @@ io.on('connection', (socket) => {
   socket.on('end-game', ({ code }) => {
     if (socket.data?.role !== 'host') return;
     endGame(code);
+  });
+
+  // ── Flag question ───────────────────────────────────────────────────────────
+  socket.on('flag-question', async ({ sourceId, lang, questionText, reason }) => {
+    const code = socket.data?.code;
+    const validReasons = ['incorrect', 'nonsensical'];
+    if (!validReasons.includes(reason) || !questionText) return;
+    await flagQuestion(sourceId ?? null, lang ?? null, questionText, reason, code ?? null);
+    console.log(`[FLAG] code=${code ?? '-'} sourceId=${sourceId ?? '-'} reason=${reason}`);
+    socket.emit('flag-question-ack');
   });
 });
 

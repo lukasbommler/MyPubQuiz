@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check \"c:/Users/LukasBommler/Meine Ablage/Coding & Kurse/Quizapp/app.js\")",
+      "Bash(node --check \"c:/Users/LukasBommler/Meine Ablage/Coding & Kurse/Quizapp/questions-db.js\")",
+      "Bash(node --check \"c:/Users/LukasBommler/Meine Ablage/Coding & Kurse/Quizapp/public/js/play.js\")"
+    ]
+  }
+}
