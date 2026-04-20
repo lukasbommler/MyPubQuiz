@@ -7,6 +7,7 @@
   --bg3: #16213e;
   --card: #1e1e3a;
   --card2: #252545;
+  --card3: #2e2e52;
   --accent: #7c3aed;
   --accent2: #a855f7;
   --green: #10b981;
@@ -19,6 +20,20 @@
   --radius: 12px;
   --radius-lg: 20px;
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg: #faf9ff;
+  --bg2: #f0eeff;
+  --bg3: #e9e3fd;
+  --card: #ffffff;
+  --card2: #f5f3ff;
+  --card3: #ede9fe;
+  --text: #1e1b4b;
+  --text2: #64748b;
+  --border: rgba(124, 58, 237, 0.15);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 
 html, body {
@@ -368,3 +383,32 @@ html, body {
 }
 /* Compact variant used in host header */
 .lang-bar-compact .lang-btn { padding: 0.25rem 0.5rem; font-size: 0.75rem; letter-spacing: 0.04em; }
+
+/* ── Theme toggle button ──────────────────────────────────────────────────── */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.theme-btn:hover { background: var(--card); color: var(--text); }
+
+/* Floating variant for pages without a natural header slot */
+.theme-toggle-float {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 200;
+}
+
+/* ── Light-mode overrides ─────────────────────────────────────────────────── */
+html[data-theme="light"] .btn-secondary:hover:not(:disabled) { background: var(--bg3); }
