@@ -9,7 +9,9 @@ const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAtt
 
 let myTeam = null;
 let myTeamId = localStorage.getItem(`quiz_team_${code}`);
-let hasJoinedThisSession = false; // true once team-joined fires for the first time
+let hasJoinedThisSession = false;
+let isAutoRejoin = false; // true while a page-load silent rejoin is in flight
+
 let questionStartTime = null;
 let timerInterval = null;
 let currentQuestion = null;
@@ -44,22 +46,40 @@ document.getElementById('team-name-input').addEventListener('keydown', e => {
 // ── Connection / reconnection ─────────────────────────────────────────────────
 const reconnectBanner = document.getElementById('reconnect-banner');
 
+socket.on('error', ({ message }) => {
+  if (isAutoRejoin) {
+    // Team or game no longer exists — clear stale id and fall back to join screen
+    isAutoRejoin = false;
+    localStorage.removeItem(`quiz_team_${code}`);
+    myTeamId = null;
+    showScreen('screen-join');
+    return;
+  }
+  alert('Error: ' + message);
+});
+
 socket.on('disconnect', () => {
   reconnectBanner.classList.remove('hidden');
 });
 
 socket.on('connect', () => {
   reconnectBanner.classList.add('hidden');
-  // If we've already joined this session or have a stored ID (page refresh), silently rejoin
   if (myTeam) {
+    // Mid-session socket drop — silently rejoin
     socket.emit('team-join', { code, teamId: myTeam.id });
   } else if (hasJoinedThisSession && myTeamId) {
+    socket.emit('team-join', { code, teamId: myTeamId });
+  } else if (myTeamId) {
+    // Fresh page load with stored teamId — silent auto-rejoin, skip join/selfie screens
+    isAutoRejoin = true;
     socket.emit('team-join', { code, teamId: myTeamId });
   }
 });
 
 // ── Team joined ───────────────────────────────────────────────────────────────
 socket.on('team-joined', ({ team, eventStatus, allTeams }) => {
+  const wasAutoRejoin = isAutoRejoin;
+  isAutoRejoin = false;
   const isReconnect = hasJoinedThisSession;
   hasJoinedThisSession = true;
   myTeam = team;
@@ -67,11 +87,19 @@ socket.on('team-joined', ({ team, eventStatus, allTeams }) => {
   localStorage.setItem(`quiz_team_${code}`, team.id);
 
   if (!isReconnect) {
-    if (eventStatus === 'running') showWaiting();
-    else if (eventStatus === 'finished') showScreen('screen-gameover-play');
-    else {
+    if (wasAutoRejoin) {
+      // Silent page-load rejoin — skip join/selfie screens entirely
+      // For 'running': server follows up with question state events
+      // For 'round-over': server follows up with round-over event
+      // For 'finished': show game over directly
+      if (eventStatus === 'finished') showScreen('screen-gameover-play');
+      else showWaiting();
+    } else if (eventStatus === 'running') {
+      showWaiting();
+    } else if (eventStatus === 'finished') {
+      showScreen('screen-gameover-play');
+    } else {
       showScreen('screen-selfie');
-      // Pre-populate existing teams (joined before us)
       if (allTeams) {
         document.getElementById('teams-in-lobby').innerHTML = '';
         allTeams.forEach(t => addTeamChip(t, false));
@@ -124,6 +152,7 @@ async function resizeAndUploadSelfie(file) {
     if (!data.selfieUrl) return;
 
     myTeam.selfie = data.selfieUrl;
+    localStorage.setItem(`quiz_team_selfie_${code}`, data.selfieUrl);
 
     // Update the waiting-screen avatar
     const waitingImg = document.getElementById('waiting-selfie');

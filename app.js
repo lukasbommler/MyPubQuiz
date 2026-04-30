@@ -406,6 +406,10 @@ io.on('connection', (socket) => {
           socket.emit('answer-revealed', { correct, scores, estimationWinnerId: state.estimationWinnerId ?? null, distribution: state.distribution ?? null });
         }
       }
+    } else if (event.status === 'round-over') {
+      const state = gameState[code];
+      const scores = db.getScoresByEvent(code);
+      socket.emit('round-over', { scores, roundNum: state?.roundNum ?? 1 });
     }
   });
 
