@@ -640,7 +640,7 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
 });
 
 // ── Reveal ────────────────────────────────────────────────────────────────────
-socket.on('answer-revealed', ({ correct, scores, distribution }) => {
+socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerIds }) => {
   setStep('revealed');
   const cv = document.getElementById('correct-value');
   if (currentQuestion?.type === 'multiple_choice') cv.textContent = currentQuestion.answers[correct];
@@ -655,6 +655,8 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   }
 
   if (hostPlaysMode && currentQuestion) {
+    if (currentQuestion.type === 'estimation' && hostTeamId)
+      hostWasCorrect = estimationWinnerIds?.includes(hostTeamId) ?? false;
     if (hostAnswered) hostWasCorrect ? Sounds.correct() : Sounds.wrong();
     // Show the full answer preview with correct answer highlighted
     renderQuestionPreview(currentQuestion);

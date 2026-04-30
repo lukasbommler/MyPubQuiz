@@ -838,8 +838,8 @@ function doRevealAnswer(code) {
   const allAnswers = db.getAnswersByQuestion(code, qIndex);
   const specialPts = state.pointsSpecial ?? 0;
 
-  // ── Estimation: closest wins; speed bonus only if multiple tied; precision bonus if within 2% ──
-  let estimationWinnerId = null;
+  // ── Estimation: all closest teams win (absolute diff); precision bonus for exact answers ──
+  let estimationWinnerIds = [];
   if (q.type === 'estimation') {
     if (allAnswers.length > 0) {
       let minDiff = Infinity;
@@ -847,27 +847,23 @@ function doRevealAnswer(code) {
         const diff = Math.abs(parseFloat(a.answer) - q.correct_value);
         if (diff < minDiff) minDiff = diff;
       }
-      const tied = allAnswers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
-      tied.sort((a, b) => a.time_ms - b.time_ms);
-      const winner = tied[0];
-      if (winner) {
+      const winners = allAnswers.filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === minDiff);
+      if (winners.length > 0) {
         const pts = state.pointsCorrect ?? 1;
-        // Speed bonus only when multiple teams tie for closest
-        const speedBonus = tied.length > 1 ? (state.pointsBonus ?? 0) : 0;
-        const total = pts + speedBonus;
-        db.addScore(winner.team_id, total);
-        db.updateAnswer(winner.id, { is_correct: 1, points_awarded: total });
-        estimationWinnerId = winner.team_id;
-        const winnerTeam = db.getTeam(winner.team_id);
-        state.firstCorrectTeam = winnerTeam;
-        state.firstCorrectPoints = speedBonus;
-        state.estimationWinnerId = estimationWinnerId;
-
-        // Precision bonus: winner's answer must be exactly correct
-        if (specialPts > 0 && parseFloat(winner.answer) === q.correct_value) {
-          db.addScore(winner.team_id, specialPts);
-          state.preciseTeam = winnerTeam;
-          state.precisePoints = specialPts;
+        state.firstCorrectTeams = [];
+        state.firstCorrectPoints = 0;
+        state.preciseTeams = [];
+        state.precisePoints = specialPts;
+        for (const winner of winners) {
+          db.addScore(winner.team_id, pts);
+          db.updateAnswer(winner.id, { is_correct: 1, points_awarded: pts });
+          estimationWinnerIds.push(winner.team_id);
+          const winnerTeam = db.getTeam(winner.team_id);
+          state.firstCorrectTeams.push(winnerTeam);
+          if (specialPts > 0 && parseFloat(winner.answer) === q.correct_value) {
+            db.addScore(winner.team_id, specialPts);
+            state.preciseTeams.push(winnerTeam);
+          }
         }
       }
     }
@@ -913,38 +909,40 @@ function doRevealAnswer(code) {
   io.to(`room:${code}`).emit('answer-revealed', {
     correct: correctAnswer(q),
     scores,
-    estimationWinnerId,
+    estimationWinnerIds,
     distribution,
   });
 
-  // First-correct buzz at 1500ms (buzz shows for 3500ms, ends ~5000ms after reveal)
+  // First-correct buzz — each winner shown for 3500ms, sequenced one after another
   // Capture values now — next-question resets them on the live state object
-  const buzzTeam = state.firstCorrectTeam;
-  const buzzPoints = state.firstCorrectPoints;
-  if (buzzTeam) {
-    const buzzType = q.type;
+  const buzzTeams = state.firstCorrectTeams ?? (state.firstCorrectTeam ? [state.firstCorrectTeam] : []);
+  const buzzPoints = state.firstCorrectPoints ?? 0;
+  const buzzType = q.type;
+  buzzTeams.forEach((team, i) => {
     setTimeout(() => {
-      io.to(`room:${code}`).emit('first-correct', { team: buzzTeam, points: buzzPoints, questionType: buzzType });
-    }, 1500);
-  }
+      io.to(`room:${code}`).emit('first-correct', { team, points: buzzPoints, questionType: buzzType });
+    }, 1500 + i * 3500);
+  });
 
-  // Special animation at 5500ms — after buzz has finished
-  const specialDelay = buzzTeam ? 5500 : 1000;
+  // Special animations start after all buzz overlays finish (each lasts 3500ms)
+  const specialDelay = buzzTeams.length > 0 ? 1500 + buzzTeams.length * 3500 + 500 : 1000;
   const loneTeam = state.loneHeroTeam;
   const lonePoints = state.loneHeroPoints;
-  const preciseTeam = state.preciseTeam;
-  const precisePoints = state.precisePoints;
+  const preciseTeams = state.preciseTeams ?? (state.preciseTeam ? [state.preciseTeam] : []);
+  const precisePoints = state.precisePoints ?? 0;
 
-  const hasSpecialAnim = !!(loneTeam || preciseTeam);
+  const hasSpecialAnim = !!(loneTeam || preciseTeams.length > 0);
 
   if (loneTeam) {
     setTimeout(() => {
       io.to(`room:${code}`).emit('lone-hero', { team: loneTeam, points: lonePoints });
     }, specialDelay);
-  } else if (preciseTeam) {
-    setTimeout(() => {
-      io.to(`room:${code}`).emit('precise-estimate', { team: preciseTeam, points: precisePoints });
-    }, specialDelay);
+  } else {
+    preciseTeams.forEach((team, i) => {
+      setTimeout(() => {
+        io.to(`room:${code}`).emit('precise-estimate', { team, points: precisePoints });
+      }, specialDelay + i * 4500);
+    });
   }
 
   // Worst estimate: furthest-away team, shown after all other animations finish
@@ -957,10 +955,11 @@ function doRevealAnswer(code) {
     const worstAnswer = allAnswers
       .filter(a => Math.abs(parseFloat(a.answer) - q.correct_value) === maxDiff)
       .sort((a, b) => b.time_ms - a.time_ms)[0]; // pick slowest if tied
-    if (worstAnswer && worstAnswer.team_id !== estimationWinnerId) {
+    if (worstAnswer && !estimationWinnerIds.includes(worstAnswer.team_id)) {
       const worstTeam = db.getTeam(worstAnswer.team_id);
       if (worstTeam) {
-        const worstDelay = specialDelay + (hasSpecialAnim ? 4500 : 500);
+        const numSpecialAnims = loneTeam ? 1 : preciseTeams.length;
+        const worstDelay = specialDelay + (hasSpecialAnim ? numSpecialAnims * 4500 : 500);
         setTimeout(() => {
           io.to(`room:${code}`).emit('worst-estimate', { team: worstTeam });
         }, worstDelay);

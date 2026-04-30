@@ -351,9 +351,9 @@ function startCountdown(onDone) {
 }
 
 // ── STEP 3: Host reveals results ──────────────────────────────────────────────
-socket.on('answer-revealed', ({ correct, scores, estimationWinnerId, distribution }) => {
+socket.on('answer-revealed', ({ correct, scores, estimationWinnerIds, distribution }) => {
   stopTimer();
-  showReveal(correct, scores, estimationWinnerId, distribution);
+  showReveal(correct, scores, estimationWinnerIds, distribution);
 });
 
 // ── First correct flash (after reveal) ───────────────────────────────────────
@@ -615,7 +615,7 @@ socket.on('answer-acknowledged', () => {
 });
 
 // ── Reveal screen ─────────────────────────────────────────────────────────────
-function showReveal(correct, scores, estimationWinnerId, distribution) {
+function showReveal(correct, scores, estimationWinnerIds, distribution) {
   flagBtn.textContent = '🚩 Report issue';
   flagBtn.disabled = false;
   flagModal.classList.add('hidden');
@@ -643,7 +643,7 @@ function showReveal(correct, scores, estimationWinnerId, distribution) {
     } else if (currentQuestion?.type === 'word_order') {
       wasCorrect = JSON.stringify(wordOrder) === JSON.stringify(correct);
     } else if (currentQuestion?.type === 'estimation') {
-      wasCorrect = estimationWinnerId != null && estimationWinnerId === myTeamId;
+      wasCorrect = estimationWinnerIds?.includes(myTeamId) ?? false;
     }
 
     resultEl.textContent = answered ? (wasCorrect ? t('correct_str') : t('wrong_str')) : t('not_answered');
