@@ -695,13 +695,13 @@ socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerI
 // ── Host flag question (playing mode) ─────────────────────────────────────────
 const hostFlagBtn    = document.getElementById('host-flag-btn');
 const hostFlagModal  = document.getElementById('host-flag-modal');
-const hostFlagCancel = document.querySelector('.host-flag-cancel');
+const hostFlagCancel = document.querySelector('#host-flag-modal .flag-cancel');
 
 hostFlagBtn.addEventListener('click', () => hostFlagModal.classList.remove('hidden'));
 hostFlagCancel.addEventListener('click', () => hostFlagModal.classList.add('hidden'));
 hostFlagModal.addEventListener('click', e => { if (e.target === hostFlagModal) hostFlagModal.classList.add('hidden'); });
 
-document.querySelectorAll('.host-flag-option').forEach(btn => {
+document.querySelectorAll('#host-flag-modal .flag-option').forEach(btn => {
   btn.addEventListener('click', () => {
     const reason = btn.dataset.reason;
     if (!currentQuestion) return;
