@@ -255,13 +255,14 @@ socket.on('round-over', ({ scores, roundNum }) => {
 function showRoundOver(scores, roundNum) {
   showScreen('screen-round-over-play');
   document.getElementById('round-complete-badge').textContent = t('round_complete_badge', { num: roundNum });
+  const _roRanks = assignRanks(scores || []);
   document.getElementById('round-over-scores-play').innerHTML = (scores || []).map((team, i) => {
     const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     const avatarHtml = team.selfie
       ? `<img src="${escapeHtml(team.selfie)}" alt="">`
       : `<span class="reveal-score-initials">${initials}</span>`;
     return `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="reveal-score-rank">${rankEmoji(i)}</span>
+      <span class="reveal-score-rank">${rankEmoji(_roRanks[i])}</span>
       <div class="reveal-score-avatar">${avatarHtml}</div>
       <span class="reveal-score-name">${escapeHtml(team.name)}</span>
       <span class="reveal-score-pts">${team.score} pts</span>
@@ -272,13 +273,14 @@ function showRoundOver(scores, roundNum) {
 socket.on('scoreboard-shown', ({ scores, roundNum }) => {
   showScreen('screen-round-over-play');
   document.getElementById('round-complete-badge').textContent = t('round_standings', { num: roundNum });
+  const _sbRanks = assignRanks(scores);
   document.getElementById('round-over-scores-play').innerHTML = scores.map((team, i) => {
     const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     const avatarHtml = team.selfie
       ? `<img src="${escapeHtml(team.selfie)}" alt="">`
       : `<span class="reveal-score-initials">${initials}</span>`;
     return `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="reveal-score-rank">${rankEmoji(i)}</span>
+      <span class="reveal-score-rank">${rankEmoji(_sbRanks[i])}</span>
       <div class="reveal-score-avatar">${avatarHtml}</div>
       <span class="reveal-score-name">${escapeHtml(team.name)}</span>
       <span class="reveal-score-pts">${team.score} pts</span>
@@ -386,7 +388,9 @@ socket.on('game-over', ({ scores }) => {
   stopTimer();
   showScreen('screen-gameover-play');
 
-  const myRank = scores.findIndex(t => t.id === myTeamId) + 1;
+  const _goRanks = assignRanks(scores);
+  const _myIdx = scores.findIndex(t => t.id === myTeamId);
+  const myRank = _myIdx >= 0 ? _goRanks[_myIdx] : 0;
   const myScore = scores.find(t => t.id === myTeamId)?.score ?? 0;
 
   const rankBadge = document.getElementById('gameover-rank-badge');
@@ -403,17 +407,19 @@ socket.on('game-over', ({ scores }) => {
 
   const top3 = scores.slice(0, 3);
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const rankOf = t => scores.indexOf(t) + 1;
+  const posOf = t => scores.indexOf(t) + 1;
+  const rankOf = t => _goRanks[scores.indexOf(t)];
   const blockHeights = { 1: 140, 2: 95, 3: 65 };
   const blockDelays  = { 1: 1.3, 2: 0.7, 3: 0.4 };
   const entryDelays  = { 1: 1.45, 2: 0.85, 3: 0.5 };
 
   let html = `<div class="podium-stage"><div class="podium-entries">`;
   for (const team of podiumOrder) {
+    const pos = posOf(team);
     const rank = rankOf(team);
     const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     const isMe = team.id === myTeamId ? ' me' : '';
-    html += `<div class="podium-entry p${rank}${isMe}" style="--entry-delay:${entryDelays[rank]}s">
+    html += `<div class="podium-entry p${pos}${isMe}" style="--entry-delay:${entryDelays[pos]}s">
       <div class="podium-avatar">${team.selfie ? `<img src="${escapeHtml(team.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}</div>
       <div class="podium-name">${escapeHtml(team.name)}</div>
       <div class="podium-score">${team.score} pts</div>
@@ -421,13 +427,14 @@ socket.on('game-over', ({ scores }) => {
   }
   html += `</div><div class="podium-blocks">`;
   for (const team of podiumOrder) {
+    const pos = posOf(team);
     const rank = rankOf(team);
-    html += `<div class="podium-block b${rank}" style="--block-height:${blockHeights[rank]}px;--block-delay:${blockDelays[rank]}s">${rankEmoji(rank - 1)}</div>`;
+    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankEmoji(rank)}</div>`;
   }
   html += `</div></div><div class="podium-all-scores">`;
   html += scores.map((team, i) => `
     <div class="podium-score-row ${i === 0 ? 'winner' : ''} ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="psr-rank">${rankEmoji(i)}</span>
+      <span class="psr-rank">${rankEmoji(_goRanks[i])}</span>
       <span class="psr-name">${escapeHtml(team.name)}</span>
       <span class="psr-pts">${team.score} pts</span>
     </div>`).join('');
@@ -885,7 +892,8 @@ socket.on('flag-question-ack', () => {
 });
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
-function rankEmoji(i) { return ['🥇', '🥈', '🥉'][i] || `${i + 1}.`; }
+function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
+function rankEmoji(rank) { return ['🥇', '🥈', '🥉'][rank - 1] || `${rank}.`; }
 function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

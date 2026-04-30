@@ -85,13 +85,16 @@ function startCountdown(onDone) {
 }
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────
+function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
+function rankEmoji(rank) { return ['🥇','🥈','🥉'][rank - 1] || `${rank}.`; }
+
 function updateScoreboard(scores) {
   const el = document.getElementById('mon-scoreboard');
   if (!el) return;
-  const ranks = ['🥇','🥈','🥉'];
+  const ranks = assignRanks(scores);
   el.innerHTML = scores.map((team, i) => `
     <div class="mon-score-row">
-      <span class="mon-score-rank">${ranks[i] || (i + 1) + '.'}</span>
+      <span class="mon-score-rank">${rankEmoji(ranks[i])}</span>
       <div class="mon-score-avatar">${avatar(team)}</div>
       <span class="mon-score-name">${esc(team.name)}</span>
       <span class="mon-score-pts">${team.score} pts</span>
@@ -288,10 +291,10 @@ function showStandings(scores, rn) {
   const grid  = document.getElementById('mon-standings-grid');
   if (badge) badge.textContent = `Round ${rn} Complete!`;
   if (!grid) return;
-  const ranks = ['🥇','🥈','🥉'];
+  const ranks = assignRanks(scores);
   grid.innerHTML = scores.map((team, i) => `
     <div class="mon-standings-row">
-      <span class="mon-standings-rank">${ranks[i] || (i + 1) + '.'}</span>
+      <span class="mon-standings-rank">${rankEmoji(ranks[i])}</span>
       <div class="mon-standings-avatar">${avatar(team, 'lg')}</div>
       <span class="mon-standings-name">${esc(team.name)}</span>
       <span class="mon-standings-pts">${team.score} pts</span>
@@ -306,18 +309,18 @@ function showGameOver(scores) {
   // Podium: display order 2nd · 1st · 3rd
   if (podium) {
     const top3 = scores.slice(0, 3);
+    const podRanks = assignRanks(scores);
     const order = [1, 0, 2].filter(i => top3[i]);
+    const heights = { 0: '160px', 1: '120px', 2: '90px' };
     podium.innerHTML = order.map(i => {
       const team = top3[i];
-      const heights = { 0: '160px', 1: '120px', 2: '90px' };
-      const labels  = { 0: '🥇', 1: '🥈', 2: '🥉' };
       return `
         <div class="mon-podium-entry p${i + 1}">
           <div class="mon-podium-avatar">${avatar(team, 'xl')}</div>
           <div class="mon-podium-name">${esc(team.name)}</div>
           <div class="mon-podium-score">${team.score} pts</div>
           <div class="mon-podium-block" style="height:${heights[i]}">
-            <span>${labels[i]}</span>
+            <span>${rankEmoji(podRanks[i])}</span>
           </div>
         </div>`;
     }).join('');

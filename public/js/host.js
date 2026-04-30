@@ -812,9 +812,9 @@ socket.on('round-over', ({ scores, roundNum }) => {
 
   // Show standings screen first
   document.getElementById('host-standings-badge').textContent = t('round_complete', { num: roundNum });
+  const _standRanks = assignRanks(scores);
   document.getElementById('host-standings-scores').innerHTML = scores.map((team, i) => {
-    const ranks = ['🥇', '🥈', '🥉'];
-    const rank = ranks[i] || `${i + 1}.`;
+    const rank = rankEmoji(_standRanks[i]);
     const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     const avatarHtml = team.selfie
       ? `<img src="${escapeHtml(team.selfie)}" alt="">`
@@ -851,7 +851,9 @@ socket.on('game-over', ({ scores }) => {
   const top3 = scores.slice(0, 3);
   // Classic Olympic layout: 2nd left, 1st centre, 3rd right
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const rankOf = t => scores.indexOf(t) + 1;
+  const _goRanks = assignRanks(scores);
+  const posOf = t => scores.indexOf(t) + 1;
+  const rankOf = t => _goRanks[scores.indexOf(t)];
   const blockHeights = { 1: 140, 2: 95, 3: 65 };
   const blockDelays  = { 1: 1.3, 2: 0.7, 3: 0.4 };
   const entryDelays  = { 1: 1.45, 2: 0.85, 3: 0.5 };
@@ -860,10 +862,11 @@ socket.on('game-over', ({ scores }) => {
     <div class="podium-entries">`;
 
   for (const t of podiumOrder) {
+    const pos = posOf(t);
     const rank = rankOf(t);
     const initials = t.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     html += `
-      <div class="podium-entry p${rank}" style="--entry-delay:${entryDelays[rank]}s">
+      <div class="podium-entry p${pos}" style="--entry-delay:${entryDelays[pos]}s">
         <div class="podium-avatar">
           ${t.selfie ? `<img src="${escapeHtml(t.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
         </div>
@@ -874,8 +877,9 @@ socket.on('game-over', ({ scores }) => {
 
   html += `</div><div class="podium-blocks">`;
   for (const t of podiumOrder) {
+    const pos = posOf(t);
     const rank = rankOf(t);
-    html += `<div class="podium-block b${rank}" style="--block-height:${blockHeights[rank]}px;--block-delay:${blockDelays[rank]}s">${rankEmoji(rank - 1)}</div>`;
+    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankEmoji(rank)}</div>`;
   }
   html += `</div></div>`;
 
@@ -883,7 +887,7 @@ socket.on('game-over', ({ scores }) => {
   html += `<div class="podium-all-scores">` +
     scores.map((t, i) => `
       <div class="podium-score-row ${i === 0 ? 'winner' : ''}">
-        <span class="psr-rank">${rankEmoji(i)}</span>
+        <span class="psr-rank">${rankEmoji(_goRanks[i])}</span>
         <span class="psr-name">${escapeHtml(t.name)}</span>
         <span class="psr-pts">${t.score} pts</span>
       </div>`).join('') +
@@ -898,10 +902,11 @@ socket.on('game-over', ({ scores }) => {
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────
 function updateScoreboard(elId, scores) {
+  const _ranks = assignRanks(scores);
   document.getElementById(elId).innerHTML = scores.map((t, i) => {
     const initials = t.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     return `<div class="score-row" data-score-team="${t.id}">
-      <span class="score-rank">${rankEmoji(i)}</span>
+      <span class="score-rank">${rankEmoji(_ranks[i])}</span>
       <div class="score-avatar">
         <img src="${t.selfie||''}" alt="" class="${t.selfie?'':'hidden'}">
         <span class="init${t.selfie?' hidden':''}">${initials}</span>
@@ -1000,5 +1005,6 @@ function showConfirm(message, onConfirm) {
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
-function rankEmoji(i) { return ['🥇','🥈','🥉'][i] || `${i+1}.`; }
+function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
+function rankEmoji(rank) { return ['🥇','🥈','🥉'][rank - 1] || `${rank}.`; }
 function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
