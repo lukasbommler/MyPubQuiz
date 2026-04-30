@@ -89,6 +89,16 @@ body.landing-body {
   max-width: 420px;
 }
 
+.hero-stat {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin: 0 0 1.25rem;
+}
+.hero-stat #question-count {
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .hero-actions {
   display: flex;
   flex-direction: column;

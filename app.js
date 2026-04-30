@@ -105,6 +105,11 @@ app.post('/api/team/:teamId/selfie', express.json({ limit: '8mb' }), (req, res) 
   res.json({ selfieUrl });
 });
 
+app.get('/api/question-count', (req, res) => {
+  const total = questionsByLang.en.length + questionsByLang.de.length;
+  res.json({ count: Math.floor(total / 100) * 100 });
+});
+
 app.get('/api/questions', (req, res) => {
   const lang = req.query.lang || 'en';
   const qs = questionsByLang[lang] || questionsByLang.en;

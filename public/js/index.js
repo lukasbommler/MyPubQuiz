@@ -1,6 +1,12 @@
 // Apply translations immediately on load
 applyI18n();
 
+fetch('/api/question-count').then(r => r.json()).then(({ count }) => {
+  document.getElementById('question-count').textContent = count.toLocaleString() + '+';
+}).catch(() => {
+  document.getElementById('question-count').closest('.hero-stat').style.display = 'none';
+});
+
 // ── Create Game ───────────────────────────────────────────────────────────────
 async function createGame() {
   const btn  = document.getElementById('create-btn');
