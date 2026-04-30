@@ -445,6 +445,33 @@ io.on('connection', (socket) => {
     socket.emit('monitor-joined', { event, teams, roundNum: state?.roundNum ?? 0, reconnectState });
   });
 
+  // ── Host registers as player before round starts ────────────────────────────
+  socket.on('host-register-player', ({ code, playerName }) => {
+    if (socket.data?.role !== 'host') return;
+    const event = db.getEvent(code);
+    if (!event || event.status === 'running' || event.status === 'finished') return;
+
+    const name = playerName?.trim()?.substring(0, 30);
+    if (!name) return;
+
+    if (!gameState[code]) gameState[code] = {};
+    const state = gameState[code];
+
+    if (state.hostTeamId) {
+      socket.emit('host-team-created', { teamId: state.hostTeamId });
+      return;
+    }
+
+    const hostTeam = db.createTeam(uuidv4(), code, name);
+    state.hostTeamId = hostTeam.id;
+    socket.join(`team:${hostTeam.id}`);
+
+    const allTeams = db.getTeamsByEvent(code);
+    io.to(`room:${code}`).emit('team-arrived', { team: hostTeam, totalTeams: allTeams.length });
+    socket.emit('host-team-created', { teamId: hostTeam.id });
+    console.log(`[GAME] host-player-registered code=${code} name="${name}"`);
+  });
+
   // ── Start round (works from lobby and between rounds) ───────────────────────
   socket.on('start-round', ({ code, categories, questionType, pointsCorrect, pointsBonus, pointsSpecial, timeLimitSecs, hostPlayerName }) => {
     if (socket.data?.role !== 'host') return;

@@ -238,6 +238,12 @@ document.getElementById('host-plays-toggle').addEventListener('change', (e) => {
   if (hostPlaysMode) document.getElementById('host-player-name').focus();
 });
 
+document.getElementById('host-player-name').addEventListener('blur', () => {
+  if (!hostPlaysMode || hostTeamId) return;
+  const name = document.getElementById('host-player-name').value.trim();
+  if (name) socket.emit('host-register-player', { code, playerName: name });
+});
+
 document.getElementById('host-selfie-btn').addEventListener('click', () => {
   document.getElementById('host-selfie-input').click();
 });
