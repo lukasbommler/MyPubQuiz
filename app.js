@@ -439,6 +439,7 @@ io.on('connection', (socket) => {
         currentQuestion: q ? { ...safeQuestion(q, qIndex, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1, time_limit: timeLimit } : null,
         timerRemaining,
         answeredCount: answers.length,
+        answeredTeamIds: answers.map(a => a.team_id),
         totalTeams: teams.length,
         scores,
         distribution: state.distribution ?? null,
@@ -669,7 +670,7 @@ io.on('connection', (socket) => {
     socket.emit('answer-acknowledged', { received: true });
     // Let monitors show live answer count
     const tallyCount = db.getAnswersByQuestion(code, qIndex).length;
-    io.to(`room:${code}`).emit('answer-tally', { count: tallyCount, total: db.getTeamsByEvent(code).length });
+    io.to(`room:${code}`).emit('answer-tally', { count: tallyCount, total: db.getTeamsByEvent(code).length, teamId });
 
     // Auto-reveal early if every team has now answered
     checkAllAnswered(code, qIndex);
@@ -797,6 +798,10 @@ io.on('connection', (socket) => {
     }
 
     socket.emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
+
+    // Let monitors show which team just answered
+    const hostTallyCount = db.getAnswersByQuestion(code, qIndex).length;
+    io.to(`room:${code}`).emit('answer-tally', { count: hostTallyCount, total: db.getTeamsByEvent(code).length, teamId });
 
     // Auto-reveal early if every team has now answered
     checkAllAnswered(code, qIndex);

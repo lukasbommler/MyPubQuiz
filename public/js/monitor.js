@@ -1,12 +1,14 @@
 const code = location.pathname.split('/').pop();
 const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity });
 
-let currentQuestion = null;
-let timerInterval   = null;
-let roundNum        = 0;
-let teamCount       = 0;
-let countdownActive = false;
+let currentQuestion  = null;
+let timerInterval    = null;
+let roundNum         = 0;
+let teamCount        = 0;
+let countdownActive  = false;
 let pendingTimeLimit = null;
+let allTeams         = {};   // { teamId: teamObject }
+let answeredTeams    = new Set();
 
 // ── Utils ──────────────────────────────────────────────────────────────────────
 function esc(str) {
@@ -237,6 +239,26 @@ function renderDistribution(dist, q) {
   }
 }
 
+// ── Team answer strip ─────────────────────────────────────────────────────────
+function renderAnswerStrip() {
+  const strip = document.getElementById('mon-answer-strip');
+  if (!strip) return;
+  const teams = Object.values(allTeams);
+  if (teams.length === 0) { strip.classList.add('hidden'); return; }
+  strip.classList.remove('hidden');
+  strip.innerHTML = teams.map(team => `
+    <div class="mon-team-chip ${answeredTeams.has(team.id) ? 'done' : ''}" data-chip-team="${esc(team.id)}">
+      <div class="mon-team-chip-av">${avatar(team)}</div>
+      <div class="mon-team-chip-check">✓</div>
+    </div>`).join('');
+}
+
+function markTeamAnswered(teamId) {
+  answeredTeams.add(teamId);
+  const chip = document.querySelector(`[data-chip-team="${esc(teamId)}"]`);
+  if (chip) chip.classList.add('done');
+}
+
 // ── Lobby helpers ─────────────────────────────────────────────────────────────
 function renderLobby(teams) {
   const grid = document.getElementById('mon-lobby-teams');
@@ -337,18 +359,22 @@ socket.on('error', ({ message }) => {
 socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => {
   teamCount = teams.length;
   roundNum  = rn || 0;
+  allTeams  = {};
+  teams.forEach(t => { allTeams[t.id] = t; });
   document.getElementById('mon-code-display').textContent = code;
   document.getElementById('mon-teams-label').textContent  = `${teamCount} team${teamCount !== 1 ? 's' : ''}`;
   renderLobby(teams);
 
   if (reconnectState) {
-    const { currentStep, currentQuestion: q, timerRemaining, answeredCount, totalTeams, scores, distribution, correct } = reconnectState;
-    roundNum  = reconnectState.roundNum || rn || 1;
-    teamCount = totalTeams ?? teams.length;
+    const { currentStep, currentQuestion: q, timerRemaining, answeredCount, answeredTeamIds, totalTeams, scores, distribution, correct } = reconnectState;
+    roundNum      = reconnectState.roundNum || rn || 1;
+    teamCount     = totalTeams ?? teams.length;
+    answeredTeams = new Set(answeredTeamIds ?? []);
     showScreen('screen-game');
     if (q) showQuestion(q);
     if (scores) updateScoreboard(scores);
     setTally(answeredCount ?? 0, teamCount);
+    renderAnswerStrip();
 
     if (currentStep === 'answers-shown' && timerRemaining > 0) startTimer(timerRemaining);
     else if (currentStep === 'revealed' && q)                  showReveal(correct, distribution, q);
@@ -359,6 +385,7 @@ socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => 
 
 socket.on('team-arrived', ({ team, totalTeams }) => {
   teamCount = totalTeams;
+  allTeams[team.id] = team;
   document.getElementById('mon-teams-label').textContent = `${teamCount} team${teamCount !== 1 ? 's' : ''}`;
   addTeamChip(team);
 });
@@ -372,10 +399,12 @@ socket.on('round-started', ({ roundNum: rn }) => {
 
 socket.on('question-text', (q) => {
   currentQuestion = q;
+  answeredTeams   = new Set();
   showScreen('screen-game');
   showQuestion(q);
   stopTimer();
   setTally(0, teamCount);
+  renderAnswerStrip();
 });
 
 socket.on('question-answers', (q) => {
@@ -389,9 +418,10 @@ socket.on('question-start', ({ timeLimit }) => {
   else startTimer(timeLimit);
 });
 
-socket.on('answer-tally', ({ count, total }) => {
+socket.on('answer-tally', ({ count, total, teamId }) => {
   teamCount = total;
   setTally(count, total);
+  if (teamId) markTeamAnswered(teamId);
 });
 
 socket.on('answer-revealed', ({ correct, scores, distribution }) => {
@@ -406,7 +436,9 @@ socket.on('first-correct', ({ team, points, questionType }) => {
   document.getElementById('mon-buzz-icon').textContent  = questionType === 'estimation' ? '🎯' : '⚡';
   document.getElementById('mon-buzz-title').textContent = questionType === 'estimation' ? 'Best Estimate!' : 'First Correct!';
   document.getElementById('mon-buzz-name').textContent  = team.name;
-  document.getElementById('mon-buzz-pts').textContent   = `+${points} pts`;
+  const ptsEl = document.getElementById('mon-buzz-pts');
+  ptsEl.textContent   = points > 0 ? `+${points} pts` : '';
+  ptsEl.style.display = points > 0 ? '' : 'none';
   document.getElementById('mon-buzz-avatar').innerHTML  = `<div class="mon-buzz-av">${avatar(team, 'xl')}</div>`;
   flashOverlay('mon-buzz-overlay', 4000);
 });
@@ -438,9 +470,9 @@ socket.on('worst-estimate', ({ team }) => {
   flashOverlay('mon-buzz-overlay', 3000);
 });
 
-socket.on('round-over',      ({ scores, roundNum: rn }) => { stopTimer(); showStandings(scores, rn); });
-socket.on('scoreboard-shown',({ scores, roundNum: rn }) => { showStandings(scores, rn); });
-socket.on('game-over',       ({ scores })               => { stopTimer(); showGameOver(scores); });
+socket.on('round-over',      ({ scores, roundNum: rn }) => { stopTimer(); document.getElementById('mon-answer-strip').classList.add('hidden'); showStandings(scores, rn); });
+socket.on('scoreboard-shown',({ scores, roundNum: rn }) => { document.getElementById('mon-answer-strip').classList.add('hidden'); showStandings(scores, rn); });
+socket.on('game-over',       ({ scores })               => { stopTimer(); document.getElementById('mon-answer-strip').classList.add('hidden'); showGameOver(scores); });
 
 // ── Tally helper ──────────────────────────────────────────────────────────────
 function setTally(count, total) {
