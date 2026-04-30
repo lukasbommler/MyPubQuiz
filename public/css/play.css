@@ -366,8 +366,11 @@ body.play-body {
   gap: 0.75rem;
   transition: all 0.15s;
 }
-.mc-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(124,58,237,0.1); transform: translateX(3px); }
+.mc-btn:focus { outline: none; }
 .mc-btn:disabled { cursor: default; }
+@media (hover: hover) {
+  .mc-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(124,58,237,0.1); transform: translateX(3px); }
+}
 .mc-btn.selected { border-color: var(--accent); background: rgba(124,58,237,0.15); }
 .mc-btn.correct { border-color: var(--green); background: rgba(16,185,129,0.15); color: var(--green); }
 .mc-btn.wrong { border-color: var(--red); background: rgba(239,68,68,0.1); color: var(--text2); }
