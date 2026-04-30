@@ -102,7 +102,7 @@ function updateScoreboard(scores) {
 }
 
 // ── Question display ──────────────────────────────────────────────────────────
-function showQuestion(q) {
+function showQuestion(q, showAnswers = true) {
   currentQuestion = q;
 
   // Stats bar
@@ -121,6 +121,8 @@ function showQuestion(q) {
   const area = document.getElementById('mon-answers-area');
   area.innerHTML = '';
   area.className = 'mon-answers-area';
+
+  if (!showAnswers) return;
 
   if (q.type === 'multiple_choice' && q.answers) {
     area.className += ' mon-answers-mc';
@@ -374,7 +376,7 @@ socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => 
     teamCount     = totalTeams ?? teams.length;
     answeredTeams = new Set(answeredTeamIds ?? []);
     showScreen('screen-game');
-    if (q) showQuestion(q);
+    if (q) showQuestion(q, currentStep !== 'question-text');
     if (scores) updateScoreboard(scores);
     setTally(answeredCount ?? 0, teamCount);
     renderAnswerStrip();
@@ -404,7 +406,7 @@ socket.on('question-text', (q) => {
   currentQuestion = q;
   answeredTeams   = new Set();
   showScreen('screen-game');
-  showQuestion(q);
+  showQuestion(q, false);
   stopTimer();
   setTally(0, teamCount);
   renderAnswerStrip();
