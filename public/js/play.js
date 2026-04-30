@@ -298,7 +298,6 @@ socket.on('question-text', (q) => {
 });
 
 // ── STEP 2: Host shows answer options — with 3-2-1-GO countdown ──────────────
-let pendingTimeLimit = null;
 let countdownActive = false;
 
 socket.on('question-answers', (q) => {
@@ -307,19 +306,14 @@ socket.on('question-answers', (q) => {
     showAnswerOptions(q);
     questionStartTime = Date.now();
     Sounds.questionStart();
-    if (pendingTimeLimit !== null) {
-      startAllTimers(pendingTimeLimit);
-      pendingTimeLimit = null;
-    }
   });
 });
 
-socket.on('question-start', ({ timeLimit }) => {
-  if (countdownActive) {
-    pendingTimeLimit = timeLimit; // held until countdown finishes
-  } else {
-    startAllTimers(timeLimit);
-  }
+// Timer starts immediately on receipt. Deadline includes the 3600ms countdown
+// so the bar is full during 3-2-1-GO and starts draining exactly on "GO".
+socket.on('question-start', ({ timeLimit, startedAt }) => {
+  const deadline = startedAt ? startedAt + 3600 + timeLimit * 1000 : null;
+  startAllTimers(timeLimit, deadline);
 });
 
 function startCountdown(onDone) {
@@ -800,13 +794,14 @@ function showBuzz(team, points, label) {
 }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
-function startAllTimers(seconds) {
+function startAllTimers(seconds, deadline) {
   stopTimer();
+  const end = deadline ?? (Date.now() + seconds * 1000);
   const fills = ['mc-timer-fill', 'est-timer-fill', 'wo-timer-fill'].map(id => document.getElementById(id));
-  let remaining = seconds;
   timerInterval = setInterval(() => {
-    remaining--;
-    const pct = (remaining / seconds) * 100;
+    const remainingMs = end - Date.now();
+    const remaining = Math.max(0, remainingMs / 1000);
+    const pct = Math.min(100, Math.max(0, (remaining / seconds) * 100));
     fills.forEach(f => {
       if (!f) return;
       f.style.width = `${pct}%`;
@@ -814,7 +809,7 @@ function startAllTimers(seconds) {
     });
     if (remaining <= 3 && remaining > 0) Sounds.urgentTick();
     else if (pct < 60 && remaining > 0) Sounds.tick();
-    if (remaining <= 0) { stopTimer(); lockAnswers(); }
+    if (remainingMs <= 0) { stopTimer(); lockAnswers(); }
   }, 1000);
 }
 

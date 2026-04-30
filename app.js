@@ -394,9 +394,8 @@ io.on('connection', (socket) => {
           socket.emit('question-text', safe);
           socket.emit('question-answers', safe);
           if (!alreadyAnswered) {
-            const elapsed = Math.floor((Date.now() - (state.questionStartedAt || Date.now())) / 1000);
-            const remaining = Math.max(1, q.time_limit - elapsed);
-            socket.emit('question-start', { index: qIndex, timeLimit: remaining });
+            const effectiveTimeLimit = state.timeLimitSecs ?? q.time_limit;
+            socket.emit('question-start', { index: qIndex, timeLimit: effectiveTimeLimit, startedAt: state.questionStartedAt });
           }
         } else if (state.currentStep === 'revealed') {
           const scores = db.getScoresByEvent(code);
@@ -438,6 +437,7 @@ io.on('connection', (socket) => {
         roundNum: state.roundNum ?? 1,
         currentQuestion: q ? { ...safeQuestion(q, qIndex, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1, time_limit: timeLimit } : null,
         timerRemaining,
+        questionStartedAt: state.questionStartedAt ?? null,
         answeredCount: answers.length,
         answeredTeamIds: answers.map(a => a.team_id),
         totalTeams: teams.length,
@@ -549,12 +549,12 @@ io.on('connection', (socket) => {
     // Estimation: skip the separate show-answers step — send input field immediately
     if (q.type === 'estimation' && gameState[code]) {
       const effectiveTimeLimit = gameState[code].timeLimitSecs ?? q.time_limit;
-      io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
-      io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit });
-      io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
-      gameState[code].currentStep = 'answers-shown';
       gameState[code].questionStartedAt = Date.now();
-      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000);
+      gameState[code].currentStep = 'answers-shown';
+      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000 + 3600);
+      io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
+      io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code].questionStartedAt });
+      io.to(`host:${code}`).emit('host-step', { step: 'answers-shown', startedAt: gameState[code].questionStartedAt });
     } else {
       io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
       if (gameState[code]) gameState[code].currentStep = 'question-text';
@@ -615,15 +615,14 @@ io.on('connection', (socket) => {
     if (state.currentStep === 'answers-shown') return; // estimation already advanced past this
     const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     const effectiveTimeLimit = state.timeLimitSecs ?? q.time_limit;
-    io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
-    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit });
-    io.to(`host:${code}`).emit('host-step', { step: 'answers-shown' });
     if (gameState[code]) {
       gameState[code].currentStep = 'answers-shown';
       gameState[code].questionStartedAt = Date.now();
-      // Auto-reveal once the time limit expires
-      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000);
+      gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000 + 3600);
     }
+    io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
+    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code]?.questionStartedAt });
+    io.to(`host:${code}`).emit('host-step', { step: 'answers-shown', startedAt: gameState[code]?.questionStartedAt });
   });
 
   // ── Submit answer ───────────────────────────────────────────────────────────

@@ -206,7 +206,11 @@ function restoreHostGame(rs) {
   } else if (step === 'answers-shown') {
     renderQuestionPreview(q);
     setStep('answering');
-    if (rs.timerRemaining > 0) startTimer(rs.timerRemaining);
+    if (rs.timerRemaining > 0) {
+      const tl = q?.time_limit || rs.timerRemaining;
+      const dl = rs.questionStartedAt ? rs.questionStartedAt + 3600 + tl * 1000 : (Date.now() + rs.timerRemaining * 1000);
+      startTimer(tl, dl);
+    }
   } else if (step === 'revealed') {
     renderQuestionPreview(q);
     const cv = document.getElementById('correct-value');
@@ -557,7 +561,7 @@ document.getElementById('btn-replace').addEventListener('click', () => socket.em
 document.getElementById('btn-show-answers').addEventListener('click', () => socket.emit('show-answers', { code }));
 document.getElementById('btn-next').addEventListener('click', () => socket.emit('next-question', { code }));
 
-socket.on('host-step', ({ step }) => {
+socket.on('host-step', ({ step, startedAt }) => {
   if (step === 'question-sent') {
     setStep('sent');
     if (hostPlaysMode && currentQuestion) {
@@ -577,7 +581,9 @@ socket.on('host-step', ({ step }) => {
     // Delay matches the 3-2-1-GO countdown on player screens (4 × 900ms = 3600ms)
     [900, 1800, 2700].forEach(ms => setTimeout(() => Sounds.countdownTick(), ms));
     setTimeout(() => Sounds.countdownGo(), 3600);
-    setTimeout(() => startTimer(currentQuestion?.time_limit || 20), 3600);
+    const _tl = currentQuestion?.time_limit || 20;
+    const _dl = startedAt ? startedAt + 3600 + _tl * 1000 : null;
+    setTimeout(() => startTimer(_tl, _dl), 3600);
     // For estimation, question-sent is skipped — initialise preview here instead
     if (currentQuestion?.type === 'estimation') {
       document.getElementById('question-text').textContent = currentQuestion.question;
@@ -915,19 +921,20 @@ window.setHostLang = function (lang) {
 };
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
-function startTimer(seconds) {
+function startTimer(seconds, deadline) {
   stopTimer();
   const fill = document.getElementById('timer-fill');
   fill.style.width = '100%'; fill.className = 'timer-fill';
-  let remaining = seconds;
+  const end = deadline ?? (Date.now() + seconds * 1000);
   timerInterval = setInterval(() => {
-    remaining--;
-    const pct = (remaining / seconds) * 100;
+    const remainingMs = end - Date.now();
+    const remaining = Math.max(0, remainingMs / 1000);
+    const pct = Math.min(100, Math.max(0, (remaining / seconds) * 100));
     fill.style.width = `${pct}%`;
     fill.className = 'timer-fill' + (pct < 30 ? ' danger' : pct < 60 ? ' warning' : '');
     if (remaining <= 3 && remaining > 0) Sounds.urgentTick();
     else if (pct < 60 && remaining > 0) Sounds.tick();
-    if (remaining <= 0) stopTimer();
+    if (remainingMs <= 0) stopTimer();
   }, 1000);
 }
 function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
