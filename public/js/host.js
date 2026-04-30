@@ -15,6 +15,7 @@ let hostTeamId = null;
 let hostAnswered = false;
 let hostAnswerStartTime = null;
 let hostSubmittedAnswer = null;
+let hostWasCorrect = false;
 
 const CATEGORY_ICONS = {
   'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
@@ -402,6 +403,8 @@ socket.on('question-host', (q) => {
   currentQuestion = q;
   hostAnswered = false;
   hostSubmittedAnswer = null;
+  hostWasCorrect = false;
+  Sounds.questionStart();
 
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
@@ -572,6 +575,8 @@ socket.on('host-step', ({ step }) => {
   if (step === 'answers-shown') {
     setStep('answering');
     // Delay matches the 3-2-1-GO countdown on player screens (4 × 900ms = 3600ms)
+    [900, 1800, 2700].forEach(ms => setTimeout(() => Sounds.countdownTick(), ms));
+    setTimeout(() => Sounds.countdownGo(), 3600);
     setTimeout(() => startTimer(currentQuestion?.time_limit || 20), 3600);
     // For estimation, question-sent is skipped — initialise preview here instead
     if (currentQuestion?.type === 'estimation') {
@@ -611,6 +616,7 @@ socket.on('host-step', ({ step }) => {
 socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
   const team = teams[teamId];
   if (!team) return;
+  if (teamId === hostTeamId && isCorrect) hostWasCorrect = true;
 
   // Playing host must not see others' estimation answers before reveal
   const isEstimation = currentQuestion?.type === 'estimation';
@@ -649,6 +655,7 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
   }
 
   if (hostPlaysMode && currentQuestion) {
+    if (hostAnswered) hostWasCorrect ? Sounds.correct() : Sounds.wrong();
     // Show the full answer preview with correct answer highlighted
     renderQuestionPreview(currentQuestion);
     document.getElementById('host-answer-area').classList.add('hidden');
@@ -785,6 +792,7 @@ socket.on('scores-updated', ({ scores }) => {
 socket.on('first-correct', ({ team, points, questionType }) => {
   const label = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
   showBuzz(team, points, label);
+  Sounds.buzz();
 });
 
 // ── Round over ────────────────────────────────────────────────────────────────
@@ -910,6 +918,8 @@ function startTimer(seconds) {
     const pct = (remaining / seconds) * 100;
     fill.style.width = `${pct}%`;
     fill.className = 'timer-fill' + (pct < 30 ? ' danger' : pct < 60 ? ' warning' : '');
+    if (remaining <= 3 && remaining > 0) Sounds.urgentTick();
+    else if (pct < 60 && remaining > 0) Sounds.tick();
     if (remaining <= 0) stopTimer();
   }, 1000);
 }
@@ -919,7 +929,9 @@ function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerI
 function showBuzz(team, points, label) {
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('buzz-team-name').textContent = team.name;
-  document.getElementById('buzz-points').textContent = `+${points} pts`;
+  const buzzPts = document.getElementById('buzz-points');
+  buzzPts.textContent = points > 0 ? `+${points} pts` : '';
+  buzzPts.style.display = points > 0 ? '' : 'none';
   if (label) document.querySelector('#buzz-overlay .buzz-label').textContent = label;
   const img = document.getElementById('buzz-selfie');
   const init = document.getElementById('buzz-initials');

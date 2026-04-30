@@ -660,7 +660,7 @@ io.on('connection', (socket) => {
 
     if (isFirst) {
       state.firstCorrectTeam = db.getTeam(teamId);
-      state.firstCorrectPoints = points;
+      state.firstCorrectPoints = bonusPoints;
     }
 
     const teamName = db.getTeam(teamId)?.name ?? teamId;
@@ -793,7 +793,7 @@ io.on('connection', (socket) => {
 
     if (isFirst) {
       state.firstCorrectTeam = db.getTeam(teamId);
-      state.firstCorrectPoints = points;
+      state.firstCorrectPoints = bonusPoints;
     }
 
     socket.emit('answer-received', { teamId, isCorrect, points, answer, timeTaken });
@@ -860,7 +860,7 @@ function doRevealAnswer(code) {
         estimationWinnerId = winner.team_id;
         const winnerTeam = db.getTeam(winner.team_id);
         state.firstCorrectTeam = winnerTeam;
-        state.firstCorrectPoints = total;
+        state.firstCorrectPoints = speedBonus;
         state.estimationWinnerId = estimationWinnerId;
 
         // Precision bonus: winner's answer must be exactly correct

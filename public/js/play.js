@@ -761,7 +761,9 @@ function showBuzz(team, points, label) {
   const overlay = document.getElementById('play-buzz-overlay');
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('play-buzz-team-name').textContent = team.name;
-  document.getElementById('play-buzz-points').textContent = `+${points} pts`;
+  const buzzPts = document.getElementById('play-buzz-points');
+  buzzPts.textContent = points > 0 ? `+${points} pts` : '';
+  buzzPts.style.display = points > 0 ? '' : 'none';
   if (label) document.querySelector('#play-buzz-overlay .buzz-label').textContent = label;
   const selfieImg = document.getElementById('play-buzz-selfie');
   const initialsEl = document.getElementById('play-buzz-initials');
