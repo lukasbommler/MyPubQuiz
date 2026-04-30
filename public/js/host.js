@@ -481,6 +481,7 @@ function showHostAnswerOptions(q) {
         hostSubmittedAnswer = String(btn.dataset.index);
         opts.querySelectorAll('.host-answer-btn').forEach(b => b.disabled = true);
         btn.classList.add('host-answer-selected');
+        Sounds.submit();
         socket.emit('host-submit-answer', { code, answer: hostSubmittedAnswer,
           timeTaken: Date.now() - hostAnswerStartTime });
         showHostAnswerFeedback(t('locked_in_host'));
@@ -501,6 +502,7 @@ function showHostAnswerOptions(q) {
       hostAnswered = true;
       hostSubmittedAnswer = val;
       document.getElementById('host-est-submit').disabled = true;
+      Sounds.submit();
       socket.emit('host-submit-answer', { code, answer: val,
         timeTaken: Date.now() - hostAnswerStartTime });
       showHostAnswerFeedback(t('submitted_val', { val, unit: q.unit || '' }));
@@ -542,6 +544,7 @@ function showHostAnswerOptions(q) {
       hostAnswered = true;
       hostSubmittedAnswer = JSON.stringify(wordOrder);
       document.getElementById('host-wo-submit').disabled = true;
+      Sounds.submit();
       socket.emit('host-submit-answer', { code, answer: hostSubmittedAnswer,
         timeTaken: Date.now() - hostAnswerStartTime });
       showHostAnswerFeedback(t('order_submitted'));
@@ -800,7 +803,7 @@ socket.on('scores-updated', ({ scores }) => {
 socket.on('first-correct', ({ team, points, questionType }) => {
   const label = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
   showBuzz(team, points, label);
-  Sounds.buzz();
+  Sounds.firstCorrect();
 });
 
 // ── Round over ────────────────────────────────────────────────────────────────
@@ -957,9 +960,9 @@ function showBuzz(team, points, label) {
 }
 
 // ── Special animations ────────────────────────────────────────────────────────
-socket.on('lone-hero', ({ team, points }) => showSpecialOverlay('lone-hero-overlay', 'lone-hero-team', 'lone-hero-points', team, points));
+socket.on('lone-hero', ({ team, points }) => { showSpecialOverlay('lone-hero-overlay', 'lone-hero-team', 'lone-hero-points', team, points); Sounds.soloCorrect(); });
 socket.on('precise-estimate', ({ team, points }) => showSpecialOverlay('precise-overlay', 'precise-team', 'precise-points', team, points));
-socket.on('worst-estimate', ({ team }) => showSpecialOverlay('worst-overlay', 'worst-team', null, team, 0));
+socket.on('worst-estimate', ({ team }) => { showSpecialOverlay('worst-overlay', 'worst-team', null, team, 0); Sounds.offTheCharts(); });
 
 function showSpecialOverlay(overlayId, teamId, ptsId, team, points) {
   document.getElementById(teamId).textContent = team.name;

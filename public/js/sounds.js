@@ -104,6 +104,36 @@ const Sounds = (() => {
       });
     },
 
+    // First-correct — game-show electric ding + ascending arpeggio
+    firstCorrect() {
+      const t = now();
+      tone(1200, 'square', t,        0.04, 0.35, 0.001);
+      tone(1400, 'square', t + 0.06, 0.04, 0.35, 0.001);
+      tone(1600, 'square', t + 0.12, 0.06, 0.4,  0.001);
+      [523, 659, 784, 1047].forEach((f, i) => {
+        tone(f, 'sine', t + 0.22 + i * 0.09, 0.2, 0.5, 0.001);
+      });
+    },
+
+    // Sole correct — over-the-top heroic trumpet fanfare
+    soloCorrect() {
+      const t = now();
+      tone(392, 'square', t,        0.12, 0.5, 0.08);
+      tone(392, 'square', t + 0.18, 0.12, 0.5, 0.08);
+      tone(523, 'square', t + 0.36, 0.14, 0.5, 0.08);
+      tone(659, 'square', t + 0.54, 0.14, 0.5, 0.08);
+      tone(784, 'square', t + 0.72, 0.45, 0.5, 0.001);
+    },
+
+    // Off the charts — sad trombone (wah wah wahhh)
+    offTheCharts() {
+      const t = now();
+      tone(466, 'sawtooth', t,        0.22, 0.4, 0.06);
+      tone(415, 'sawtooth', t + 0.28, 0.22, 0.4, 0.06);
+      tone(370, 'sawtooth', t + 0.56, 0.22, 0.4, 0.06);
+      tone(311, 'sawtooth', t + 0.84, 0.5,  0.5, 0.001);
+    },
+
     // Victory fanfare — rising arpeggio + sustained top note
     victory() {
       const t = now();

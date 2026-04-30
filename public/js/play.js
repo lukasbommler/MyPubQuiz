@@ -360,13 +360,13 @@ socket.on('answer-revealed', ({ correct, scores, estimationWinnerIds, distributi
 socket.on('first-correct', ({ team, points, questionType }) => {
   const label = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
   showBuzz(team, points, label);
-  Sounds.buzz();
+  Sounds.firstCorrect();
 });
 
 // ── Lone hero / Precise estimate animations ───────────────────────────────────
-socket.on('lone-hero', ({ team, points }) => showPlaySpecial('play-lone-hero-overlay', 'play-lone-hero-team', 'play-lone-hero-points', team, points));
+socket.on('lone-hero', ({ team, points }) => { showPlaySpecial('play-lone-hero-overlay', 'play-lone-hero-team', 'play-lone-hero-points', team, points); Sounds.soloCorrect(); });
 socket.on('precise-estimate', ({ team, points }) => showPlaySpecial('play-precise-overlay', 'play-precise-team', 'play-precise-points', team, points));
-socket.on('worst-estimate', ({ team }) => showPlaySpecial('play-worst-overlay', 'play-worst-team', null, team, 0));
+socket.on('worst-estimate', ({ team }) => { showPlaySpecial('play-worst-overlay', 'play-worst-team', null, team, 0); Sounds.offTheCharts(); });
 
 function showPlaySpecial(overlayId, teamElId, ptsElId, team, points) {
   document.getElementById(teamElId).textContent = team.name;
@@ -434,7 +434,8 @@ socket.on('game-over', ({ scores }) => {
   html += `</div>`;
   document.getElementById('final-scores-play').innerHTML = html;
 
-  if (myRank > 0 && myRank <= 3) setTimeout(() => Sounds.launchConfetti(), 400);
+  setTimeout(() => Sounds.victory(), 1300);
+  setTimeout(() => Sounds.launchConfetti(), 1500);
 });
 
 // ── Standby / waiting screens ─────────────────────────────────────────────────
