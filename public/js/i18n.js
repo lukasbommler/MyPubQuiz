@@ -422,11 +422,12 @@
     return str;
   };
 
-  /** Persist language choice and reload. */
+  /** Persist language choice and re-apply translations in place (no reload). */
   window.setLang = function (lang) {
     if (lang !== 'en' && lang !== 'de') return;
     localStorage.setItem('mpq_lang', lang);
-    location.reload();
+    window.MPQ_LANG = lang;
+    applyI18n();
   };
 
   /**

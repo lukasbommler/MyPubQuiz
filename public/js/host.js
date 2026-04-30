@@ -909,6 +909,11 @@ function updateScoreboard(elId, scores) {
 
 window.adjustScore = (teamId, delta) => socket.emit('adjust-score', { code, teamId, delta });
 
+window.setHostLang = function (lang) {
+  setLang(lang);
+  socket.emit('set-language', { code, lang });
+};
+
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer(seconds) {
   stopTimer();
