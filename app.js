@@ -302,7 +302,7 @@ app.get('/admin/flags/:id/dismiss', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/host/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
 app.get('/game/:code', (req, res) => res.sendFile(path.join(__dirname, 'public', 'play.html')));
-app.get('/monitor/:code', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'monitor.html')));
+app.get('/tv/:code', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'monitor.html')));
 
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 

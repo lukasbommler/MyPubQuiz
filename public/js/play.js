@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', applyI18n);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 const code = location.pathname.split('/').pop();
-document.getElementById('monitor-link').href = `/monitor/${code}`;
+document.getElementById('monitor-link').href = `/tv/${code}`;
 const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity });
 
 let myTeam = null;
