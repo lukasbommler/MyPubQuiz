@@ -462,6 +462,9 @@ function showQuestionText(q) {
   } else if (q.type === 'word_order') {
     setupWordOrderScreen(q, false);
     showScreen('screen-wordorder');
+  } else if (q.type === 'truth_or_lie') {
+    setupTruthOrLieScreen(q, false);
+    showScreen('screen-tol');
   }
 }
 
@@ -470,6 +473,7 @@ function showAnswerOptions(q) {
   if (q.type === 'multiple_choice') setupMCScreen(q, true);
   else if (q.type === 'estimation') setupEstimationScreen(q, true);
   else if (q.type === 'word_order') setupWordOrderScreen(q, true);
+  else if (q.type === 'truth_or_lie') setupTruthOrLieScreen(q, true);
 }
 
 // ── Multiple Choice ───────────────────────────────────────────────────────────
@@ -598,6 +602,40 @@ function setupWordOrderScreen(q, showAnswers) {
   });
 }
 
+// ── Truth or Lie ──────────────────────────────────────────────────────────────
+function setupTruthOrLieScreen(q, showAnswers) {
+  document.getElementById('tol-category').textContent = q.category;
+  document.getElementById('tol-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
+  document.getElementById('tol-question-text').textContent = q.question;
+  document.getElementById('tol-feedback').classList.add('hidden');
+  document.getElementById('tol-timer-fill').style.width = '100%';
+  document.getElementById('tol-timer-fill').className = 'play-timer-fill';
+
+  const container = document.getElementById('tol-buttons');
+
+  if (!showAnswers) {
+    container.innerHTML = `<div class="waiting-answers-hint">${t('waiting_answers')}</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <button class="tol-btn tol-truth" data-index="0">${t('truth_btn')}</button>
+    <button class="tol-btn tol-lie"   data-index="1">${t('lie_btn')}</button>
+  `;
+
+  container.querySelectorAll('.tol-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
+      btn.classList.add('selected');
+      container.querySelectorAll('.tol-btn').forEach(b => b.disabled = true);
+      submitAnswer(String(btn.dataset.index));
+      showLockedIn('tol-feedback');
+      playSound('submit');
+    });
+  });
+}
+
 document.getElementById('wo-submit-btn').addEventListener('click', () => {
   if (answered) return;
   if (wordOrder.length !== currentQuestion?.words?.length) {
@@ -655,8 +693,15 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
       if (parseInt(btn.dataset.index) === correct) btn.classList.add('correct');
       else if (btn.classList.contains('selected')) btn.classList.add('wrong');
     });
-    // Reset inline style from showLockedIn
     const fb = document.getElementById('mc-feedback');
+    if (fb) { fb.style.background = ''; fb.style.color = ''; }
+  } else if (currentQuestion?.type === 'truth_or_lie') {
+    document.querySelectorAll('.tol-btn').forEach(btn => {
+      btn.disabled = true;
+      if (parseInt(btn.dataset.index) === correct) btn.classList.add('correct');
+      else if (btn.classList.contains('selected')) btn.classList.add('wrong');
+    });
+    const fb = document.getElementById('tol-feedback');
     if (fb) { fb.style.background = ''; fb.style.color = ''; }
   }
 
@@ -668,6 +713,8 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
     let wasCorrect = false;
     if (currentQuestion?.type === 'multiple_choice') {
       wasCorrect = document.querySelector('.mc-btn.correct.selected') != null;
+    } else if (currentQuestion?.type === 'truth_or_lie') {
+      wasCorrect = document.querySelector('.tol-btn.correct.selected') != null;
     } else if (currentQuestion?.type === 'word_order') {
       wasCorrect = JSON.stringify(wordOrder) === JSON.stringify(correct);
     } else if (currentQuestion?.type === 'estimation') {
@@ -681,6 +728,8 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
     const correctAnswerEl = document.getElementById('reveal-correct-answer');
     if (currentQuestion?.type === 'multiple_choice') {
       correctAnswerEl.textContent = t('correct_label', { answer: currentQuestion.answers[correct] });
+    } else if (currentQuestion?.type === 'truth_or_lie') {
+      correctAnswerEl.textContent = correct === 0 ? t('tol_correct_truth') : t('tol_correct_lie');
     } else if (currentQuestion?.type === 'estimation') {
       correctAnswerEl.textContent = t('answer_label', { value: correct, unit: currentQuestion.unit || '' });
     } else if (currentQuestion?.type === 'word_order') {
@@ -692,6 +741,8 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
       let yourText = '';
       if (currentQuestion.type === 'multiple_choice') {
         yourText = t('your_answer_label') + ': ' + (currentQuestion.answers[parseInt(mySubmittedAnswer)] ?? mySubmittedAnswer);
+      } else if (currentQuestion.type === 'truth_or_lie') {
+        yourText = parseInt(mySubmittedAnswer) === 0 ? t('tol_your_truth') : t('tol_your_lie');
       } else if (currentQuestion.type === 'estimation') {
         yourText = t('your_answer_label') + ': ' + mySubmittedAnswer + (currentQuestion.unit ? ' ' + currentQuestion.unit : '');
       } else if (currentQuestion.type === 'word_order') {
@@ -712,6 +763,52 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
 
     document.getElementById('reveal-scoreboard').innerHTML = '';
   }, 800);
+}
+
+// ── Shared donut chart for Truth or Lie distribution ─────────────────────────
+function renderDonutChart(counts, correct, labelTruth, labelLie) {
+  const total = counts[0] + counts[1] || 1;
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  const truthArc  = (counts[0] / total) * circ;
+  const lieArc    = (counts[1] / total) * circ;
+  const truthPct  = Math.round((counts[0] / total) * 100);
+  const liePct    = 100 - truthPct;
+
+  // Dash offset: truth starts at top (−90°), lie segment follows
+  const truthOffset = 0;
+  const lieOffset   = -(truthArc);
+
+  return `
+    <div class="tol-donut-wrap">
+      <svg class="tol-donut" viewBox="0 0 100 100" width="160" height="160">
+        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="${correct === 0 ? 'var(--green)' : '#22c55e'}" stroke-width="18"
+          stroke-dasharray="${truthArc} ${circ}"
+          stroke-dashoffset="${truthOffset}"
+          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="${correct === 1 ? 'var(--red)' : '#ef4444'}" stroke-width="18"
+          stroke-dasharray="${lieArc} ${circ}"
+          stroke-dashoffset="${lieOffset}"
+          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
+        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
+        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
+      </svg>
+      <div class="tol-donut-legend">
+        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot truth"></span>
+          <span class="tol-legend-name">${labelTruth}</span>
+          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
+        </div>
+        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot lie"></span>
+          <span class="tol-legend-name">${labelLie}</span>
+          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── Answer distribution ───────────────────────────────────────────────────────
@@ -781,6 +878,9 @@ function renderDistribution(dist) {
           <span class="dist-wo-w">${t('got_wrong', { n: dist.wrong })}</span>
         </div>
       </div>`;
+
+  } else if (dist.type === 'truth_or_lie') {
+    el.innerHTML = renderDonutChart(dist.counts, dist.correct, t('truth_btn'), t('lie_btn'));
   }
 }
 
@@ -805,7 +905,7 @@ function showBuzz(team, points, label) {
 function startAllTimers(seconds, deadline) {
   stopTimer();
   const end = deadline ?? (Date.now() + seconds * 1000);
-  const fills = ['mc-timer-fill', 'est-timer-fill', 'wo-timer-fill'].map(id => document.getElementById(id));
+  const fills = ['mc-timer-fill', 'tol-timer-fill', 'est-timer-fill', 'wo-timer-fill'].map(id => document.getElementById(id));
   timerInterval = setInterval(() => {
     const remainingMs = end - Date.now();
     const remaining = Math.max(0, remainingMs / 1000);
@@ -824,12 +924,13 @@ function startAllTimers(seconds, deadline) {
 function lockAnswers() {
   // Disable all interactive answer elements
   document.querySelectorAll('.mc-btn').forEach(b => b.disabled = true);
+  document.querySelectorAll('.tol-btn').forEach(b => b.disabled = true);
   document.getElementById('est-submit-btn').disabled = true;
   document.getElementById('est-input').disabled = true;
   document.getElementById('wo-submit-btn').disabled = true;
   // Show "Time's up!" only if the player hasn't answered yet
   if (!answered) {
-    ['mc-feedback', 'est-feedback', 'wo-feedback'].forEach(id => {
+    ['mc-feedback', 'tol-feedback', 'est-feedback', 'wo-feedback'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.textContent = '⏰ Time\'s up!';

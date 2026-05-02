@@ -644,7 +644,7 @@ io.on('connection', (socket) => {
     if (db.hasAnswered(code, teamId, qIndex)) return;
 
     let isCorrect = false;
-    if (q.type === 'multiple_choice') {
+    if (q.type === 'multiple_choice' || q.type === 'truth_or_lie') {
       isCorrect = parseInt(answer) === q.correct;
     } else if (q.type === 'word_order') {
       try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(correctAnswer(q)); } catch (e) {}
@@ -778,7 +778,7 @@ io.on('connection', (socket) => {
     if (!q || db.hasAnswered(code, teamId, qIndex)) return;
 
     let isCorrect = false;
-    if (q.type === 'multiple_choice') {
+    if (q.type === 'multiple_choice' || q.type === 'truth_or_lie') {
       isCorrect = parseInt(answer) === q.correct;
     } else if (q.type === 'word_order') {
       try { isCorrect = JSON.stringify(JSON.parse(answer)) === JSON.stringify(correctAnswer(q)); } catch (e) {}
@@ -878,8 +878,8 @@ function doRevealAnswer(code) {
     }
   }
 
-  // ── MC / Word Order: lone correct bonus if exactly 1 team answered correctly ──
-  if (q.type === 'multiple_choice' || q.type === 'word_order') {
+  // ── MC / Word Order / Truth-or-Lie: lone correct bonus if exactly 1 team answered correctly ──
+  if (q.type === 'multiple_choice' || q.type === 'word_order' || q.type === 'truth_or_lie') {
     const correctAnswerers = allAnswers.filter(a => a.is_correct);
     if (correctAnswerers.length === 1) {
       if (specialPts > 0) db.addScore(correctAnswerers[0].team_id, specialPts);
@@ -907,6 +907,13 @@ function doRevealAnswer(code) {
   } else if (q.type === 'word_order') {
     const correct = allAnswers.filter(a => a.is_correct).length;
     distribution = { type: 'word_order', correct, wrong: allAnswers.length - correct, total: allAnswers.length };
+  } else if (q.type === 'truth_or_lie') {
+    const counts = [0, 0]; // [Truth, Lie]
+    for (const a of allAnswers) {
+      const idx = parseInt(a.answer);
+      if (idx === 0 || idx === 1) counts[idx]++;
+    }
+    distribution = { type: 'truth_or_lie', counts, correct: q.correct };
   }
 
   state.currentStep = 'revealed';

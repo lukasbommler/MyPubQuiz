@@ -158,6 +158,15 @@
       type_multiple_choice: 'Multiple Choice',
       type_estimation:      'Estimation',
       type_word_order:      'Word Ordering',
+      type_truth_or_lie:    'Truth or Lie',
+
+      // truth or lie
+      truth_btn:            'Truth',
+      lie_btn:              'Lie',
+      tol_correct_truth:    'Correct answer: Truth',
+      tol_correct_lie:      'Correct answer: Lie',
+      tol_your_truth:       'You answered: Truth',
+      tol_your_lie:         'You answered: Lie',
 
       back_to_home: '← Back to Homepage',
 
@@ -186,7 +195,7 @@
       faq_q8:  'Can the host also play?',
       faq_a8:  'Yes. The host panel has an option to register the host as a participating team, so the person running the quiz can play along at the same time.',
       faq_q9:  'What question types are there?',
-      faq_a9:  'MyPubQuiz supports three types:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> — four options, one is correct.</li><li><strong>Estimation</strong> — numerical input; the team closest to the target wins.</li><li><strong>Word Ordering</strong> — arrange given words into the correct sequence.</li></ul>',
+      faq_a9:  'MyPubQuiz supports four types:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> — four options, one is correct.</li><li><strong>Estimation</strong> — numerical input; the team closest to the target wins.</li><li><strong>Word Ordering</strong> — arrange given words into the correct sequence.</li><li><strong>Truth or Lie</strong> — a statement is shown; teams decide if it\'s Truth or Lie.</li></ul>',
       faq_q10: 'In which languages are questions available?',
       faq_a10: 'The question catalogue is available in German and English. The host can choose the language in the lobby screen before the game starts.',
       faq_q11: 'How does the scoring system work?',
@@ -362,6 +371,15 @@
       type_multiple_choice: 'Multiple Choice',
       type_estimation:      'Schätzfrage',
       type_word_order:      'Wörter sortieren',
+      type_truth_or_lie:    'Wahrheit oder Lüge',
+
+      // truth or lie
+      truth_btn:            'Wahrheit',
+      lie_btn:              'Lüge',
+      tol_correct_truth:    'Richtige Antwort: Wahrheit',
+      tol_correct_lie:      'Richtige Antwort: Lüge',
+      tol_your_truth:       'Deine Antwort: Wahrheit',
+      tol_your_lie:         'Deine Antwort: Lüge',
 
       back_to_home: '← Zurück zur Startseite',
 
@@ -390,7 +408,7 @@
       faq_q8:  'Kann der Host auch mitspielen?',
       faq_a8:  'Ja. Im Host-Panel gibt es eine Option, den Host als teilnehmendes Team einzutragen. So kann die moderierende Person gleichzeitig spielen.',
       faq_q9:  'Welche Fragetypen gibt es?',
-      faq_a9:  'MyPubQuiz unterstützt drei Typen:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> – vier Antwortmöglichkeiten, eine ist richtig.</li><li><strong>Schätzfrage</strong> – numerische Eingabe; das Team mit dem nächsten Wert gewinnt.</li><li><strong>Wörter sortieren</strong> – vorgegebene Wörter in die richtige Reihenfolge bringen.</li></ul>',
+      faq_a9:  'MyPubQuiz unterstützt vier Typen:<ul style="margin-top:0.5rem;padding-left:1.25rem;line-height:2"><li><strong>Multiple Choice</strong> – vier Antwortmöglichkeiten, eine ist richtig.</li><li><strong>Schätzfrage</strong> – numerische Eingabe; das Team mit dem nächsten Wert gewinnt.</li><li><strong>Wörter sortieren</strong> – vorgegebene Wörter in die richtige Reihenfolge bringen.</li><li><strong>Wahrheit oder Lüge</strong> – eine Aussage wird gezeigt; Teams entscheiden ob sie wahr oder falsch ist.</li></ul>',
       faq_q10: 'In welchen Sprachen sind Fragen verfügbar?',
       faq_a10: 'Der Fragenkatalog ist auf Deutsch und Englisch verfügbar. Die Sprache kann der Host vor dem Spielstart im Lobby-Bildschirm wählen.',
       faq_q11: 'Wie funktioniert das Punktesystem?',

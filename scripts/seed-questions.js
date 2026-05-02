@@ -69,6 +69,14 @@ async function seed() {
       }
       wordsJson = JSON.stringify(wordArr);
 
+    } else if (type === 'truth_or_lie') {
+      const c = (correct || '').trim().toUpperCase();
+      if (c !== 'T' && c !== 'F') {
+        console.log(`  SKIP ${tag} — truth_or_lie has no valid correct (expected T or F)`);
+        skipped++; continue;
+      }
+      correctIndex = c === 'T' ? 0 : 1; // 0 = Truth, 1 = Lie
+
     } else {
       console.log(`  SKIP ${tag} — unknown type "${type}"`);
       skipped++; continue;

@@ -28,6 +28,7 @@ function getTypeLabels() {
     'multiple_choice': t('type_multiple_choice'),
     'word_order':      t('type_word_order'),
     'estimation':      t('type_estimation'),
+    'truth_or_lie':    t('type_truth_or_lie'),
   };
 }
 
@@ -215,6 +216,7 @@ function restoreHostGame(rs) {
     renderQuestionPreview(q);
     const cv = document.getElementById('correct-value');
     if (q.type === 'multiple_choice') cv.textContent = q.answers[rs.correct];
+    else if (q.type === 'truth_or_lie') cv.textContent = rs.correct === 0 ? t('truth_btn') : t('lie_btn');
     else if (q.type === 'estimation') cv.textContent = `${rs.correct} ${q.unit || ''}`;
     else if (q.type === 'word_order') cv.textContent = rs.correct.map(i => q.words[i]).join(' → ');
     updateScoreboard('scoreboard', rs.scores);
@@ -447,6 +449,16 @@ function renderQuestionPreview(q) {
       <div class="answer-option${i === q.correct ? ' correct' : ''}">
         <span class="answer-letter">${'ABCD'[i]}</span>${escapeHtml(a)}
       </div>`).join('');
+  } else if (q.type === 'truth_or_lie') {
+    const el = document.getElementById('answers-preview');
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="answer-option tol-preview-option${q.correct === 0 ? ' correct' : ''}">
+        <span class="answer-letter">T</span>${escapeHtml(t('truth_btn'))}
+      </div>
+      <div class="answer-option tol-preview-option${q.correct === 1 ? ' correct' : ''}">
+        <span class="answer-letter">L</span>${escapeHtml(t('lie_btn'))}
+      </div>`;
   } else if (q.type === 'word_order') {
     const el = document.getElementById('words-preview');
     el.classList.remove('hidden');
@@ -506,6 +518,26 @@ function showHostAnswerOptions(q) {
       socket.emit('host-submit-answer', { code, answer: val,
         timeTaken: Date.now() - hostAnswerStartTime });
       showHostAnswerFeedback(t('submitted_val', { val, unit: q.unit || '' }));
+    });
+
+  } else if (q.type === 'truth_or_lie') {
+    opts.innerHTML = `
+      <div class="host-tol-btns">
+        <button class="tol-btn tol-truth host-tol-btn" data-index="0">${t('truth_btn')}</button>
+        <button class="tol-btn tol-lie   host-tol-btn" data-index="1">${t('lie_btn')}</button>
+      </div>`;
+    opts.querySelectorAll('.host-tol-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (hostAnswered) return;
+        hostAnswered = true;
+        hostSubmittedAnswer = String(btn.dataset.index);
+        opts.querySelectorAll('.host-tol-btn').forEach(b => b.disabled = true);
+        btn.classList.add('host-answer-selected');
+        Sounds.submit();
+        socket.emit('host-submit-answer', { code, answer: hostSubmittedAnswer,
+          timeTaken: Date.now() - hostAnswerStartTime });
+        showHostAnswerFeedback(t('locked_in_host'));
+      });
     });
 
   } else if (q.type === 'word_order') {
@@ -632,7 +664,9 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
   if (!(hostPlaysMode && isEstimation)) {
     const row = document.createElement('div');
     row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
-    const display = currentQuestion?.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
+    let display = answer;
+    if (currentQuestion?.type === 'multiple_choice') display = 'ABCD'[parseInt(answer)] || answer;
+    else if (currentQuestion?.type === 'truth_or_lie') display = parseInt(answer) === 0 ? t('truth_btn') : t('lie_btn');
     row.innerHTML = `
       <span class="answer-log-name">${escapeHtml(team.name)}</span>
       <span style="color:var(--text2);font-size:.8rem">${display}</span>
@@ -653,6 +687,7 @@ socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerI
   setStep('revealed');
   const cv = document.getElementById('correct-value');
   if (currentQuestion?.type === 'multiple_choice') cv.textContent = currentQuestion.answers[correct];
+  else if (currentQuestion?.type === 'truth_or_lie') cv.textContent = correct === 0 ? t('truth_btn') : t('lie_btn');
   else if (currentQuestion?.type === 'estimation') cv.textContent = `${correct} ${currentQuestion.unit || ''}`;
   else if (currentQuestion?.type === 'word_order') cv.textContent = correct.map(i => currentQuestion.words[i]).join(' → ');
   updateScoreboard('scoreboard', scores);
@@ -677,6 +712,8 @@ socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerI
       let yourText = '';
       if (currentQuestion.type === 'multiple_choice') {
         yourText = t('your_answer_label') + ': ' + (currentQuestion.answers[parseInt(hostSubmittedAnswer)] ?? hostSubmittedAnswer);
+      } else if (currentQuestion.type === 'truth_or_lie') {
+        yourText = parseInt(hostSubmittedAnswer) === 0 ? t('tol_your_truth') : t('tol_your_lie');
       } else if (currentQuestion.type === 'estimation') {
         yourText = t('your_answer_label') + ': ' + hostSubmittedAnswer + (currentQuestion.unit ? ' ' + currentQuestion.unit : '');
       } else if (currentQuestion.type === 'word_order') {
@@ -726,6 +763,46 @@ document.querySelectorAll('#host-flag-modal .flag-option').forEach(btn => {
   });
 });
 
+function renderDonutChart(counts, correct, labelTruth, labelLie) {
+  const total = counts[0] + counts[1] || 1;
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  const truthArc = (counts[0] / total) * circ;
+  const lieArc   = (counts[1] / total) * circ;
+  const truthPct = Math.round((counts[0] / total) * 100);
+  const liePct   = 100 - truthPct;
+  return `
+    <div class="tol-donut-wrap">
+      <svg class="tol-donut" viewBox="0 0 100 100" width="160" height="160">
+        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="#22c55e" stroke-width="18"
+          stroke-dasharray="${truthArc} ${circ}"
+          stroke-dashoffset="0"
+          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="#ef4444" stroke-width="18"
+          stroke-dasharray="${lieArc} ${circ}"
+          stroke-dashoffset="${-truthArc}"
+          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
+        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
+        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
+      </svg>
+      <div class="tol-donut-legend">
+        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot truth"></span>
+          <span class="tol-legend-name">${labelTruth}</span>
+          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
+        </div>
+        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot lie"></span>
+          <span class="tol-legend-name">${labelLie}</span>
+          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderHostDistribution(dist) {
   const el = document.getElementById('host-distribution');
   if (!dist || !el) return;
@@ -759,6 +836,8 @@ function renderHostDistribution(dist) {
       </div>
       <span style="font-size:.85rem;color:var(--text2)">✓ ${dist.correct} correct &nbsp; ✗ ${dist.wrong} wrong</span>
     </div>`;
+  } else if (dist.type === 'truth_or_lie') {
+    el.innerHTML = renderDonutChart(dist.counts, dist.correct, t('truth_btn'), t('lie_btn'));
   }
 }
 

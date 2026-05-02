@@ -132,6 +132,18 @@ function showQuestion(q, showAnswers = true) {
         <span class="mon-mc-text">${esc(a)}</span>
       </div>`).join('');
 
+  } else if (q.type === 'truth_or_lie') {
+    area.className += ' mon-answers-tol';
+    area.innerHTML = `
+      <div class="mon-tol-btn mon-tol-truth" data-idx="0">
+        <span class="mon-tol-icon">✓</span>
+        <span>Truth</span>
+      </div>
+      <div class="mon-tol-btn mon-tol-lie" data-idx="1">
+        <span class="mon-tol-icon">✗</span>
+        <span>Lie</span>
+      </div>`;
+
   } else if (q.type === 'estimation') {
     area.innerHTML = `<div class="mon-est-placeholder">
       <span class="mon-est-icon">🔢</span>
@@ -161,6 +173,13 @@ function showReveal(correct, distribution, q) {
       btn.classList.remove('correct', 'wrong');
       btn.classList.add(i === correct ? 'correct' : 'wrong');
     });
+  } else if (q.type === 'truth_or_lie') {
+    correctBanner.textContent = `✓ ${correct === 0 ? 'Truth' : 'Lie'}`;
+    document.querySelectorAll('.mon-tol-btn').forEach(btn => {
+      const idx = parseInt(btn.dataset.idx);
+      btn.classList.remove('correct', 'wrong');
+      btn.classList.add(idx === correct ? 'correct' : 'wrong');
+    });
   } else if (q.type === 'estimation') {
     correctBanner.textContent = `✓ ${correct} ${q.unit || ''}`;
   } else if (q.type === 'word_order') {
@@ -169,6 +188,47 @@ function showReveal(correct, distribution, q) {
   }
 
   if (distribution) renderDistribution(distribution, q);
+}
+
+// ── Donut chart helper (Truth or Lie) ─────────────────────────────────────────
+function renderDonutChart(counts, correct, labelTruth, labelLie) {
+  const total = counts[0] + counts[1] || 1;
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  const truthArc = (counts[0] / total) * circ;
+  const lieArc   = (counts[1] / total) * circ;
+  const truthPct = Math.round((counts[0] / total) * 100);
+  const liePct   = 100 - truthPct;
+  return `
+    <div class="tol-donut-wrap">
+      <svg class="tol-donut" viewBox="0 0 100 100" width="180" height="180">
+        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="#22c55e" stroke-width="18"
+          stroke-dasharray="${truthArc} ${circ}"
+          stroke-dashoffset="0"
+          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
+        <circle cx="50" cy="50" r="${r}" fill="none"
+          stroke="#ef4444" stroke-width="18"
+          stroke-dasharray="${lieArc} ${circ}"
+          stroke-dashoffset="${-truthArc}"
+          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
+        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
+        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
+      </svg>
+      <div class="tol-donut-legend">
+        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot truth"></span>
+          <span class="tol-legend-name">${esc(labelTruth)}</span>
+          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
+        </div>
+        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
+          <span class="tol-legend-dot lie"></span>
+          <span class="tol-legend-name">${esc(labelLie)}</span>
+          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── Distribution charts ───────────────────────────────────────────────────────
@@ -222,6 +282,9 @@ function renderDistribution(dist, q) {
         </div>
       </div>
       <div class="mon-nl-legend">▼ Correct answer: <strong>${dist.correctValue} ${esc(dist.unit || '')}</strong></div>`;
+
+  } else if (dist.type === 'truth_or_lie') {
+    el.innerHTML = renderDonutChart(dist.counts, dist.correct, 'Truth', 'Lie');
 
   } else if (dist.type === 'word_order') {
     const total  = dist.total || 1;

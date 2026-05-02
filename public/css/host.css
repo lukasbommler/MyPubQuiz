@@ -877,3 +877,20 @@ body.host-body {
 }
 
 /* Flag styles in main.css */
+
+/* ── Host: Truth or Lie playing buttons ──────────────────────────────────── */
+.host-tol-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+.host-tol-btns .tol-btn {
+  flex: 1;
+  min-height: 52px;
+  font-size: 1rem;
+  border-radius: var(--radius);
+}
+.host-tol-btns .tol-btn.host-answer-selected {
+  border-color: var(--accent2);
+  background: rgba(124,58,237,0.15);
+  color: var(--accent2);
+}
