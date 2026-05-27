@@ -34,6 +34,9 @@ async function seed() {
     const lang = language || 'en';
     const tag  = `ID=${source_id || '?'} lang=${lang}`;
 
+    // Normalize sheet alias → internal type name
+    if (type === 'truth_lie') type = 'truth_or_lie';
+
     if (!type || !question) {
       console.log(`  SKIP ${tag} — missing type or question`);
       skipped++; continue;
