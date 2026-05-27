@@ -296,7 +296,10 @@ socket.on('question-text', (q) => {
   myAnswerCorrect = false;
   mySubmittedAnswer = null;
   roundEnded = false; // clear stale flag so reconnect doesn't block the countdown callback
-  showQuestionText(q);
+  // For estimation and truth_or_lie the countdown fires first; question appears on GO
+  if (q.type !== 'estimation' && q.type !== 'truth_or_lie') {
+    showQuestionText(q);
+  }
 });
 
 // ── STEP 2: Host shows answer options — with 3-2-1-GO countdown ──────────────
@@ -305,6 +308,9 @@ let countdownActive = false;
 socket.on('question-answers', (q) => {
   currentQuestion = q;
   startCountdown(() => {
+    // For estimation + truth_or_lie the screen is shown here (skipped in question-text handler)
+    if (q.type === 'estimation') showScreen('screen-estimation');
+    else if (q.type === 'truth_or_lie') showScreen('screen-tol');
     showAnswerOptions(q);
     questionStartTime = Date.now();
     Sounds.questionStart();

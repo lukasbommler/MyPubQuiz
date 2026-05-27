@@ -617,8 +617,7 @@ socket.on('host-step', ({ step, startedAt }) => {
     [900, 1800, 2700].forEach(ms => setTimeout(() => Sounds.countdownTick(), ms));
     setTimeout(() => Sounds.countdownGo(), 3600);
     const _tl = currentQuestion?.time_limit || 20;
-    const _dl = startedAt ? startedAt + 3600 + _tl * 1000 : null;
-    setTimeout(() => startTimer(_tl, _dl), 3600);
+    setTimeout(() => startTimer(_tl, null), 3600);
     // For estimation + truth_or_lie, question-sent is skipped — reveal question text here instead
     if (currentQuestion?.type === 'estimation' || currentQuestion?.type === 'truth_or_lie') {
       document.getElementById('question-text').textContent = currentQuestion.question;
