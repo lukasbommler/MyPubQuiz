@@ -35,9 +35,9 @@ async function seed() {
     const tag  = `ID=${source_id || '?'} lang=${lang}`;
 
     // Normalize sheet alias → internal type name
-    if (type === 'truth_lie') type = 'truth_or_lie';
+    const normalizedType = type === 'truth_lie' ? 'truth_or_lie' : type;
 
-    if (!type || !question) {
+    if (!normalizedType || !question) {
       console.log(`  SKIP ${tag} — missing type or question`);
       skipped++; continue;
     }
@@ -47,7 +47,7 @@ async function seed() {
     let correctVal   = null;
     let wordsJson    = null;
 
-    if (type === 'multiple_choice') {
+    if (normalizedType === 'multiple_choice') {
       const answers = [answer_a, answer_b, answer_c, answer_d].filter(Boolean);
       if (answers.length < 2) {
         console.log(`  SKIP ${tag} — MC has fewer than 2 answers`);
@@ -57,14 +57,14 @@ async function seed() {
       correctIndex = ['A','B','C','D'].indexOf((correct || '').toUpperCase());
       if (correctIndex === -1) correctIndex = 0;
 
-    } else if (type === 'estimation') {
+    } else if (normalizedType === 'estimation') {
       correctVal = parseFloat(correct_value);
       if (isNaN(correctVal)) {
         console.log(`  SKIP ${tag} — estimation has no valid correct_value`);
         skipped++; continue;
       }
 
-    } else if (type === 'word_order') {
+    } else if (normalizedType === 'word_order') {
       const wordArr = (words || '').split('|').map(w => w.trim()).filter(Boolean);
       if (wordArr.length < 2) {
         console.log(`  SKIP ${tag} — word_order has fewer than 2 words`);
@@ -72,7 +72,7 @@ async function seed() {
       }
       wordsJson = JSON.stringify(wordArr);
 
-    } else if (type === 'truth_or_lie') {
+    } else if (normalizedType === 'truth_or_lie') {
       const c = (correct || '').trim().toUpperCase();
       if (c !== 'T' && c !== 'F') {
         console.log(`  SKIP ${tag} — truth_or_lie has no valid correct (expected T or F)`);
@@ -91,7 +91,7 @@ async function seed() {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         source_id ? parseInt(source_id) : null,
-        type,
+        normalizedType,
         category,
         lang,
         question,
