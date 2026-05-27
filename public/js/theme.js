@@ -1,5 +1,6 @@
 // Set theme immediately (in <head>) to prevent flash
-const _t = localStorage.getItem('quiz-theme') || 'dark';
+const _h = new Date().getHours();
+const _t = localStorage.getItem('quiz-theme') || (_h >= 20 || _h < 8 ? 'dark' : 'light');
 document.documentElement.setAttribute('data-theme', _t);
 
 function toggleTheme() {

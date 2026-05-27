@@ -432,7 +432,7 @@
   };
 
   const saved = localStorage.getItem('mpq_lang');
-  window.MPQ_LANG = (saved === 'en' || saved === 'de') ? saved : 'en';
+  window.MPQ_LANG = (saved === 'en' || saved === 'de') ? saved : 'de';
 
   /** Translate a key, optionally interpolating {var} placeholders. */
   window.t = function (key, vars) {
