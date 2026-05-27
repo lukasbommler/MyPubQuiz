@@ -551,8 +551,8 @@ io.on('connection', (socket) => {
     const safe = { ...safeQuestion(q, event.current_question_index, getQ(code).length), roundIndex: state.roundIndex ?? 0, roundTotal: state.roundQuestionIndices?.length ?? 1 };
     io.to(`room:${code}`).except(`host:${code}`).emit('question-text', safe);
 
-    // Estimation: skip the separate show-answers step — send input field immediately
-    if (q.type === 'estimation' && gameState[code]) {
+    // Estimation + Truth-or-Lie: skip the separate show-answers step — send answer UI immediately
+    if ((q.type === 'estimation' || q.type === 'truth_or_lie') && gameState[code]) {
       const effectiveTimeLimit = gameState[code].timeLimitSecs ?? q.time_limit;
       gameState[code].questionStartedAt = Date.now();
       gameState[code].currentStep = 'answers-shown';

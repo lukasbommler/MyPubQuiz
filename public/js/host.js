@@ -619,12 +619,11 @@ socket.on('host-step', ({ step, startedAt }) => {
     const _tl = currentQuestion?.time_limit || 20;
     const _dl = startedAt ? startedAt + 3600 + _tl * 1000 : null;
     setTimeout(() => startTimer(_tl, _dl), 3600);
-    // For estimation, question-sent is skipped — initialise preview here instead
-    if (currentQuestion?.type === 'estimation') {
+    // For estimation + truth_or_lie, question-sent is skipped — reveal question text here instead
+    if (currentQuestion?.type === 'estimation' || currentQuestion?.type === 'truth_or_lie') {
       document.getElementById('question-text').textContent = currentQuestion.question;
       document.getElementById('correct-value').textContent = '';
-      // Playing host must not see live submissions (would reveal others' answers)
-      if (!hostPlaysMode) {
+      if (currentQuestion.type === 'estimation' && !hostPlaysMode) {
         const el = document.getElementById('estimation-preview');
         el.classList.remove('hidden');
         document.getElementById('estimation-submissions').innerHTML = '';
