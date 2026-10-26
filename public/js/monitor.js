@@ -19,7 +19,23 @@ function showScreen(id) {
   document.querySelectorAll('.mon-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
+  document.body.dataset.screen = id; // drives the colour field in monitor.css
 }
+
+// Question running (tangerine) vs. answer revealed (mint)
+function setRevealed(on) {
+  document.body.classList.toggle('mon-revealed', on);
+}
+
+document.addEventListener('DOMContentLoaded', applyI18n);
+
+// Lobby QR code: scanning it opens the player join page
+(function renderLobbyQr() {
+  const url = `${location.origin}/game/${code}`;
+  document.getElementById('mon-lobby-url').textContent = t('scan_to_join', { url: location.host });
+  const el = document.getElementById('mon-lobby-qr');
+  if (el && window.QRCode) new QRCode(el, { text: url, width: 300, height: 300, colorDark: '#161616', colorLight: '#ffffff' });
+})();
 
 function initials(name) {
   return String(name).split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
@@ -69,6 +85,9 @@ function startCountdown(onDone) {
   function tick() {
     numEl.textContent  = steps[i];
     numEl.className    = 'mon-countdown-number' + (steps[i] === 'GO' ? ' go' : '');
+    numEl.style.animation = 'none'; // restart the pop animation for every number
+    numEl.offsetHeight;
+    numEl.style.animation = '';
     i++;
     if (i < steps.length) setTimeout(tick, 900);
     else {
@@ -86,7 +105,7 @@ function startCountdown(onDone) {
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────
 function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
-function rankEmoji(rank) { return ['🥇','🥈','🥉'][rank - 1] || `${rank}.`; }
+function rankLabel(rank) { return String(rank); }
 
 function updateScoreboard(scores) {
   const el = document.getElementById('mon-scoreboard');
@@ -94,10 +113,10 @@ function updateScoreboard(scores) {
   const ranks = assignRanks(scores);
   el.innerHTML = scores.map((team, i) => `
     <div class="mon-score-row">
-      <span class="mon-score-rank">${rankEmoji(ranks[i])}</span>
+      <span class="mon-score-rank">${rankLabel(ranks[i])}</span>
       <div class="mon-score-avatar">${avatar(team)}</div>
       <span class="mon-score-name">${esc(team.name)}</span>
-      <span class="mon-score-pts">${team.score} pts</span>
+      <span class="mon-score-pts">${team.score}</span>
     </div>`).join('');
 }
 
@@ -106,8 +125,9 @@ function showQuestion(q, showAnswers = true) {
   currentQuestion = q;
 
   // Stats bar
-  document.getElementById('mon-round-label').textContent    = `Round ${roundNum}`;
-  document.getElementById('mon-q-label').textContent        = `Q ${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? '?'}`;
+  document.getElementById('mon-round-label').textContent    = t('round_n', { n: roundNum });
+  document.getElementById('mon-q-label').textContent        = t('question_x_of_y', { x: (q.roundIndex ?? 0) + 1, y: q.roundTotal ?? '?' });
+  setRevealed(false);
   document.getElementById('mon-category-label').textContent = q.category || '';
 
   // Reset reveal area
@@ -135,19 +155,12 @@ function showQuestion(q, showAnswers = true) {
   } else if (q.type === 'truth_or_lie') {
     area.className += ' mon-answers-tol';
     area.innerHTML = `
-      <div class="mon-tol-btn mon-tol-truth" data-idx="0">
-        <span class="mon-tol-icon">✓</span>
-        <span>Truth</span>
-      </div>
-      <div class="mon-tol-btn mon-tol-lie" data-idx="1">
-        <span class="mon-tol-icon">✗</span>
-        <span>Lie</span>
-      </div>`;
+      <div class="mon-tol-btn mon-tol-truth" data-idx="0">${esc(t('truth_btn'))}</div>
+      <div class="mon-tol-btn mon-tol-lie" data-idx="1">${esc(t('lie_btn'))}</div>`;
 
   } else if (q.type === 'estimation') {
     area.innerHTML = `<div class="mon-est-placeholder">
-      <span class="mon-est-icon">🔢</span>
-      Teams are estimating…${q.unit ? ' <em>(' + esc(q.unit) + ')</em>' : ''}
+      ${esc(t('teams_estimating'))}${q.unit ? ` <span class="mon-est-unit">${esc(q.unit)}</span>` : ''}
     </div>`;
 
   } else if (q.type === 'word_order' && q.words) {
@@ -165,70 +178,30 @@ function showReveal(correct, distribution, q) {
   const revealArea    = document.getElementById('mon-reveal-area');
   const correctBanner = document.getElementById('mon-correct-banner');
   revealArea.classList.remove('hidden');
+  setRevealed(true);
 
   if (q.type === 'multiple_choice') {
     const label = q.answers?.[correct] ?? String(correct);
-    correctBanner.textContent = `✓ ${label}`;
+    correctBanner.textContent = label;
     document.querySelectorAll('.mon-mc-btn').forEach((btn, i) => {
       btn.classList.remove('correct', 'wrong');
       btn.classList.add(i === correct ? 'correct' : 'wrong');
     });
   } else if (q.type === 'truth_or_lie') {
-    correctBanner.textContent = `✓ ${correct === 0 ? 'Truth' : 'Lie'}`;
+    correctBanner.textContent = correct === 0 ? t('truth_btn') : t('lie_btn');
     document.querySelectorAll('.mon-tol-btn').forEach(btn => {
       const idx = parseInt(btn.dataset.idx);
       btn.classList.remove('correct', 'wrong');
       btn.classList.add(idx === correct ? 'correct' : 'wrong');
     });
   } else if (q.type === 'estimation') {
-    correctBanner.textContent = `✓ ${correct} ${q.unit || ''}`;
+    correctBanner.textContent = `${correct} ${q.unit || ''}`.trim();
   } else if (q.type === 'word_order') {
     const order = Array.isArray(correct) ? correct : [];
-    correctBanner.textContent = `✓ ${order.map(i => q.words[i]).join(' → ')}`;
+    correctBanner.textContent = order.map(i => q.words[i]).join(' → ');
   }
 
   if (distribution) renderDistribution(distribution, q);
-}
-
-// ── Donut chart helper (Truth or Lie) ─────────────────────────────────────────
-function renderDonutChart(counts, correct, labelTruth, labelLie) {
-  const total = counts[0] + counts[1] || 1;
-  const r = 38;
-  const circ = 2 * Math.PI * r;
-  const truthArc = (counts[0] / total) * circ;
-  const lieArc   = (counts[1] / total) * circ;
-  const truthPct = Math.round((counts[0] / total) * 100);
-  const liePct   = 100 - truthPct;
-  return `
-    <div class="tol-donut-wrap">
-      <svg class="tol-donut" viewBox="0 0 100 100" width="180" height="180">
-        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="#22c55e" stroke-width="18"
-          stroke-dasharray="${truthArc} ${circ}"
-          stroke-dashoffset="0"
-          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="#ef4444" stroke-width="18"
-          stroke-dasharray="${lieArc} ${circ}"
-          stroke-dashoffset="${-truthArc}"
-          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
-        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
-        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
-      </svg>
-      <div class="tol-donut-legend">
-        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot truth"></span>
-          <span class="tol-legend-name">${esc(labelTruth)}</span>
-          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
-        </div>
-        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot lie"></span>
-          <span class="tol-legend-name">${esc(labelLie)}</span>
-          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
-        </div>
-      </div>
-    </div>`;
 }
 
 // ── Distribution charts ───────────────────────────────────────────────────────
@@ -281,10 +254,16 @@ function renderDistribution(dist, q) {
             </div>`).join('')}
         </div>
       </div>
-      <div class="mon-nl-legend">▼ Correct answer: <strong>${dist.correctValue} ${esc(dist.unit || '')}</strong></div>`;
+      <div class="mon-nl-legend">${esc(t('answer_label', { value: dist.correctValue, unit: dist.unit || '' }))}</div>`;
 
   } else if (dist.type === 'truth_or_lie') {
-    el.innerHTML = renderDonutChart(dist.counts, dist.correct, 'Truth', 'Lie');
+    const max = Math.max(...dist.counts, 1);
+    el.innerHTML = [t('truth_btn'), t('lie_btn')].map((label, i) => `
+      <div class="mon-dist-row ${i === dist.correct ? 'mon-dist-correct' : ''}">
+        <span class="mon-dist-label">${esc(label)}</span>
+        <div class="mon-dist-bar-wrap"><div class="mon-dist-bar" style="width:${Math.round((dist.counts[i] / max) * 100)}%"></div></div>
+        <span class="mon-dist-count">${dist.counts[i]}</span>
+      </div>`).join('');
 
   } else if (dist.type === 'word_order') {
     const total  = dist.total || 1;
@@ -297,8 +276,8 @@ function renderDistribution(dist, q) {
           <div class="mon-wo-seg wrong"   style="width:${wrongPct}%"></div>
         </div>
         <div class="mon-wo-labels">
-          <span class="mon-wo-correct-lbl">✓ ${dist.correct} correct (${pct}%)</span>
-          <span class="mon-wo-wrong-lbl">✗ ${dist.wrong} wrong (${wrongPct}%)</span>
+          <span class="mon-wo-correct-lbl">${esc(t('got_right', { n: dist.correct }))}</span>
+          <span class="mon-wo-wrong-lbl">${esc(t('got_wrong', { n: dist.wrong }))}</span>
         </div>
       </div>
       ${q?.type === 'word_order' && Array.isArray(dist.correctOrder)
@@ -317,7 +296,7 @@ function renderAnswerStrip() {
   strip.innerHTML = teams.map(team => `
     <div class="mon-team-chip ${answeredTeams.has(team.id) ? 'done' : ''}" data-chip-team="${esc(team.id)}">
       <div class="mon-team-chip-av">${avatar(team)}</div>
-      <div class="mon-team-chip-check">✓</div>
+      <div class="mon-team-chip-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
     </div>`).join('');
 }
 
@@ -354,15 +333,15 @@ function showStandings(scores, rn) {
   showScreen('screen-standings');
   const badge = document.getElementById('mon-standings-badge');
   const grid  = document.getElementById('mon-standings-grid');
-  if (badge) badge.textContent = `Round ${rn} Complete!`;
+  if (badge) badge.textContent = t('round_complete', { num: rn });
   if (!grid) return;
   const ranks = assignRanks(scores);
   grid.innerHTML = scores.map((team, i) => `
     <div class="mon-standings-row">
-      <span class="mon-standings-rank">${rankEmoji(ranks[i])}</span>
+      <span class="mon-standings-rank">${rankLabel(ranks[i])}</span>
       <div class="mon-standings-avatar">${avatar(team, 'lg')}</div>
       <span class="mon-standings-name">${esc(team.name)}</span>
-      <span class="mon-standings-pts">${team.score} pts</span>
+      <span class="mon-standings-pts">${team.score}</span>
     </div>`).join('');
 }
 
@@ -383,9 +362,9 @@ function showGameOver(scores) {
         <div class="mon-podium-entry p${i + 1}">
           <div class="mon-podium-avatar">${avatar(team, 'xl')}</div>
           <div class="mon-podium-name">${esc(team.name)}</div>
-          <div class="mon-podium-score">${team.score} pts</div>
+          <div class="mon-podium-score">${team.score} ${esc(t('pts_short'))}</div>
           <div class="mon-podium-block" style="height:${heights[i]}">
-            <span>${rankEmoji(podRanks[i])}</span>
+            <span>${rankLabel(podRanks[i])}</span>
           </div>
         </div>`;
     }).join('');
@@ -394,15 +373,20 @@ function showGameOver(scores) {
   if (list) {
     list.innerHTML = scores.slice(3).map((team, i) => `
       <div class="mon-final-row">
-        <span class="mon-final-rank">${i + 4}.</span>
+        <span class="mon-final-rank">${i + 4}</span>
         <div class="mon-final-avatar">${avatar(team)}</div>
         <span class="mon-final-name">${esc(team.name)}</span>
-        <span class="mon-final-pts">${team.score} pts</span>
+        <span class="mon-final-pts">${team.score}</span>
       </div>`).join('');
   }
 }
 
 // ── Overlay helper ────────────────────────────────────────────────────────────
+// first / solo = butter, spot = mint, worst = pink (see monitor.css)
+function setOverlayKind(kind) {
+  document.getElementById('mon-buzz-overlay').dataset.kind = kind;
+}
+
 function flashOverlay(id, ms) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -430,7 +414,7 @@ socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => 
   allTeams  = {};
   teams.forEach(t => { allTeams[t.id] = t; });
   document.getElementById('mon-code-display').textContent = code;
-  document.getElementById('mon-teams-label').textContent  = `${teamCount} team${teamCount !== 1 ? 's' : ''}`;
+  document.getElementById('mon-teams-label').textContent  = t('teams_in', { n: teamCount });
   renderLobby(teams);
 
   if (reconnectState) {
@@ -454,14 +438,14 @@ socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => 
 socket.on('team-arrived', ({ team, totalTeams }) => {
   teamCount = totalTeams;
   allTeams[team.id] = team;
-  document.getElementById('mon-teams-label').textContent = `${teamCount} team${teamCount !== 1 ? 's' : ''}`;
+  document.getElementById('mon-teams-label').textContent = t('teams_in', { n: teamCount });
   addTeamChip(team);
 });
 
 socket.on('round-started', ({ roundNum: rn }) => {
   roundNum = rn;
   showScreen('screen-game');
-  document.getElementById('mon-round-label').textContent = `Round ${rn}`;
+  document.getElementById('mon-round-label').textContent = t('round_n', { n: rn });
   setTally(0, teamCount);
 });
 
@@ -501,37 +485,39 @@ socket.on('answer-revealed', ({ correct, scores, distribution }) => {
 });
 
 socket.on('first-correct', ({ team, points, questionType }) => {
-  document.getElementById('mon-buzz-icon').textContent  = questionType === 'estimation' ? '🎯' : '⚡';
-  document.getElementById('mon-buzz-title').textContent = questionType === 'estimation' ? 'Best Estimate!' : 'First Correct!';
+  setOverlayKind('first');
+  document.getElementById('mon-buzz-title').textContent = questionType === 'estimation' ? t('best_estimate_label') : t('first_correct_label');
   document.getElementById('mon-buzz-name').textContent  = team.name;
   const ptsEl = document.getElementById('mon-buzz-pts');
-  ptsEl.textContent   = points > 0 ? `+${points} pts` : '';
+  ptsEl.textContent   = points > 0 ? `+${points} ${t('pts_short')}` : '';
   ptsEl.style.display = points > 0 ? '' : 'none';
   document.getElementById('mon-buzz-avatar').innerHTML  = `<div class="mon-buzz-av">${avatar(team, 'xl')}</div>`;
   flashOverlay('mon-buzz-overlay', 4000);
 });
 
 socket.on('lone-hero', ({ team, points }) => {
-  document.getElementById('mon-buzz-icon').textContent  = '🦸';
-  document.getElementById('mon-buzz-title').textContent = 'Solo Correct!';
+  setOverlayKind('solo');
+  document.getElementById('mon-buzz-title').textContent = t('solo_correct_title');
   document.getElementById('mon-buzz-name').textContent  = team.name;
-  document.getElementById('mon-buzz-pts').textContent   = `+${points} pts`;
+  document.getElementById('mon-buzz-pts').textContent   = `+${points} ${t('pts_short')}`;
+  document.getElementById('mon-buzz-pts').style.display = '';
   document.getElementById('mon-buzz-avatar').innerHTML  = `<div class="mon-buzz-av">${avatar(team, 'xl')}</div>`;
   flashOverlay('mon-buzz-overlay', 4000);
 });
 
 socket.on('precise-estimate', ({ team, points }) => {
-  document.getElementById('mon-buzz-icon').textContent  = '🎯';
-  document.getElementById('mon-buzz-title').textContent = 'Spot On!';
+  setOverlayKind('spot');
+  document.getElementById('mon-buzz-title').textContent = t('spot_on_title');
   document.getElementById('mon-buzz-name').textContent  = team.name;
-  document.getElementById('mon-buzz-pts').textContent   = `+${points} pts`;
+  document.getElementById('mon-buzz-pts').textContent   = `+${points} ${t('pts_short')}`;
+  document.getElementById('mon-buzz-pts').style.display = '';
   document.getElementById('mon-buzz-avatar').innerHTML  = `<div class="mon-buzz-av">${avatar(team, 'xl')}</div>`;
   flashOverlay('mon-buzz-overlay', 3500);
 });
 
 socket.on('worst-estimate', ({ team }) => {
-  document.getElementById('mon-buzz-icon').textContent  = '📉';
-  document.getElementById('mon-buzz-title').textContent = 'Off the Charts!';
+  setOverlayKind('worst');
+  document.getElementById('mon-buzz-title').textContent = t('off_the_charts');
   document.getElementById('mon-buzz-name').textContent  = team.name;
   document.getElementById('mon-buzz-pts').textContent   = '';
   document.getElementById('mon-buzz-avatar').innerHTML  = `<div class="mon-buzz-av">${avatar(team, 'xl')}</div>`;
@@ -545,5 +531,5 @@ socket.on('game-over',       ({ scores })               => { stopTimer(); docume
 // ── Tally helper ──────────────────────────────────────────────────────────────
 function setTally(count, total) {
   const el = document.getElementById('mon-tally');
-  if (el) el.textContent = `${count} / ${total} answered`;
+  if (el) el.textContent = t('answered_count', { n: count, total });
 }

@@ -133,7 +133,9 @@ Quizapp/
 ├── db.js                   In-memory store for events/teams/answers
 ├── questions-db.js         SQLite interface via sql.js
 ├── scripts/
-│   └── seed-questions.js   Import questions from Google Sheets CSV
+│   ├── seed-questions.js   Import questions from Google Sheets CSV
+│   ├── smoke.js            Plays a full game in Edge and screenshots every stage
+│   └── contact-sheet.js    Overview image of smoke-test screenshots
 ├── questions.db            SQLite question catalogue
 ├── quiz-data.json          Persisted game/team/answer data
 ├── package.json
@@ -152,8 +154,9 @@ Quizapp/
     │   ├── index.js        Landing page logic
     │   ├── sounds.js       Web Audio API sound effects
     │   └── qrcode.min.js   QR code generator
+    ├── fonts/              Schibsted Grotesk (self-hosted, OFL)
     ├── css/
-    │   ├── main.css        Shared styles + design tokens
+    │   ├── main.css        Shared styles + design tokens ("Colour Field")
     │   ├── host.css        Host panel styles
     │   ├── play.css        Player screen styles
     │   └── landing.css     Landing + content page styles

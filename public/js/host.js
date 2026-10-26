@@ -17,10 +17,9 @@ let hostAnswerStartTime = null;
 let hostSubmittedAnswer = null;
 let hostWasCorrect = false;
 
-const CATEGORY_ICONS = {
-  'Geography': '🌍', 'Science': '🔬', 'Pop Culture': '🎬',
-  'Sports': '⚽', 'History': '📜', 'Food & Drink': '🍽️'
-};
+// Answer per team for the current question, shown in the scoreboard rows
+let answerMarks = {};   // teamId -> { display, isCorrect }
+let answersRevealed = false;
 
 // TYPE_LABELS are built dynamically so they respect the active UI language
 function getTypeLabels() {
@@ -40,6 +39,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active', 'screen-enter'));
   const el = document.getElementById(id);
   if (!el) return;
+  document.body.dataset.screen = id; // drives page layout and colour in host.css
   el.classList.add('active', 'screen-enter');
   el.addEventListener('animationend', () => el.classList.remove('screen-enter'), { once: true });
 }
@@ -49,6 +49,7 @@ function setStep(step) {
   ['btn-send-question','btn-replace','btn-show-answers','btn-next','btn-end-round'].forEach(id =>
     document.getElementById(id).classList.add('hidden'));
   document.getElementById('correct-reveal').classList.add('hidden');
+  document.body.dataset.step = step; // step bar + colour field
 
   if (step === 'idle')      { document.getElementById('btn-send-question').classList.remove('hidden'); document.getElementById('btn-replace').classList.remove('hidden'); }
   if (step === 'sent')      { document.getElementById('btn-show-answers').classList.remove('hidden'); document.getElementById('btn-end-round').classList.remove('hidden'); }
@@ -71,7 +72,6 @@ function buildConfigPanel(checkboxesId, radiosId, countId, defaultCats, defaultT
   document.getElementById(checkboxesId).innerHTML = categories.map(cat => `
     <label class="checkbox-label">
       <input type="checkbox" class="cat-cb" value="${cat}" ${defaultCats.includes(cat) ? 'checked' : ''}>
-      <span class="cat-icon">${CATEGORY_ICONS[cat] || '❓'}</span>
       <span>${cat}</span>
     </label>
   `).join('');
@@ -126,6 +126,8 @@ socket.on('error', ({ message }) => alert('Error: ' + message));
 socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: savedHostTeamId, reconnectState }) => {
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
+  document.getElementById('lobby-code').textContent = code;
+  document.getElementById('tv-link').href = `/tv/${code}`;
 
   // Restore host-plays state on reconnect
   if (savedHostTeamId) {
@@ -138,7 +140,7 @@ socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: saved
   const gameUrl = `${location.origin}/game/${code}`;
   document.getElementById('lobby-share-link').value = gameUrl;
   new QRCode(document.getElementById('lobby-qr'), {
-    text: gameUrl, width: 150, height: 150, colorDark: '#7c3aed', colorLight: '#ffffff'
+    text: gameUrl, width: 180, height: 180, colorDark: '#161616', colorLight: '#ffffff'
   });
 
   const allCats = [...new Set(questions.map(q => q.category))];
@@ -172,7 +174,7 @@ function restoreHostGame(rs) {
   currentRound = (q.roundIndex ?? 0) + 1;
 
   document.getElementById('q-category').textContent = q.category;
-  document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
+  document.getElementById('q-round-info').textContent = t('round_n', { n: currentRound });
   document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
   document.getElementById('q-type-badge').textContent = getTypeLabels()[q.type] || q.type;
   document.getElementById('timer-fill').style.width = '100%';
@@ -195,7 +197,7 @@ function restoreHostGame(rs) {
     row.innerHTML = `
       <span class="answer-log-name">${escapeHtml(team.name)}</span>
       <span style="color:var(--text2);font-size:.8rem">${display}</span>
-      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
+      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '0'}</span>`;
     document.getElementById('answers-log').appendChild(row);
   });
 
@@ -391,11 +393,11 @@ document.getElementById('btn-show-scoreboard').addEventListener('click', () => {
 });
 
 document.getElementById('btn-end-round').addEventListener('click', () => {
-  showConfirm('End this round early and go to standings?', () => socket.emit('end-round', { code }));
+  showConfirm(t('confirm_end_round'), () => socket.emit('end-round', { code }));
 });
 
 document.getElementById('btn-final-end').addEventListener('click', () => {
-  showConfirm('End game and show final results?', () => socket.emit('end-game', { code }));
+  showConfirm(t('confirm_end_game'), () => socket.emit('end-game', { code }));
 });
 
 // ── Round started ─────────────────────────────────────────────────────────────
@@ -413,7 +415,7 @@ socket.on('question-host', (q) => {
   Sounds.questionStart();
 
   document.getElementById('q-category').textContent = q.category;
-  document.getElementById('q-round-info').textContent = `Round ${currentRound}`;
+  document.getElementById('q-round-info').textContent = t('round_n', { n: currentRound });
   document.getElementById('q-progress').textContent = `${q.roundIndex + 1} / ${q.roundTotal}`;
   document.getElementById('q-type-badge').textContent = getTypeLabels()[q.type] || q.type;
   document.getElementById('answers-log').innerHTML = '';
@@ -429,9 +431,13 @@ socket.on('question-host', (q) => {
   document.getElementById('host-your-answer').classList.add('hidden');
   document.getElementById('host-flag-btn').classList.add('hidden');
 
+  answerMarks = {};
+  answersRevealed = false;
+  ensureScoreboard();
+
   if (hostPlaysMode) {
     // Hide question content until it's sent to players
-    document.getElementById('question-text').textContent = MPQ_LANG === 'de' ? '⏳ Frage bereit — sende sie, wenn du bereit bist' : '⏳ Question ready — send it when you\'re ready';
+    document.getElementById('question-text').textContent = t('question_ready_host');
   } else {
     renderQuestionPreview(q);
   }
@@ -659,6 +665,8 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
 
   // Playing host must not see others' estimation answers before reveal
   const isEstimation = currentQuestion?.type === 'estimation';
+  answerMarks[teamId] = { display: hostPlaysMode && isEstimation ? '' : shortAnswer(answer), isCorrect };
+  refreshScoreboardMarks();
   if (!(hostPlaysMode && isEstimation)) {
     const row = document.createElement('div');
     row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
@@ -668,7 +676,7 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
     row.innerHTML = `
       <span class="answer-log-name">${escapeHtml(team.name)}</span>
       <span style="color:var(--text2);font-size:.8rem">${display}</span>
-      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '✗'}</span>`;
+      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '0'}</span>`;
     document.getElementById('answers-log').prepend(row);
 
     if (isEstimation) {
@@ -682,6 +690,11 @@ socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
 
 // ── Reveal ────────────────────────────────────────────────────────────────────
 socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerIds }) => {
+  answersRevealed = true;
+  if (currentQuestion?.type === 'estimation') {
+    // An estimate is only "correct" once the closest team(s) are known
+    Object.keys(answerMarks).forEach(id => { answerMarks[id].isCorrect = estimationWinnerIds?.includes(id) ?? false; });
+  }
   setStep('revealed');
   const cv = document.getElementById('correct-value');
   if (currentQuestion?.type === 'multiple_choice') cv.textContent = currentQuestion.answers[correct];
@@ -730,7 +743,7 @@ socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerI
     const hostFlagBtn = document.getElementById('host-flag-btn');
     if (hostFlagBtn) {
       hostFlagBtn.classList.remove('hidden');
-      hostFlagBtn.textContent = '🚩 Report issue';
+      hostFlagBtn.textContent = t('report_issue');
       hostFlagBtn.disabled = false;
     }
   }
@@ -756,50 +769,10 @@ document.querySelectorAll('#host-flag-modal .flag-option').forEach(btn => {
       reason,
     });
     hostFlagModal.classList.add('hidden');
-    hostFlagBtn.textContent = '✓ Reported';
+    hostFlagBtn.textContent = t('reported');
     hostFlagBtn.disabled = true;
   });
 });
-
-function renderDonutChart(counts, correct, labelTruth, labelLie) {
-  const total = counts[0] + counts[1] || 1;
-  const r = 38;
-  const circ = 2 * Math.PI * r;
-  const truthArc = (counts[0] / total) * circ;
-  const lieArc   = (counts[1] / total) * circ;
-  const truthPct = Math.round((counts[0] / total) * 100);
-  const liePct   = 100 - truthPct;
-  return `
-    <div class="tol-donut-wrap">
-      <svg class="tol-donut" viewBox="0 0 100 100" width="160" height="160">
-        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="#22c55e" stroke-width="18"
-          stroke-dasharray="${truthArc} ${circ}"
-          stroke-dashoffset="0"
-          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="#ef4444" stroke-width="18"
-          stroke-dasharray="${lieArc} ${circ}"
-          stroke-dashoffset="${-truthArc}"
-          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
-        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
-        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
-      </svg>
-      <div class="tol-donut-legend">
-        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot truth"></span>
-          <span class="tol-legend-name">${labelTruth}</span>
-          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
-        </div>
-        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot lie"></span>
-          <span class="tol-legend-name">${labelLie}</span>
-          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
-        </div>
-      </div>
-    </div>`;
-}
 
 function renderHostDistribution(dist) {
   const el = document.getElementById('host-distribution');
@@ -830,12 +803,17 @@ function renderHostDistribution(dist) {
     const pct = dist.total ? Math.round((dist.correct / dist.total) * 100) : 0;
     el.innerHTML = `<div class="host-dist-wo">
       <div class="host-dist-wo-bar">
-        <div style="width:${pct}%;background:var(--green);height:100%;border-radius:4px;transition:width .6s"></div>
+        <div class="host-dist-wo-fill" style="width:${pct}%"></div>
       </div>
-      <span style="font-size:.85rem;color:var(--text2)">✓ ${dist.correct} correct &nbsp; ✗ ${dist.wrong} wrong</span>
+      <span class="host-dist-wo-text">${escapeHtml(t('got_right', { n: dist.correct }))} · ${escapeHtml(t('got_wrong', { n: dist.wrong }))}</span>
     </div>`;
   } else if (dist.type === 'truth_or_lie') {
-    el.innerHTML = renderDonutChart(dist.counts, dist.correct, t('truth_btn'), t('lie_btn'));
+    const max = Math.max(...dist.counts, 1);
+    el.innerHTML = [t('truth_btn'), t('lie_btn')].map((label, i) => `<div class="host-dist-row ${i === dist.correct ? 'host-dist-correct' : ''}">
+        <span class="host-dist-label">${escapeHtml(label)}</span>
+        <div class="host-dist-bar-wrap"><div class="host-dist-bar" style="width:${Math.round((dist.counts[i] / max) * 100)}%"></div></div>
+        <span class="host-dist-count">${dist.counts[i]}</span>
+      </div>`).join('');
   }
 }
 
@@ -869,7 +847,7 @@ function renderHostDistributionNumberLine(dist) {
       </div>
     </div>
     <div class="dist-nl-legend">
-      <span class="dist-nl-correct-label">▼ ${dist.correctValue} ${dist.unit}</span>
+      <span class="dist-nl-correct-label">${escapeHtml(t('answer_label', { value: dist.correctValue, unit: dist.unit || '' }))}</span>
     </div>`;
 }
 
@@ -891,7 +869,7 @@ socket.on('round-over', ({ scores, roundNum }) => {
   document.getElementById('host-standings-badge').textContent = t('round_complete', { num: roundNum });
   const _standRanks = assignRanks(scores);
   document.getElementById('host-standings-scores').innerHTML = scores.map((team, i) => {
-    const rank = rankEmoji(_standRanks[i]);
+    const rank = rankLabel(_standRanks[i]);
     const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     const avatarHtml = team.selfie
       ? `<img src="${escapeHtml(team.selfie)}" alt="">`
@@ -900,7 +878,7 @@ socket.on('round-over', ({ scores, roundNum }) => {
       <span class="score-rank">${rank}</span>
       <div class="score-avatar">${avatarHtml}</div>
       <span class="score-name">${escapeHtml(team.name)}</span>
-      <span class="score-pts">${team.score} pts</span>
+      <span class="score-pts">${team.score}</span>
     </div>`;
   }).join('');
   showScreen('screen-host-standings');
@@ -948,7 +926,7 @@ socket.on('game-over', ({ scores }) => {
           ${t.selfie ? `<img src="${escapeHtml(t.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}
         </div>
         <div class="podium-name">${escapeHtml(t.name)}</div>
-        <div class="podium-score">${t.score} pts</div>
+        <div class="podium-score">${t.score} ${t_('pts_short')}</div>
       </div>`;
   }
 
@@ -956,7 +934,7 @@ socket.on('game-over', ({ scores }) => {
   for (const t of podiumOrder) {
     const pos = posOf(t);
     const rank = rankOf(t);
-    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankEmoji(rank)}</div>`;
+    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankLabel(rank)}</div>`;
   }
   html += `</div></div>`;
 
@@ -964,9 +942,9 @@ socket.on('game-over', ({ scores }) => {
   html += `<div class="podium-all-scores">` +
     scores.map((t, i) => `
       <div class="podium-score-row ${i === 0 ? 'winner' : ''}">
-        <span class="psr-rank">${rankEmoji(_goRanks[i])}</span>
+        <span class="psr-rank">${rankLabel(_goRanks[i])}</span>
         <span class="psr-name">${escapeHtml(t.name)}</span>
-        <span class="psr-pts">${t.score} pts</span>
+        <span class="psr-pts">${t.score}</span>
       </div>`).join('') +
     `</div>`;
 
@@ -983,19 +961,21 @@ function updateScoreboard(elId, scores) {
   document.getElementById(elId).innerHTML = scores.map((t, i) => {
     const initials = t.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
     return `<div class="score-row" data-score-team="${t.id}">
-      <span class="score-rank">${rankEmoji(_ranks[i])}</span>
+      <span class="score-rank">${rankLabel(_ranks[i])}</span>
       <div class="score-avatar">
         <img src="${t.selfie||''}" alt="" class="${t.selfie?'':'hidden'}">
         <span class="init${t.selfie?' hidden':''}">${initials}</span>
       </div>
       <span class="score-name">${escapeHtml(t.name)}</span>
+      <span class="score-answer" data-answer-for="${t.id}"></span>
       <span class="score-pts">${t.score}</span>
       <div class="score-adj">
-        <button onclick="adjustScore('${t.id}',1)">+</button>
-        <button onclick="adjustScore('${t.id}',-1)">-</button>
+        <button onclick="adjustScore('${t.id}',-1)" aria-label="-1">−</button>
+        <button onclick="adjustScore('${t.id}',1)" aria-label="+1">+</button>
       </div>
     </div>`;
   }).join('');
+  if (elId === 'scoreboard') refreshScoreboardMarks();
 }
 
 window.adjustScore = (teamId, delta) => socket.emit('adjust-score', { code, teamId, delta });
@@ -1029,7 +1009,7 @@ function showBuzz(team, points, label) {
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('buzz-team-name').textContent = team.name;
   const buzzPts = document.getElementById('buzz-points');
-  buzzPts.textContent = points > 0 ? `+${points} pts` : '';
+  buzzPts.textContent = points > 0 ? `+${points} ${t('pts_short')}` : '';
   buzzPts.style.display = points > 0 ? '' : 'none';
   if (label) document.querySelector('#buzz-overlay .buzz-label').textContent = label;
   const img = document.getElementById('buzz-selfie');
@@ -1048,7 +1028,7 @@ socket.on('worst-estimate', ({ team }) => { showSpecialOverlay('worst-overlay', 
 
 function showSpecialOverlay(overlayId, teamId, ptsId, team, points) {
   document.getElementById(teamId).textContent = team.name;
-  if (ptsId) document.getElementById(ptsId).textContent = points > 0 ? `+${points} pts` : '';
+  if (ptsId) document.getElementById(ptsId).textContent = points > 0 ? `+${points} ${t('pts_short')}` : '';
   const img   = document.getElementById(overlayId + '-selfie');
   const inits = document.getElementById(overlayId + '-initials');
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
@@ -1081,7 +1061,49 @@ function showConfirm(message, onConfirm) {
   document.addEventListener('keydown', handleKey);
 }
 
+// ── Answer status in the scoreboard ───────────────────────────────────────────
+// Short label of a team's answer: the letter for multiple choice, Truth/Lie, the number, or a check for word order.
+function shortAnswer(answer) {
+  const type = currentQuestion?.type;
+  if (type === 'multiple_choice') return 'ABCD'[parseInt(answer)] || String(answer);
+  if (type === 'truth_or_lie') return parseInt(answer) === 0 ? t('truth_btn') : t('lie_btn');
+  if (type === 'word_order') return '';
+  return String(answer);
+}
+
+const CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+function refreshScoreboardMarks() {
+  document.querySelectorAll('#scoreboard .score-answer').forEach(el => {
+    const mark = answerMarks[el.dataset.answerFor];
+    el.innerHTML = mark ? (mark.display ? escapeHtml(mark.display) : CHECK_SVG) : '';
+    el.className = 'score-answer' + (mark ? ' answered' : '') +
+      (mark && answersRevealed ? (mark.isCorrect ? ' is-correct' : ' is-wrong') : '');
+  });
+}
+
+// Before the first reveal the scoreboard has no scores yet: list the teams with 0 so answers can show up.
+function ensureScoreboard() {
+  if (document.querySelector('#scoreboard .score-row')) { refreshScoreboardMarks(); return; }
+  const list = Object.values(teams).map(tm => ({ id: tm.id, name: tm.name, selfie: tm.selfie, score: tm.score || 0 }));
+  if (list.length) updateScoreboard('scoreboard', list.sort((a, b) => b.score - a.score));
+}
+
+// −/+ buttons next to number inputs (points, seconds)
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-stepper]');
+  if (!btn) return;
+  const input = document.getElementById(btn.dataset.stepper);
+  const min = input.min !== '' ? Number(input.min) : -Infinity;
+  const max = input.max !== '' ? Number(input.max) : Infinity;
+  const next = Math.min(max, Math.max(min, (Number(input.value) || 0) + Number(btn.dataset.delta)));
+  input.value = next;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+});
+
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
-function rankEmoji(rank) { return ['🥇','🥈','🥉'][rank - 1] || `${rank}.`; }
+function rankLabel(rank) { return String(rank); }
+// Templates below name their loop variable `t`, which shadows the translate function
+const t_ = (...args) => window.t(...args);
 function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

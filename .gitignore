@@ -4,3 +4,5 @@ public/uploads/
 CLAUDE.md
 *.db
 *.docx
+.moodboard/
+scripts/smoke-out/
