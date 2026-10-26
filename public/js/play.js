@@ -280,6 +280,15 @@ function standingsRows(scores, limit) {
     </div>`).join('');
 }
 
+// The "first correct" / "solo correct" moments cover the whole screen for a few seconds.
+// A new question must never end up underneath one, and a tap closes them early.
+const MOMENT_OVERLAYS = ['play-buzz-overlay', 'play-lone-hero-overlay', 'play-precise-overlay', 'play-worst-overlay'];
+function hideMomentOverlays() {
+  MOMENT_OVERLAYS.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  document.getElementById('flag-modal')?.classList.add('hidden');
+}
+MOMENT_OVERLAYS.forEach(id => document.getElementById(id)?.addEventListener('click', e => e.currentTarget.classList.add('hidden')));
+
 function rememberMyScore(scores) {
   const mine = (scores || []).find(s => s.id === myTeamId);
   if (mine) myLastScore = mine.score;
@@ -287,6 +296,7 @@ function rememberMyScore(scores) {
 
 // ── STEP 1: Host sends question text only ─────────────────────────────────────
 socket.on('question-text', (q) => {
+  hideMomentOverlays();
   currentQuestion = q;
   answered = false;
   wordOrder = [];
@@ -303,6 +313,7 @@ socket.on('question-text', (q) => {
 let countdownActive = false;
 
 socket.on('question-answers', (q) => {
+  hideMomentOverlays();
   currentQuestion = q;
   startCountdown(() => {
     // For estimation + truth_or_lie the screen is shown here (skipped in question-text handler)
@@ -316,8 +327,11 @@ socket.on('question-answers', (q) => {
 
 // Timer starts immediately on receipt. Deadline includes the 3600ms countdown
 // so the bar is full during 3-2-1-GO and starts draining exactly on "GO".
-socket.on('question-start', ({ timeLimit, startedAt }) => {
-  const deadline = startedAt ? startedAt + 3600 + timeLimit * 1000 : null;
+socket.on('question-start', ({ timeLimit, startedAt, serverNow }) => {
+  // Convert the server's start time to this phone's clock. Without this, a phone whose
+  // clock runs ahead of the server locks its answers early (or immediately).
+  const clockOffset = serverNow ? Date.now() - serverNow : 0;
+  const deadline = startedAt ? startedAt + clockOffset + 3600 + timeLimit * 1000 : null;
   startAllTimers(timeLimit, deadline);
 });
 

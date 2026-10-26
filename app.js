@@ -330,6 +330,8 @@ io.on('connection', (socket) => {
     const lang = gameState[code]?.lang || 'en';
     const qs = questionsByLang[lang] || questionsByLang.en;
     const state = gameState[code];
+    // A playing host that reconnects (phone locked, network blip) gets its team room back
+    if (state?.hostTeamId) socket.join(`team:${state.hostTeamId}`);
 
     // Build reconnect snapshot so the host panel can restore itself
     let reconnectState = null;
@@ -400,7 +402,7 @@ io.on('connection', (socket) => {
           socket.emit('question-answers', safe);
           if (!alreadyAnswered) {
             const effectiveTimeLimit = state.timeLimitSecs ?? q.time_limit;
-            socket.emit('question-start', { index: qIndex, timeLimit: effectiveTimeLimit, startedAt: state.questionStartedAt });
+            socket.emit('question-start', { index: qIndex, timeLimit: effectiveTimeLimit, startedAt: state.questionStartedAt, serverNow: Date.now() });
           }
         } else if (state.currentStep === 'revealed') {
           const scores = db.getScoresByEvent(code);
@@ -558,7 +560,7 @@ io.on('connection', (socket) => {
       gameState[code].currentStep = 'answers-shown';
       gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000 + 3600);
       io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
-      io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code].questionStartedAt });
+      io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code].questionStartedAt, serverNow: Date.now() });
       io.to(`host:${code}`).emit('host-step', { step: 'answers-shown', startedAt: gameState[code].questionStartedAt });
     } else {
       io.to(`host:${code}`).emit('host-step', { step: 'question-sent' });
@@ -626,7 +628,7 @@ io.on('connection', (socket) => {
       gameState[code].autoRevealTimeout = setTimeout(() => doRevealAnswer(code), effectiveTimeLimit * 1000 + 3600);
     }
     io.to(`room:${code}`).except(`host:${code}`).emit('question-answers', safe);
-    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code]?.questionStartedAt });
+    io.to(`room:${code}`).emit('question-start', { index: event.current_question_index, timeLimit: effectiveTimeLimit, startedAt: gameState[code]?.questionStartedAt, serverNow: Date.now() });
     io.to(`host:${code}`).emit('host-step', { step: 'answers-shown', startedAt: gameState[code]?.questionStartedAt });
   });
 

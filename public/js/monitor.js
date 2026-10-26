@@ -450,6 +450,7 @@ socket.on('round-started', ({ roundNum: rn }) => {
 });
 
 socket.on('question-text', (q) => {
+  document.getElementById('mon-buzz-overlay').classList.add('hidden'); // never cover a new question
   currentQuestion = q;
   answeredTeams   = new Set();
   showScreen('screen-game');

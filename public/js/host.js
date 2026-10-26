@@ -120,10 +120,20 @@ function getConfig(checkboxesId, radiosId, pointsCorrectId, pointsBonusId, point
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
-socket.emit('host-join', { code, hostToken });
+// Register as host on every (re)connect. Phones drop the socket whenever the screen locks;
+// after a reconnect the server only treats this socket as the host once host-join is sent again.
+let hostJoinedBefore = false;
+const reconnectBanner = document.getElementById('reconnect-banner');
+socket.on('connect', () => {
+  reconnectBanner.classList.add('hidden');
+  socket.emit('host-join', { code, hostToken });
+});
+socket.on('disconnect', () => reconnectBanner.classList.remove('hidden'));
 socket.on('error', ({ message }) => alert('Error: ' + message));
 
 socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: savedHostTeamId, reconnectState }) => {
+  const firstJoin = !hostJoinedBefore;
+  hostJoinedBefore = true;
   allQuestions = questions;
   document.getElementById('header-code').textContent = code;
   document.getElementById('lobby-code').textContent = code;
@@ -137,19 +147,21 @@ socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: saved
     document.getElementById('host-player-name').classList.remove('hidden');
   }
 
-  const gameUrl = `${location.origin}/game/${code}`;
-  document.getElementById('lobby-share-link').value = gameUrl;
-  new QRCode(document.getElementById('lobby-qr'), {
-    text: gameUrl, width: 180, height: 180, colorDark: '#161616', colorLight: '#ffffff'
-  });
-
   const allCats = [...new Set(questions.map(q => q.category))];
-  buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
+  if (firstJoin) {
+    const gameUrl = `${location.origin}/game/${code}`;
+    document.getElementById('lobby-share-link').value = gameUrl;
+    new QRCode(document.getElementById('lobby-qr'), {
+      text: gameUrl, width: 180, height: 180, colorDark: '#161616', colorLight: '#ffffff'
+    });
+    buildConfigPanel('category-checkboxes', 'type-radios', 'match-count', allCats, 'multiple_choice');
+  }
 
   teamList.forEach(t => addTeam(t));
 
-  // Sync question language to the UI language (unless mid-game where it's locked in)
-  if (event.status !== 'running' && event.status !== 'finished') {
+  // Sync question language to the UI language (unless mid-game where it's locked in).
+  // Only on the first join: on a reconnect it would rebuild the setup and lose the host's choices.
+  if (firstJoin && event.status !== 'running' && event.status !== 'finished') {
     socket.emit('set-language', { code, lang: window.MPQ_LANG });
   }
 
@@ -157,11 +169,14 @@ socket.on('host-joined', ({ event, teams: teamList, questions, hostTeamId: saved
     showScreen('screen-game');
     if (reconnectState) restoreHostGame(reconnectState);
   } else if (event.status === 'round-over') {
-    showScreen('screen-round-over');
-    buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+    // On a reconnect between rounds the host stays where they were (standings or setup)
+    if (firstJoin) {
+      showScreen('screen-round-over');
+      buildConfigPanel('ro-category-checkboxes', 'ro-type-radios', 'ro-match-count', allCats, 'multiple_choice');
+    }
   } else if (event.status === 'finished') {
     showScreen('screen-gameover');
-  } else {
+  } else if (firstJoin) {
     showScreen('screen-lobby');
   }
 });
@@ -172,6 +187,7 @@ function restoreHostGame(rs) {
 
   currentQuestion = q;
   currentRound = (q.roundIndex ?? 0) + 1;
+  const step = rs.currentStep;
 
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-round-info').textContent = t('round_n', { n: currentRound });
@@ -187,32 +203,41 @@ function restoreHostGame(rs) {
   document.getElementById('words-preview').classList.add('hidden');
   document.getElementById('estimation-preview').classList.add('hidden');
 
-  // Restore answers log
-  rs.answers.forEach(({ teamId, answer, isCorrect, points }) => {
-    const team = teams[teamId];
-    if (!team) return;
-    const row = document.createElement('div');
-    row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
-    const display = q.type === 'multiple_choice' ? 'ABCD'[parseInt(answer)] || answer : answer;
-    row.innerHTML = `
-      <span class="answer-log-name">${escapeHtml(team.name)}</span>
-      <span style="color:var(--text2);font-size:.8rem">${display}</span>
-      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '0'}</span>`;
-    document.getElementById('answers-log').appendChild(row);
-  });
+  // Has the playing host already answered this question?
+  const hostAnswer = hostTeamId ? rs.answers.find(a => a.teamId === hostTeamId) : null;
+  hostAnswered = !!hostAnswer;
+  hostSubmittedAnswer = hostAnswer ? hostAnswer.answer : null;
+  hostWasCorrect = !!hostAnswer?.isCorrect;
 
-  const step = rs.currentStep;
+  // Answers so far: scoreboard badges + log (hidden from a playing host until the reveal)
+  answersRevealed = step === 'revealed';
+  answerMarks = {};
+  pendingLog = [];
+  if (rs.scores) updateScoreboard('scoreboard', rs.scores);
+  rs.answers.forEach(a => recordAnswer(a, false));
+
+  // A playing host must not see the options or the correct answer before the reveal
+  const showPreview = !hostPlaysMode || step === 'revealed';
+  const showText = () => { document.getElementById('question-text').textContent = q.question; };
 
   if (step === 'question-text') {
-    renderQuestionPreview(q);
+    showPreview ? renderQuestionPreview(q) : showText();
     setStep('sent');
   } else if (step === 'answers-shown') {
-    renderQuestionPreview(q);
+    showPreview ? renderQuestionPreview(q) : showText();
     setStep('answering');
     if (rs.timerRemaining > 0) {
       const tl = q?.time_limit || rs.timerRemaining;
       const dl = rs.questionStartedAt ? rs.questionStartedAt + 3600 + tl * 1000 : (Date.now() + rs.timerRemaining * 1000);
       startTimer(tl, dl);
+    }
+    if (hostPlaysMode) {
+      if (!hostAnswered) showHostAnswerOptions(q);
+      else {
+        document.getElementById('host-answer-area').classList.remove('hidden');
+        document.getElementById('host-answer-options').innerHTML = '';
+        showHostAnswerFeedback(t('locked_in_host'));
+      }
     }
   } else if (step === 'revealed') {
     renderQuestionPreview(q);
@@ -221,12 +246,12 @@ function restoreHostGame(rs) {
     else if (q.type === 'truth_or_lie') cv.textContent = rs.correct === 0 ? t('truth_btn') : t('lie_btn');
     else if (q.type === 'estimation') cv.textContent = `${rs.correct} ${q.unit || ''}`;
     else if (q.type === 'word_order') cv.textContent = rs.correct.map(i => q.words[i]).join(' → ');
-    updateScoreboard('scoreboard', rs.scores);
     renderHostDistribution(rs.distribution);
     setStep('revealed');
   } else {
     // step is null — question arrived at host but not yet sent to players
-    renderQuestionPreview(q);
+    if (showPreview) renderQuestionPreview(q);
+    else document.getElementById('question-text').textContent = t('question_ready_host');
     setStep('idle');
   }
 }
@@ -433,7 +458,9 @@ socket.on('question-host', (q) => {
 
   answerMarks = {};
   answersRevealed = false;
+  pendingLog = [];
   ensureScoreboard();
+  ['buzz-overlay', 'lone-hero-overlay', 'precise-overlay', 'worst-overlay'].forEach(id => document.getElementById(id).classList.add('hidden'));
 
   if (hostPlaysMode) {
     // Hide question content until it's sent to players
@@ -453,17 +480,17 @@ function renderQuestionPreview(q) {
     el.classList.remove('hidden');
     el.innerHTML = q.answers.map((a, i) => `
       <div class="answer-option${i === q.correct ? ' correct' : ''}">
-        <span class="answer-letter">${'ABCD'[i]}</span>${escapeHtml(a)}
+        <span class="answer-letter">${'ABCD'[i]}</span><span class="answer-text">${escapeHtml(a)}</span>${i === q.correct ? `<span class="answer-correct-tag">${escapeHtml(t('correct_tag'))}</span>` : ''}
       </div>`).join('');
   } else if (q.type === 'truth_or_lie') {
     const el = document.getElementById('answers-preview');
     el.classList.remove('hidden');
     el.innerHTML = `
       <div class="answer-option tol-preview-option${q.correct === 0 ? ' correct' : ''}">
-        <span class="answer-letter">T</span>${escapeHtml(t('truth_btn'))}
+        <span class="answer-text">${escapeHtml(t('truth_btn'))}</span>${q.correct === 0 ? `<span class="answer-correct-tag">${escapeHtml(t('correct_tag'))}</span>` : ''}
       </div>
       <div class="answer-option tol-preview-option${q.correct === 1 ? ' correct' : ''}">
-        <span class="answer-letter">L</span>${escapeHtml(t('lie_btn'))}
+        <span class="answer-text">${escapeHtml(t('lie_btn'))}</span>${q.correct === 1 ? `<span class="answer-correct-tag">${escapeHtml(t('correct_tag'))}</span>` : ''}
       </div>`;
   } else if (q.type === 'word_order') {
     const el = document.getElementById('words-preview');
@@ -658,39 +685,53 @@ socket.on('host-step', ({ step, startedAt }) => {
 });
 
 // ── Answers log ───────────────────────────────────────────────────────────────
-socket.on('answer-received', ({ teamId, isCorrect, points, answer }) => {
+socket.on('answer-received', a => recordAnswer(a, true));
+
+// Answers the playing host may only see after the reveal (all question types)
+let pendingLog = [];
+
+// One team's answer: scoreboard badge, answer log row, estimation chip.
+// A playing host sees only that a team has answered, not what, until the reveal.
+function recordAnswer({ teamId, isCorrect, points, answer }, live) {
   const team = teams[teamId];
   if (!team) return;
   if (teamId === hostTeamId && isCorrect) hostWasCorrect = true;
-
-  // Playing host must not see others' estimation answers before reveal
-  const isEstimation = currentQuestion?.type === 'estimation';
-  answerMarks[teamId] = { display: hostPlaysMode && isEstimation ? '' : shortAnswer(answer), isCorrect };
+  answerMarks[teamId] = { answer, isCorrect };
+  const entry = { teamId, isCorrect, points, answer };
+  if (isHiddenFromHost(teamId)) pendingLog.push(entry);
+  else appendLogRow(entry, live);
   refreshScoreboardMarks();
-  if (!(hostPlaysMode && isEstimation)) {
-    const row = document.createElement('div');
-    row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
-    let display = answer;
-    if (currentQuestion?.type === 'multiple_choice') display = 'ABCD'[parseInt(answer)] || answer;
-    else if (currentQuestion?.type === 'truth_or_lie') display = parseInt(answer) === 0 ? t('truth_btn') : t('lie_btn');
-    row.innerHTML = `
-      <span class="answer-log-name">${escapeHtml(team.name)}</span>
-      <span style="color:var(--text2);font-size:.8rem">${display}</span>
-      <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '0'}</span>`;
-    document.getElementById('answers-log').prepend(row);
+}
 
-    if (isEstimation) {
-      const chip = document.createElement('div');
-      chip.className = 'est-submission-chip';
-      chip.textContent = `${team.name}: ${answer}`;
-      document.getElementById('estimation-submissions').appendChild(chip);
-    }
+function isHiddenFromHost(teamId) {
+  return hostPlaysMode && !answersRevealed && teamId !== hostTeamId;
+}
+
+function appendLogRow({ teamId, isCorrect, points, answer }, atTop) {
+  const team = teams[teamId];
+  if (!team) return;
+  const row = document.createElement('div');
+  row.className = `answer-log-row ${isCorrect ? 'correct-log' : 'wrong-log'}`;
+  row.innerHTML = `
+    <span class="answer-log-name">${escapeHtml(team.name)}</span>
+    <span class="answer-log-answer">${escapeHtml(shortAnswer(answer) || '')}</span>
+    <span class="answer-log-result ${isCorrect ? 'ok' : 'bad'}">${isCorrect ? `+${points}` : '0'}</span>`;
+  const log = document.getElementById('answers-log');
+  atTop ? log.prepend(row) : log.appendChild(row);
+
+  if (currentQuestion?.type === 'estimation' && !answersRevealed) {
+    const chip = document.createElement('div');
+    chip.className = 'est-submission-chip';
+    chip.textContent = `${team.name}: ${answer}`;
+    document.getElementById('estimation-submissions').appendChild(chip);
   }
-});
+}
 
 // ── Reveal ────────────────────────────────────────────────────────────────────
 socket.on('answer-revealed', ({ correct, scores, distribution, estimationWinnerIds }) => {
   answersRevealed = true;
+  pendingLog.forEach(entry => appendLogRow(entry, true));
+  pendingLog = [];
   if (currentQuestion?.type === 'estimation') {
     // An estimate is only "correct" once the closest team(s) are known
     Object.keys(answerMarks).forEach(id => { answerMarks[id].isCorrect = estimationWinnerIds?.includes(id) ?? false; });
@@ -1076,7 +1117,8 @@ const CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" s
 function refreshScoreboardMarks() {
   document.querySelectorAll('#scoreboard .score-answer').forEach(el => {
     const mark = answerMarks[el.dataset.answerFor];
-    el.innerHTML = mark ? (mark.display ? escapeHtml(mark.display) : CHECK_SVG) : '';
+    const label = mark && !isHiddenFromHost(el.dataset.answerFor) ? shortAnswer(mark.answer) : '';
+    el.innerHTML = mark ? (label ? escapeHtml(label) : CHECK_SVG) : '';
     el.className = 'score-answer' + (mark ? ' answered' : '') +
       (mark && answersRevealed ? (mark.isCorrect ? ' is-correct' : ' is-wrong') : '');
   });
