@@ -4,98 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Datenschutz — MyPubQuiz</title>
+  <link rel="preload" href="/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/landing.css">
-  <style>
-    .content-page {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 3rem 1.25rem 4rem;
-    }
-    .page-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: var(--text2);
-      text-decoration: none;
-      font-size: 0.875rem;
-      margin-bottom: 2rem;
-      transition: color 0.15s;
-    }
-    .page-back:hover { color: var(--accent2); }
-    .page-title {
-      font-size: 2rem;
-      font-weight: 900;
-      margin-bottom: 0.5rem;
-    }
-    .page-subtitle {
-      color: var(--text2);
-      margin-bottom: 2.5rem;
-      font-size: 1rem;
-    }
-    .dsg-section {
-      margin-bottom: 2.25rem;
-    }
-    .dsg-section h2 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 0.6rem;
-      color: var(--text);
-    }
-    .dsg-section h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin: 1rem 0 0.4rem;
-      color: var(--text);
-    }
-    .dsg-section p, .dsg-section li {
-      color: var(--text2);
-      font-size: 0.9rem;
-      line-height: 1.75;
-    }
-    .dsg-section ul {
-      padding-left: 1.25rem;
-      margin-top: 0.25rem;
-    }
-    .dsg-section a { color: var(--accent2); text-decoration: none; }
-    .dsg-section a:hover { text-decoration: underline; }
-    .dsg-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 2rem 0;
-    }
-    .dsg-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: rgba(16,185,129,0.12);
-      border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 20px;
-      padding: 0.35rem 0.9rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--green);
-      margin-bottom: 2rem;
-    }
-    .last-updated {
-      color: var(--text2);
-      font-size: 0.8rem;
-      margin-bottom: 2rem;
-    }
-  </style>
 </head>
-<body class="landing-body">
-  <div class="lang-bar-top">
+<body class="landing-body content-body">
+  <header class="site-header">
+    <a class="wordmark" href="/">mypubquiz</a>
     <div class="lang-bar">
-      <button class="lang-btn" data-lang="en" onclick="setLang('en')"><img src="https://flagcdn.com/w20/gb.png" width="20" height="15" alt="EN"> EN</button>
-      <button class="lang-btn" data-lang="de" onclick="setLang('de')"><img src="https://flagcdn.com/w20/de.png" width="20" height="15" alt="DE"> DE</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')">DE</button>
     </div>
-  </div>
+  </header>
   <div class="content-page">
-    <a class="page-back" href="/" data-i18n="back_to_home">← Zurück zur Startseite</a>
+    <a class="page-back" href="/" data-i18n="back_to_home">Zurück zur Startseite</a>
     <h1 class="page-title">Datenschutzerklärung</h1>
     <p class="last-updated">Stand: Januar 2025</p>
-    <div class="dsg-badge">🔒 Kein Account, keine Tracker, keine Werbung</div>
+    <div class="dsg-badge">Kein Account, keine Tracker, keine Werbung</div>
 
     <div class="dsg-section">
       <h2>1. Verantwortlicher</h2>
@@ -191,7 +116,7 @@
       <a href="/impressum.html" data-i18n="footer_impressum">Impressum</a>
       <a href="/datenschutz.html" data-i18n="footer_datenschutz">Datenschutz</a>
     </nav>
-    <span class="footer-copy">© 2025 MyPubQuiz</span>
+    <span class="footer-copy">© 2026 MyPubQuiz</span>
   </footer>
   <script src="/js/i18n.js"></script>
   <script>applyI18n();</script>

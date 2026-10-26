@@ -19,12 +19,14 @@ let answered = false;
 let wordOrder = [];
 let myAnswerCorrect = false; // remembered for reveal screen
 let mySubmittedAnswer = null; // raw answer value, shown on reveal
+let myLastScore = null; // my team's score at the previous reveal, for the "+N" on the next one
 
 // ── Screen helper ─────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.play-screen').forEach(s => s.classList.remove('active', 'screen-enter'));
   const el = document.getElementById(id);
   if (!el) return;
+  document.body.dataset.screen = id; // drives the colour field in play.css
   el.classList.add('active', 'screen-enter');
   el.addEventListener('animationend', () => el.classList.remove('screen-enter'), { once: true });
 }
@@ -84,6 +86,7 @@ socket.on('team-joined', ({ team, eventStatus, allTeams }) => {
   hasJoinedThisSession = true;
   myTeam = team;
   myTeamId = team.id;
+  if (myLastScore === null) myLastScore = team.score ?? 0;
   localStorage.setItem(`quiz_team_${code}`, team.id);
 
   if (!isReconnect) {
@@ -255,38 +258,32 @@ socket.on('round-over', ({ scores, roundNum }) => {
 function showRoundOver(scores, roundNum) {
   showScreen('screen-round-over-play');
   document.getElementById('round-complete-badge').textContent = t('round_complete_badge', { num: roundNum });
-  const _roRanks = assignRanks(scores || []);
-  document.getElementById('round-over-scores-play').innerHTML = (scores || []).map((team, i) => {
-    const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
-    const avatarHtml = team.selfie
-      ? `<img src="${escapeHtml(team.selfie)}" alt="">`
-      : `<span class="reveal-score-initials">${initials}</span>`;
-    return `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="reveal-score-rank">${rankEmoji(_roRanks[i])}</span>
-      <div class="reveal-score-avatar">${avatarHtml}</div>
-      <span class="reveal-score-name">${escapeHtml(team.name)}</span>
-      <span class="reveal-score-pts">${team.score} pts</span>
-    </div>`;
-  }).join('');
+  document.getElementById('round-over-scores-play').innerHTML = standingsRows(scores || []);
+  rememberMyScore(scores);
 }
 
 socket.on('scoreboard-shown', ({ scores, roundNum }) => {
   showScreen('screen-round-over-play');
   document.getElementById('round-complete-badge').textContent = t('round_standings', { num: roundNum });
-  const _sbRanks = assignRanks(scores);
-  document.getElementById('round-over-scores-play').innerHTML = scores.map((team, i) => {
-    const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
-    const avatarHtml = team.selfie
-      ? `<img src="${escapeHtml(team.selfie)}" alt="">`
-      : `<span class="reveal-score-initials">${initials}</span>`;
-    return `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="reveal-score-rank">${rankEmoji(_sbRanks[i])}</span>
-      <div class="reveal-score-avatar">${avatarHtml}</div>
-      <span class="reveal-score-name">${escapeHtml(team.name)}</span>
-      <span class="reveal-score-pts">${team.score} pts</span>
-    </div>`;
-  }).join('');
+  document.getElementById('round-over-scores-play').innerHTML = standingsRows(scores);
 });
+
+// Standings rows. With `limit`, shows the top `limit` teams plus my team if it is further down.
+function standingsRows(scores, limit) {
+  const ranks = assignRanks(scores);
+  return scores.map((team, i) => ({ team, rank: ranks[i] }))
+    .filter(({ team }, i) => !limit || i < limit || team.id === myTeamId)
+    .map(({ team, rank }) => `<div class="reveal-score-row ${team.id === myTeamId ? 'my-team' : ''}">
+      <span class="reveal-score-rank">${rankLabel(rank)}</span>
+      <span class="reveal-score-name">${escapeHtml(team.name)}</span>
+      <span class="reveal-score-pts">${team.score}</span>
+    </div>`).join('');
+}
+
+function rememberMyScore(scores) {
+  const mine = (scores || []).find(s => s.id === myTeamId);
+  if (mine) myLastScore = mine.score;
+}
 
 // ── STEP 1: Host sends question text only ─────────────────────────────────────
 socket.on('question-text', (q) => {
@@ -378,7 +375,7 @@ socket.on('worst-estimate', ({ team }) => { showPlaySpecial('play-worst-overlay'
 
 function showPlaySpecial(overlayId, teamElId, ptsElId, team, points) {
   document.getElementById(teamElId).textContent = team.name;
-  if (ptsElId) document.getElementById(ptsElId).textContent = points > 0 ? `+${points} pts` : '';
+  if (ptsElId) document.getElementById(ptsElId).textContent = points > 0 ? `+${points} ${t('pts_short')}` : '';
   const img   = document.getElementById(overlayId + '-selfie');
   const inits = document.getElementById(overlayId + '-initials');
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
@@ -402,13 +399,11 @@ socket.on('game-over', ({ scores }) => {
   const rankBadge = document.getElementById('gameover-rank-badge');
   const scoreDisplay = document.getElementById('gameover-score-display');
 
-  if (myRank === 1)      { rankBadge.textContent = '🥇 You Won!';   rankBadge.className = 'gameover-rank-badge gold'; }
-  else if (myRank === 2) { rankBadge.textContent = '🥈 2nd Place';  rankBadge.className = 'gameover-rank-badge silver'; }
-  else if (myRank === 3) { rankBadge.textContent = '🥉 3rd Place';  rankBadge.className = 'gameover-rank-badge bronze'; }
-  else if (myRank > 0)   { rankBadge.textContent = `#${myRank}`;    rankBadge.className = 'gameover-rank-badge'; }
+  if (myRank === 1)      { rankBadge.textContent = t('you_won');                 rankBadge.className = 'gameover-rank-badge gold'; }
+  else if (myRank > 0)   { rankBadge.textContent = t('place_n', { n: myRank }); rankBadge.className = 'gameover-rank-badge'; }
   rankBadge.classList.remove('hidden');
 
-  scoreDisplay.textContent = `${myScore} pts`;
+  scoreDisplay.textContent = `${myScore} ${t('pts_short')}`;
   scoreDisplay.classList.remove('hidden');
 
   const top3 = scores.slice(0, 3);
@@ -428,21 +423,21 @@ socket.on('game-over', ({ scores }) => {
     html += `<div class="podium-entry p${pos}${isMe}" style="--entry-delay:${entryDelays[pos]}s">
       <div class="podium-avatar">${team.selfie ? `<img src="${escapeHtml(team.selfie)}" alt="">` : `<span>${escapeHtml(initials)}</span>`}</div>
       <div class="podium-name">${escapeHtml(team.name)}</div>
-      <div class="podium-score">${team.score} pts</div>
+      <div class="podium-score">${team.score} ${t('pts_short')}</div>
     </div>`;
   }
   html += `</div><div class="podium-blocks">`;
   for (const team of podiumOrder) {
     const pos = posOf(team);
     const rank = rankOf(team);
-    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankEmoji(rank)}</div>`;
+    html += `<div class="podium-block b${pos}" style="--block-height:${blockHeights[pos]}px;--block-delay:${blockDelays[pos]}s">${rankLabel(rank)}</div>`;
   }
   html += `</div></div><div class="podium-all-scores">`;
   html += scores.map((team, i) => `
     <div class="podium-score-row ${i === 0 ? 'winner' : ''} ${team.id === myTeamId ? 'my-team' : ''}">
-      <span class="psr-rank">${rankEmoji(_goRanks[i])}</span>
+      <span class="psr-rank">${rankLabel(_goRanks[i])}</span>
       <span class="psr-name">${escapeHtml(team.name)}</span>
-      <span class="psr-pts">${team.score} pts</span>
+      <span class="psr-pts">${team.score}</span>
     </div>`).join('');
   html += `</div>`;
   document.getElementById('final-scores-play').innerHTML = html;
@@ -453,7 +448,7 @@ socket.on('game-over', ({ scores }) => {
 
 // ── Standby / waiting screens ─────────────────────────────────────────────────
 function showWaitingForQuestion() {
-  if (myTeam) showWaiting('Get ready! Question coming soon...');
+  if (myTeam) showWaiting(t('get_ready_soon'));
 }
 
 // ── Show question text only (no answers yet) ──────────────────────────────────
@@ -488,6 +483,7 @@ function setupMCScreen(q, showAnswers) {
   document.getElementById('mc-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('mc-question-text').textContent = q.question;
   document.getElementById('mc-feedback').classList.add('hidden');
+  document.getElementById('mc-feedback').classList.remove('locked');
   document.getElementById('mc-timer-fill').style.width = '100%';
   document.getElementById('mc-timer-fill').className = 'play-timer-fill';
 
@@ -528,6 +524,8 @@ function setupEstimationScreen(q, showAnswers) {
   document.getElementById('est-unit').textContent = q.unit || '';
   document.getElementById('est-input').value = '';
   document.getElementById('est-feedback').classList.add('hidden');
+  document.getElementById('est-feedback').classList.remove('locked');
+  document.getElementById('est-input').disabled = false;
   document.getElementById('est-timer-fill').style.width = '100%';
   document.getElementById('est-timer-fill').className = 'play-timer-fill';
 
@@ -564,6 +562,7 @@ function setupWordOrderScreen(q, showAnswers) {
   document.getElementById('wo-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('wo-question-text').textContent = q.question;
   document.getElementById('wo-feedback').classList.add('hidden');
+  document.getElementById('wo-feedback').classList.remove('locked');
   document.getElementById('wo-timer-fill').style.width = '100%';
   document.getElementById('wo-timer-fill').className = 'play-timer-fill';
   document.getElementById('wo-submit-btn').disabled = false;
@@ -614,6 +613,7 @@ function setupTruthOrLieScreen(q, showAnswers) {
   document.getElementById('tol-progress').textContent = `${(q.roundIndex ?? 0) + 1} / ${q.roundTotal ?? q.total}`;
   document.getElementById('tol-question-text').textContent = q.question;
   document.getElementById('tol-feedback').classList.add('hidden');
+  document.getElementById('tol-feedback').classList.remove('locked');
   document.getElementById('tol-timer-fill').style.width = '100%';
   document.getElementById('tol-timer-fill').className = 'play-timer-fill';
 
@@ -667,8 +667,7 @@ function showLockedIn(fbId, text) {
     if (el) {
       el.textContent = text || t('locked_in_play');
       el.className = el.className.replace(/correct-fb|wrong-fb|correct_fb/g, '').trim();
-      el.style.background = 'rgba(124,58,237,0.15)';
-      el.style.color = 'var(--accent2)';
+      el.classList.add('locked');
       el.classList.remove('hidden');
     }
   });
@@ -688,7 +687,7 @@ socket.on('answer-acknowledged', () => {
 
 // ── Reveal screen ─────────────────────────────────────────────────────────────
 function showReveal(correct, scores, estimationWinnerIds, distribution) {
-  flagBtn.textContent = '🚩 Report issue';
+  flagBtn.textContent = t('report_issue');
   flagBtn.disabled = false;
   flagModal.classList.add('hidden');
 
@@ -729,6 +728,7 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
 
     resultEl.textContent = answered ? (wasCorrect ? t('correct_str') : t('wrong_str')) : t('not_answered');
     resultEl.className = `reveal-result ${wasCorrect ? 'win' : 'lose'}`;
+    document.body.dataset.result = !answered ? 'none' : (wasCorrect ? 'correct' : 'wrong');
     if (answered) wasCorrect ? Sounds.correct() : Sounds.wrong();
 
     const correctAnswerEl = document.getElementById('reveal-correct-answer');
@@ -763,58 +763,18 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
       yourAnswerEl.classList.add('hidden');
     }
 
-    document.getElementById('reveal-points').textContent = '';
+    // Points this question earned my team, from the score change since the last reveal
+    const mine = (scores || []).find(s => s.id === myTeamId);
+    const gained = mine && myLastScore !== null ? mine.score - myLastScore : 0;
+    document.getElementById('reveal-points').textContent = gained > 0 ? `+${gained}` : '';
+    rememberMyScore(scores);
 
     renderDistribution(distribution);
 
-    document.getElementById('reveal-scoreboard').innerHTML = '';
+    document.getElementById('reveal-scoreboard').innerHTML = scores?.length
+      ? `<div class="reveal-standings-title"><span>${t('standings_label')}</span></div>${standingsRows(scores, 3)}`
+      : '';
   }, 800);
-}
-
-// ── Shared donut chart for Truth or Lie distribution ─────────────────────────
-function renderDonutChart(counts, correct, labelTruth, labelLie) {
-  const total = counts[0] + counts[1] || 1;
-  const r = 38;
-  const circ = 2 * Math.PI * r;
-  const truthArc  = (counts[0] / total) * circ;
-  const lieArc    = (counts[1] / total) * circ;
-  const truthPct  = Math.round((counts[0] / total) * 100);
-  const liePct    = 100 - truthPct;
-
-  // Dash offset: truth starts at top (−90°), lie segment follows
-  const truthOffset = 0;
-  const lieOffset   = -(truthArc);
-
-  return `
-    <div class="tol-donut-wrap">
-      <svg class="tol-donut" viewBox="0 0 100 100" width="160" height="160">
-        <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--border)" stroke-width="18"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="${correct === 0 ? 'var(--green)' : '#22c55e'}" stroke-width="18"
-          stroke-dasharray="${truthArc} ${circ}"
-          stroke-dashoffset="${truthOffset}"
-          transform="rotate(-90 50 50)" class="tol-arc-truth"/>
-        <circle cx="50" cy="50" r="${r}" fill="none"
-          stroke="${correct === 1 ? 'var(--red)' : '#ef4444'}" stroke-width="18"
-          stroke-dasharray="${lieArc} ${circ}"
-          stroke-dashoffset="${lieOffset}"
-          transform="rotate(-90 50 50)" class="tol-arc-lie"/>
-        <text x="50" y="47" text-anchor="middle" class="tol-donut-total">${total}</text>
-        <text x="50" y="58" text-anchor="middle" class="tol-donut-label">total</text>
-      </svg>
-      <div class="tol-donut-legend">
-        <div class="tol-legend-row ${correct === 0 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot truth"></span>
-          <span class="tol-legend-name">${labelTruth}</span>
-          <span class="tol-legend-count">${counts[0]} <small>${truthPct}%</small></span>
-        </div>
-        <div class="tol-legend-row ${correct === 1 ? 'tol-legend-correct' : ''}">
-          <span class="tol-legend-dot lie"></span>
-          <span class="tol-legend-name">${labelLie}</span>
-          <span class="tol-legend-count">${counts[1]} <small>${liePct}%</small></span>
-        </div>
-      </div>
-    </div>`;
 }
 
 // ── Answer distribution ───────────────────────────────────────────────────────
@@ -886,7 +846,13 @@ function renderDistribution(dist) {
       </div>`;
 
   } else if (dist.type === 'truth_or_lie') {
-    el.innerHTML = renderDonutChart(dist.counts, dist.correct, t('truth_btn'), t('lie_btn'));
+    const max = Math.max(...dist.counts, 1);
+    el.innerHTML = [t('truth_btn'), t('lie_btn')].map((label, i) => `
+      <div class="dist-row ${i === dist.correct ? 'dist-correct' : ''}">
+        <span class="dist-label">${label}</span>
+        <div class="dist-bar-wrap"><div class="dist-bar" style="width:${Math.round((dist.counts[i] / max) * 100)}%"></div></div>
+        <span class="dist-count">${dist.counts[i]}</span>
+      </div>`).join('');
   }
 }
 
@@ -896,7 +862,7 @@ function showBuzz(team, points, label) {
   const initials = team.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   document.getElementById('play-buzz-team-name').textContent = team.name;
   const buzzPts = document.getElementById('play-buzz-points');
-  buzzPts.textContent = points > 0 ? `+${points} pts` : '';
+  buzzPts.textContent = points > 0 ? `+${points} ${t('pts_short')}` : '';
   buzzPts.style.display = points > 0 ? '' : 'none';
   if (label) document.querySelector('#play-buzz-overlay .buzz-label').textContent = label;
   const selfieImg = document.getElementById('play-buzz-selfie');
@@ -939,10 +905,8 @@ function lockAnswers() {
     ['mc-feedback', 'tol-feedback', 'est-feedback', 'wo-feedback'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        el.textContent = '⏰ Time\'s up!';
-        el.style.background = '';
-        el.style.color = '';
-        el.classList.remove('hidden');
+        el.textContent = t('times_up');
+        el.classList.remove('hidden', 'locked');
       }
     });
   }
@@ -988,19 +952,19 @@ document.querySelectorAll('.flag-option').forEach(btn => {
       reason,
     });
     flagModal.classList.add('hidden');
-    flagBtn.textContent = '✓ Reported';
+    flagBtn.textContent = t('reported');
     flagBtn.disabled = true;
   });
 });
 
 socket.on('flag-question-ack', () => {
-  flagBtn.textContent = '✓ Reported';
+  flagBtn.textContent = t('reported');
   flagBtn.disabled = true;
 });
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
-function rankEmoji(rank) { return ['🥇', '🥈', '🥉'][rank - 1] || `${rank}.`; }
+function rankLabel(rank) { return String(rank); }
 function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

@@ -4,100 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FAQ — MyPubQuiz</title>
+  <link rel="preload" href="/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/landing.css">
-  <style>
-    .content-page {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 3rem 1.25rem 4rem;
-    }
-    .page-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      color: var(--text2);
-      text-decoration: none;
-      font-size: 0.875rem;
-      margin-bottom: 2rem;
-      transition: color 0.15s;
-    }
-    .page-back:hover { color: var(--accent2); }
-    .page-title {
-      font-size: 2rem;
-      font-weight: 900;
-      margin-bottom: 0.5rem;
-    }
-    .page-subtitle {
-      color: var(--text2);
-      margin-bottom: 2.5rem;
-      font-size: 1rem;
-    }
-    .faq-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    details {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    details[open] { border-color: rgba(124,58,237,0.4); }
-    summary {
-      padding: 1rem 1.25rem;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      list-style: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      user-select: none;
-    }
-    summary::-webkit-details-marker { display: none; }
-    summary::after {
-      content: '+';
-      font-size: 1.25rem;
-      color: var(--accent2);
-      flex-shrink: 0;
-      transition: transform 0.2s;
-    }
-    details[open] summary::after {
-      content: '−';
-    }
-    .faq-answer {
-      padding: 0 1.25rem 1.1rem;
-      color: var(--text2);
-      font-size: 0.9rem;
-      line-height: 1.65;
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-    .faq-answer a { color: var(--accent2); text-decoration: none; }
-    .faq-answer a:hover { text-decoration: underline; }
-    .faq-category {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent2);
-      margin: 2rem 0 0.75rem;
-    }
-    .faq-category:first-of-type { margin-top: 0; }
-  </style>
 </head>
-<body class="landing-body">
-  <div class="lang-bar-top">
+<body class="landing-body content-body">
+  <header class="site-header">
+    <a class="wordmark" href="/">mypubquiz</a>
     <div class="lang-bar">
-      <button class="lang-btn" data-lang="en" onclick="setLang('en')"><img src="https://flagcdn.com/w20/gb.png" width="20" height="15" alt="EN"> EN</button>
-      <button class="lang-btn" data-lang="de" onclick="setLang('de')"><img src="https://flagcdn.com/w20/de.png" width="20" height="15" alt="DE"> DE</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')">DE</button>
     </div>
-  </div>
+  </header>
   <div class="content-page">
-    <a class="page-back" href="/" data-i18n="back_to_home">← Zurück zur Startseite</a>
+    <a class="page-back" href="/" data-i18n="back_to_home">Zurück zur Startseite</a>
     <h1 class="page-title" data-i18n="faq_title">Häufige Fragen</h1>
     <p class="page-subtitle" data-i18n="faq_subtitle">Alles, was du über MyPubQuiz wissen musst.</p>
 
@@ -181,7 +101,7 @@
       <a href="/impressum.html" data-i18n="footer_impressum">Impressum</a>
       <a href="/datenschutz.html" data-i18n="footer_datenschutz">Datenschutz</a>
     </nav>
-    <span class="footer-copy">© 2025 MyPubQuiz</span>
+    <span class="footer-copy">© 2026 MyPubQuiz</span>
   </footer>
   <script src="/js/i18n.js"></script>
   <script>applyI18n();</script>
