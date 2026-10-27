@@ -16,7 +16,7 @@ body[data-screen="screen-gameover"] { background: var(--ink); color: var(--white
 
 /* Avatars: selfie or initials */
 .mon-init { display: grid; place-items: center; width: 100%; height: 100%; font-weight: 900; letter-spacing: -0.03em; }
-.mon-lobby-avatar img, .mon-score-avatar img, .mon-team-chip-av img, .mon-standings-avatar img,
+.mon-lobby-avatar img, .mon-team-chip-av img, .mon-standings-avatar img,
 .mon-podium-avatar img, .mon-final-avatar img, .mon-buzz-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ── Lobby ──────────────────────────────────────────────────────────────── */
@@ -147,24 +147,6 @@ body[data-screen="screen-gameover"] { background: var(--ink); color: var(--white
 .mon-wo-labels { display: flex; justify-content: space-between; font-size: 1.35rem; font-weight: 800; }
 .mon-wo-correct-order { display: none; }
 
-/* Scoreboard: only after the reveal, so long answers get the full width */
-.mon-score-col {
-  display: none; width: 23rem; flex: none;
-  flex-direction: column; gap: .7rem; padding: 1.5rem;
-  border-radius: 2rem; background: var(--white); overflow: hidden;
-}
-.mon-revealed .mon-score-col { display: flex; }
-.mon-score-header { font-size: 1.4rem; font-weight: 900; }
-.mon-scoreboard { display: flex; flex-direction: column; gap: .4rem; }
-.mon-score-row {
-  display: flex; align-items: center; gap: .8rem; min-height: 3.4rem; padding: 0 1rem;
-  border-radius: 1.1rem; background: var(--surface); font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums;
-}
-.mon-score-row:first-child { background: var(--ink); color: var(--white); }
-.mon-score-rank { width: 1.2rem; font-weight: 900; }
-.mon-score-avatar { display: none; }
-.mon-score-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mon-score-pts { font-size: 1.45rem; font-weight: 900; }
 
 /* Who has answered: grey until a team is in */
 .mon-answer-strip { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; }

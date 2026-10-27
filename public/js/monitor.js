@@ -103,22 +103,9 @@ function startCountdown(onDone) {
   tick();
 }
 
-// ── Scoreboard ────────────────────────────────────────────────────────────────
+// ── Ranks ────────────────────────────────────────────────────────────────
 function assignRanks(scores) { return scores.map(s => scores.filter(o => o.score > s.score).length + 1); }
 function rankLabel(rank) { return String(rank); }
-
-function updateScoreboard(scores) {
-  const el = document.getElementById('mon-scoreboard');
-  if (!el) return;
-  const ranks = assignRanks(scores);
-  el.innerHTML = scores.map((team, i) => `
-    <div class="mon-score-row">
-      <span class="mon-score-rank">${rankLabel(ranks[i])}</span>
-      <div class="mon-score-avatar">${avatar(team)}</div>
-      <span class="mon-score-name">${esc(team.name)}</span>
-      <span class="mon-score-pts">${team.score}</span>
-    </div>`).join('');
-}
 
 // ── Question display ──────────────────────────────────────────────────────────
 function showQuestion(q, showAnswers = true) {
@@ -424,7 +411,6 @@ socket.on('monitor-joined', ({ event, teams, roundNum: rn, reconnectState }) => 
     answeredTeams = new Set(answeredTeamIds ?? []);
     showScreen('screen-game');
     if (q) showQuestion(q, currentStep !== 'question-text');
-    if (scores) updateScoreboard(scores);
     setTally(answeredCount ?? 0, teamCount);
     renderAnswerStrip();
 
@@ -477,11 +463,10 @@ socket.on('answer-tally', ({ count, total, teamId }) => {
   if (teamId) markTeamAnswered(teamId);
 });
 
-socket.on('answer-revealed', ({ correct, scores, distribution }) => {
+socket.on('answer-revealed', ({ correct, distribution }) => {
   stopTimer();
   countdownActive  = false;
   pendingTimeLimit = null;
-  if (scores) updateScoreboard(scores);
   showReveal(correct, distribution, currentQuestion);
 });
 

@@ -784,10 +784,7 @@ function showReveal(correct, scores, estimationWinnerIds, distribution) {
     rememberMyScore(scores);
 
     renderDistribution(distribution);
-
-    document.getElementById('reveal-scoreboard').innerHTML = scores?.length
-      ? `<div class="reveal-standings-title"><span>${t('standings_label')}</span></div>${standingsRows(scores, 3)}`
-      : '';
+    // Standings are not shown per question, only at the end of a round or when the host shows them
   }, 800);
 }
 
