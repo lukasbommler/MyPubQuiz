@@ -283,8 +283,8 @@
       step3_title:  'Spielen und gewinnen',
       step3_desc:   'Live-Rangliste, Schnelligkeitsbonus, Antwortverteilung nach jeder Frage und eine Siegerehrung am Ende.',
 
-      features_title: 'Alles, was du brauchst',
-      feat1: 'Multiple Choice, Schätzfragen & Wörter sortieren',
+      features_title: 'Alles auf einen Blick',
+      feat1: 'Verschiedene Fragekategorien: Multiple Choice, Schätzfragen & Wörter sortieren',
       feat2: 'Schnelligkeitsbonus für die schnellste richtige Antwort',
       feat3: 'Antwortverteilung nach jeder Auflösung',
       feat4: 'Countdown-, Buzz- und Ergebnis-Soundeffekte',
