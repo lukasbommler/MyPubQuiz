@@ -23,8 +23,8 @@
       step3_title:  'Play and see who wins',
       step3_desc:   'Live leaderboard, speed bonuses, answer distribution after each question, and a podium ceremony at the end.',
 
-      features_title: 'Everything you need',
-      feat1: 'Multiple choice, estimation & word ordering',
+      features_title: 'Everything at a Glance',
+      feat1: 'Different Categories: Multiple choice, estimation & word ordering',
       feat2: 'Speed bonus for fastest correct answer',
       feat3: 'Answer distribution shown after each reveal',
       feat4: 'Countdown, buzz & result sound effects',
